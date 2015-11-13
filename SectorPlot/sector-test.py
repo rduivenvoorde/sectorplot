@@ -19,7 +19,8 @@ sp.sectors.append(Sector(0,0,3,195,65))
 
 print(sp)
 sp.exportToDatabase()
-
+sp.setSavetime()
+print sp.sectors[0]
 
 
 #layer =  QgsVectorLayer('Polygon', 'poly' , "memory")

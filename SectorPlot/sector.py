@@ -1,5 +1,6 @@
 from math import ceil, floor, cos, sin, pi
-from qgis.core import QgsFeature, QgsPoint, QgsGeometry
+from qgis.core import QgsFeature, QgsPoint, QgsGeometry, QgsField, QgsFields
+from PyQt4.QtCore import QVariant
 from time import strftime, gmtime
 import psycopg2
 import psycopg2.extras
@@ -15,6 +16,7 @@ def doQueries(queries, conn_string="host='localhost' dbname='gistest' user='post
     conn.close()
     #return memory
 
+#def 
 
 class Sector():
     def __init__(self, x=0, y=0, distance=1.0, direction=0.0, angle=45.0, type="jodium", z_order=0):
@@ -26,60 +28,73 @@ class Sector():
         self.type = type
         self.z_order = z_order
         self.savetime = gmtime()
-        self.geometry = self.getGeometry(self.x, self.y, self.distance, self.direction, self.angle)
+        self.geometry = self.calcGeometry()
 
     def __str__(self):
-        result = 'Sector[(%d,%d), %d, %d]' % (self.x, self.y, self.distance, self.direction)
+        result = 'Sector[(%d,%d), %d, %d, %s]' % (self.x, self.y, self.distance, self.direction, strftime("%Y-%m-%d %H:%M:%S +0000", self.savetime))
         return result
 
     def getQgsFeature(self):
-        result = QgsFeature()
-        result.setGeometry(self.geometry)
-        return result
-        
+        feat = QgsFeature()
+        fields = QgsFields()
+        fields.append(QgsField('type', QVariant.String))
+        fields.append(QgsField('z_order', QVariant.Int))
+        fields.append(QgsField('savetime', QVariant.String))
+        feat.setFields(fields)
+        feat['type'] = self.type
+        feat['z_order'] = self.z_order
+        feat['savetime'] = strftime("%Y-%m-%d %H:%M:%S +0000", self.savetime)
+        feat.setGeometry(self.geometry)
+        return feat
 
-    def getArcPoint(self, x, y, r, direction):
+
+    def _getArcPoint(self, x, y, r, direction):
         newdir = direction/180.0*pi
         newx = x + r * sin(newdir)
         newy = y + r * cos(newdir)
         return QgsPoint(newx, newy)
 
-    def getGeometry(self, x, y, distance, direction, angle):
+    def calcGeometry(self):
 
         # TODO: adjust radius to distance in projection
-        r = distance
+        r = self.distance
         arc = []
 
+        
+
+        #x3657 = 
+
         # make: 0 <= direction < 360
-        direction %= 360
+        self.direction %= 360
 
         #check if sector is circle
-        if angle >= 360:
+        if self.angle >= 360:
             for d in range(0,360):
-                arc.append(getArcPoint(x, y, r, d))
+                arc.append(getArcPoint(self.x, self.y, r, d))
         else:
-            arcStart = direction
-            if isinstance(arcStart,( int, long )):
+            arcStart = self.direction
+            if isinstance(arcStart,(int, long)):
                 loopStart = arcStart + 1
             else:
                 loopStart = int(ceil(arcStart))
 
-            arcEnd = direction + (angle % 360)
-            if isinstance(arcEnd,( int, long )):
+            arcEnd = self.direction + (self.angle % 360)
+            if isinstance(arcEnd,(int, long)):
                 loopEnd = arcEnd - 1
             else:
                 loopEnd = int(floor(arcEnd))
 
-            arc.append(QgsPoint(x,y))
-            arc.append(self.getArcPoint(x, y, r, arcStart))
+            arc.append(QgsPoint(self.x,self.y))
+            arc.append(self._getArcPoint(self.x, self.y, r, arcStart))
             if loopStart <= loopEnd:
-                arc.append(self.getArcPoint(x, y, r, loopStart))
+                arc.append(self._getArcPoint(self.x, self.y, r, loopStart))
                 if loopStart < loopEnd:
                     for d in range(loopStart+1, loopEnd+1):
-                        arc.append(self.getArcPoint(x, y, r, d))
-            arc.append(self.getArcPoint(x, y, r, arcEnd))
+                        arc.append(self._getArcPoint(self.x, self.y, r, d))
+            arc.append(self._getArcPoint(self.x, self.y, r, arcEnd))
 
         return QgsGeometry.fromPolygon([arc])
+
 
     def getInsertQuery(self):
         query = {}
@@ -137,6 +152,10 @@ class SectorPlaat():
             queries.append(sector.getInsertQuery())
         result = doQueries(queries)
 
-
+    def setSavetime(self, savetime=None):
+        if savetime is None:
+            savetime = gmtime()
+        for sector in self.sectors:
+            sector.savetime = savetime
 
 
