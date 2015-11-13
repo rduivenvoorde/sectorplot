@@ -1,14 +1,25 @@
-from sector import Sector, Roos
+from sector import Sector, Roos, SectorPlaat
 
 sec = Sector()
 print(sec)
+print(sec.getInsertQuery())
+print(sec.getQgsFeature())
 
-
+'''
 roos = Roos()
 print(roos)
-
 for geom in roos.sectors:
     print(geom)
+'''
+
+sp = SectorPlaat()
+print(sp)
+sp.sectors.append(Sector(0,0,3,195,65))
+sp.sectors.append(Sector(0,0,3,195,65))
+
+print(sp)
+sp.exportToDatabase()
+
 
 
 #layer =  QgsVectorLayer('Polygon', 'poly' , "memory")

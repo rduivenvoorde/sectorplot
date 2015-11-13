@@ -1,20 +1,42 @@
 from math import ceil, floor, cos, sin, pi
 from qgis.core import QgsFeature, QgsPoint, QgsGeometry
+from time import strftime, gmtime
+import psycopg2
+import psycopg2.extras
+
+def doQueries(queries, conn_string="host='localhost' dbname='gistest' user='postgres' password='postgres'"):
+    conn = psycopg2.connect(conn_string)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    for query in queries:
+        cursor.execute(query['text'], query['vals'])
+    #memory = cursor.fetchall()
+    conn.commit()
+    cursor.close()
+    conn.close()
+    #return memory
 
 
 class Sector():
-    def __init__(self, x=0, y=0, distance=1.0, direction=0.0, angle=45.0):
+    def __init__(self, x=0, y=0, distance=1.0, direction=0.0, angle=45.0, type="jodium", z_order=0):
         self.x = x
         self.y = y
         self.distance = distance
         self.direction = direction
         self.angle = angle
+        self.type = type
+        self.z_order = z_order
+        self.savetime = gmtime()
         self.geometry = self.getGeometry(self.x, self.y, self.distance, self.direction, self.angle)
 
     def __str__(self):
         result = 'Sector[(%d,%d), %d, %d]' % (self.x, self.y, self.distance, self.direction)
         return result
 
+    def getQgsFeature(self):
+        result = QgsFeature()
+        result.setGeometry(self.geometry)
+        return result
+        
 
     def getArcPoint(self, x, y, r, direction):
         newdir = direction/180.0*pi
@@ -57,10 +79,24 @@ class Sector():
                         arc.append(self.getArcPoint(x, y, r, d))
             arc.append(self.getArcPoint(x, y, r, arcEnd))
 
-        poly = QgsFeature()
-        poly.setGeometry(QgsGeometry.fromPolygon([arc]))
-        return poly
+        return QgsGeometry.fromPolygon([arc])
 
+    def getInsertQuery(self):
+        query = {}
+        query['text'] = 'INSERT INTO sectors (geom, x, y, distance, direction, angle, type, z_order, savetime)'
+        query['text'] += ' VALUES (ST_GeomFromText(%s, 4326), %s, %s, %s, %s, %s, %s, %s, %s::timestamp)'
+        vals = []
+        vals.append(self.geometry.exportToWkt())
+        vals.append(self.x)
+        vals.append(self.y)
+        vals.append(self.distance)
+        vals.append(self.direction)
+        vals.append(self.angle)
+        vals.append(self.type)
+        vals.append(self.z_order)
+        vals.append(strftime("%Y-%m-%d %H:%M:%S +0000", self.savetime))
+        query['vals'] = tuple(vals)
+        return query
 
 
 
@@ -90,13 +126,16 @@ class SectorPlaat():
         self.y = y
         self.roos = Roos()
         self.sectors = []
-    
 
-    def __str__():
-        result = 'SectorPlaat[]'
+    def __str__(self):
+        result = 'SectorPlaat[ %s sectors]' % len(self.sectors)
         return result
 
-
+    def exportToDatabase(self):
+        queries = []
+        for sector in self.sectors:
+            queries.append(sector.getInsertQuery())
+        result = doQueries(queries)
 
 
 
