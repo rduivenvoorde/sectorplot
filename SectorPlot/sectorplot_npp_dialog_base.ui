@@ -1,28 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SectorPlotDialog</class>
- <widget class="QDialog" name="SectorPlotDialog">
+ <class>SectorPlotNPPDialog</class>
+ <widget class="QDialog" name="SectorPlotNPPDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>145</height>
+    <width>807</width>
+    <height>457</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>SectorPlot</string>
+   <string>Dialog</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="0" column="0">
-    <widget class="QPushButton" name="btn_open_npp_dialog">
-     <property name="text">
-      <string>Nuclear Power Plant</string>
-     </property>
-    </widget>
+   <item row="0" column="1">
+    <widget class="QLineEdit" name="le_search_npp"/>
    </item>
-   <item row="1" column="0">
-    <widget class="QDialogButtonBox" name="button_box">
+   <item row="2" column="1">
+    <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
      </property>
@@ -31,39 +27,49 @@
      </property>
     </widget>
    </item>
+   <item row="0" column="0">
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Nuclear Power Plant Search</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0" colspan="2">
+    <widget class="QTableView" name="table_npps"/>
+   </item>
   </layout>
  </widget>
  <resources/>
  <connections>
   <connection>
-   <sender>button_box</sender>
+   <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>SectorPlotDialog</receiver>
+   <receiver>SectorPlotNPPDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
+     <x>248</x>
+     <y>254</y>
     </hint>
     <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
+     <x>157</x>
+     <y>274</y>
     </hint>
    </hints>
   </connection>
   <connection>
-   <sender>button_box</sender>
+   <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>SectorPlotDialog</receiver>
+   <receiver>SectorPlotNPPDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>20</x>
-     <y>20</y>
+     <x>316</x>
+     <y>260</y>
     </hint>
     <hint type="destinationlabel">
-     <x>20</x>
-     <y>20</y>
+     <x>286</x>
+     <y>274</y>
     </hint>
    </hints>
   </connection>

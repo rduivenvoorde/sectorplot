@@ -1,6 +1,5 @@
 import csv
 
-
 class Npp(dict):
     def __init__(self, rec=None):
         self.ok = False
@@ -63,5 +62,6 @@ class NppSet(list):
             self.pop()
 
     def __str__(self):
+        # TODO: should this not return a full string representation of the set?
         result = 'Npps[%s]' % (str(len(self)))
         return result

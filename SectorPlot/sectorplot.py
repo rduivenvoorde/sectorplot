@@ -20,12 +20,15 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication
-from PyQt4.QtGui import QAction, QIcon
+from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
+from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, QAbstractItemView, QStandardItem
 # Initialize Qt resources from file resources.py
 import resources
-# Import the code for the dialog
+# Import the code for the dialogs
 from sectorplot_dialog import SectorPlotDialog
+from sectorplot_npp_dialog import SectorPlotNppDialog
+from npp import NppSet
+
 import os.path
 
 
@@ -60,6 +63,13 @@ class SectorPlot:
 
         # Create the dialog (after translation) and keep reference
         self.dlg = SectorPlotDialog()
+        # dlg actions
+        self.dlg.btn_open_npp_dialog.clicked.connect(self.open_npp_dialog)
+
+        # Create npp_dialog
+        self.npp_dlg = SectorPlotNppDialog()
+        # npp_dialog actions
+
 
         # Declare instance attributes
         self.actions = []
@@ -190,3 +200,55 @@ class SectorPlot:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
+
+
+    def open_npp_dialog(self):
+        npp_source = os.path.join(os.path.dirname(__file__), r'data/tabel-npp-export.txt')
+        npps = NppSet(npp_source)
+
+        self.npp_proxy_model = QSortFilterProxyModel()
+        self.npp_source_model = QStandardItemModel()
+
+        self.npp_proxy_model.setSourceModel(self.npp_source_model)
+        # setFilterKeyColumn = search in the data in column
+        self.npp_proxy_model.setFilterKeyColumn(0)
+        self.npp_dlg.table_npps.setModel(self.npp_proxy_model)
+        self.npp_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
+
+        self.npp_dlg.le_search_npp.textChanged.connect(self.filter_npps)
+        self.npp_dlg.le_search_npp.setPlaceholderText("search")
+
+        if (len(npps)):
+            # load the npps in the table in dialog
+            for npp in npps:
+                # prepare a commaseparated string to search in from the values of the npp dict
+                vals = ""
+                for val in npp.values():
+                    vals += ", %s" % unicode(val)
+                # you can attache different "data's" to to an QStandarditem
+                # default one is the visible one:
+                data = QStandardItem(vals)
+                # userrole is a free form one:
+                # attach the data/npp to the first column
+                # when clicked you can get the npp from the data of that column
+                data.setData(vals, Qt.UserRole)
+                inventory = QStandardItem("%s" % (npp["inventory"].upper()) )
+                country_code = QStandardItem("%s" % (npp["countrycode"].upper()) )
+                site = QStandardItem("%s" % (npp["site"].upper()) )
+                block = QStandardItem("%s" % (npp["block"].upper()) )
+                self.npp_source_model.appendRow ( [data, inventory, country_code, site, block] )
+        # headers
+        self.npp_source_model.setHeaderData(1, Qt.Horizontal, "Inventory")
+        self.npp_source_model.setHeaderData(2, Qt.Horizontal, "Countrycode")
+        self.npp_source_model.setHeaderData(3, Qt.Horizontal, "Site")
+        self.npp_source_model.setHeaderData(4, Qt.Horizontal, "Block")
+        self.npp_dlg.table_npps.horizontalHeader().setStretchLastSection(True)
+        # hide the data / search string column:
+        self.npp_dlg.table_npps.hideColumn(0)
+        self.npp_dlg.show()
+
+
+    def filter_npps(self, string):
+        self.npp_dlg.table_npps.selectRow(0)
+        self.npp_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
+        self.npp_proxy_model.setFilterFixedString(string)
