@@ -29,7 +29,7 @@ from PyQt4 import QtGui, uic
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'sectorplot_npp_dialog_base.ui'))
 
-# this determines the Class name base on the FORM_CLASS abouve
+# this determines the Class name base on the FORM_CLASS above
 class SectorPlotNppDialog(QtGui.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""

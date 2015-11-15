@@ -27,6 +27,7 @@ import resources
 # Import the code for the dialogs
 from sectorplot_dialog import SectorPlotDialog
 from sectorplot_npp_dialog import SectorPlotNppDialog
+from sectorplot_sector_dialog import SectorPlotSectorDialog
 from npp import NppSet
 
 import os.path
@@ -65,11 +66,15 @@ class SectorPlot:
         self.dlg = SectorPlotDialog()
         # dlg actions
         self.dlg.btn_open_npp_dialog.clicked.connect(self.open_npp_dialog)
+        self.dlg.btn_open_sector_dialog.clicked.connect(self.open_sector_dialog)
 
         # Create npp_dialog
         self.npp_dlg = SectorPlotNppDialog()
         # npp_dialog actions
 
+        # Create npp_dialog
+        self.sector_dlg = SectorPlotSectorDialog()
+        # sector_dialog actions
 
         # Declare instance attributes
         self.actions = []
@@ -252,3 +257,6 @@ class SectorPlot:
         self.npp_dlg.table_npps.selectRow(0)
         self.npp_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.npp_proxy_model.setFilterFixedString(string)
+
+    def open_sector_dialog(self):
+        self.sector_dlg.show()
