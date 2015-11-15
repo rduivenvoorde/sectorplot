@@ -24,7 +24,7 @@ class Npp(dict):
         self['ventopening'] = float(rec[12].strip())
         self['countrycode'] = rec[13].strip()
         self['numberofzones'] = int(rec[14].strip())
-        self['zoneradii'] = [2.5, 5.0, 10.0]  # get array(rec[15]) ???
+        self['zoneradii'] = [2.5, 5.0, 10.0]  # get array(rec[15]) ??? TODO
         self['numberofsectors'] = int(rec[16].strip())
         self['starangle'] = float(rec[17].strip())
         #self['closetoborder'] = rec[18] == 'True'  # ???

@@ -62,7 +62,7 @@ class Sector():
 
         
 
-        #x3657 = 
+        #x3857 = 
 
         # make: 0 <= direction < 360
         self.direction %= 360
