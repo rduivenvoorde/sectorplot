@@ -26,8 +26,12 @@ from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemMode
 import resources
 # Import the code for the dialogs
 from sectorplot_dialog import SectorPlotDialog
-from sectorplot_npp_dialog import SectorPlotNppDialog
+from sectorplot_location_dialog import SectorPlotLocationDialog
 from sectorplot_sector_dialog import SectorPlotSectorDialog
+from sectorplot_sectorplotset_dialog import SectorPlotSectorPlotSetDialog
+
+from countermeasures import CounterMeasures
+
 from npp import NppSet
 
 import os.path
@@ -65,16 +69,21 @@ class SectorPlot:
         # Create the dialog (after translation) and keep reference
         self.dlg = SectorPlotDialog()
         # dlg actions
-        self.dlg.btn_open_npp_dialog.clicked.connect(self.open_npp_dialog)
-        self.dlg.btn_open_sector_dialog.clicked.connect(self.open_sector_dialog)
+        self.dlg.btn_new_sectorplot_dialog.clicked.connect(self.open_location_dialog)
 
-        # Create npp_dialog
-        self.npp_dlg = SectorPlotNppDialog()
-        # npp_dialog actions
+        # Create location_dialog
+        self.location_dlg = SectorPlotLocationDialog()
+        # actions
 
-        # Create npp_dialog
+        # Create sector_dialog
         self.sector_dlg = SectorPlotSectorDialog()
-        # sector_dialog actions
+        # actions
+
+        # Create sectorplotset_dialog
+        self.sectorplotset_dlg = SectorPlotSectorPlotSetDialog()
+        # actions
+        self.sectorplotset_dlg.btn_new_sector.clicked.connect(self.open_new_sector_dialog)
+
 
         # Declare instance attributes
         self.actions = []
@@ -207,22 +216,20 @@ class SectorPlot:
             pass
 
 
-    def open_npp_dialog(self):
+    def open_location_dialog(self):
+
+        # fill the nuclear power plant list
         npp_source = os.path.join(os.path.dirname(__file__), r'data/tabel-npp-export.txt')
         npps = NppSet(npp_source)
-
         self.npp_proxy_model = QSortFilterProxyModel()
         self.npp_source_model = QStandardItemModel()
-
         self.npp_proxy_model.setSourceModel(self.npp_source_model)
         # setFilterKeyColumn = search in the data in column
         self.npp_proxy_model.setFilterKeyColumn(0)
-        self.npp_dlg.table_npps.setModel(self.npp_proxy_model)
-        self.npp_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
-
-        self.npp_dlg.le_search_npp.textChanged.connect(self.filter_npps)
-        self.npp_dlg.le_search_npp.setPlaceholderText("search")
-
+        self.location_dlg.table_npps.setModel(self.npp_proxy_model)
+        self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.location_dlg.le_search_npp.textChanged.connect(self.filter_npps)
+        self.location_dlg.le_search_npp.setPlaceholderText("search")
         if (len(npps)):
             # load the npps in the table in dialog
             for npp in npps:
@@ -237,26 +244,35 @@ class SectorPlot:
                 # attach the data/npp to the first column
                 # when clicked you can get the npp from the data of that column
                 data.setData(vals, Qt.UserRole)
-                inventory = QStandardItem("%s" % (npp["inventory"].upper()) )
                 country_code = QStandardItem("%s" % (npp["countrycode"].upper()) )
                 site = QStandardItem("%s" % (npp["site"].upper()) )
                 block = QStandardItem("%s" % (npp["block"].upper()) )
-                self.npp_source_model.appendRow ( [data, inventory, country_code, site, block] )
+                self.npp_source_model.appendRow ( [data, country_code, site, block] )
         # headers
-        self.npp_source_model.setHeaderData(1, Qt.Horizontal, "Inventory")
         self.npp_source_model.setHeaderData(2, Qt.Horizontal, "Countrycode")
         self.npp_source_model.setHeaderData(3, Qt.Horizontal, "Site")
         self.npp_source_model.setHeaderData(4, Qt.Horizontal, "Block")
-        self.npp_dlg.table_npps.horizontalHeader().setStretchLastSection(True)
+        self.location_dlg.table_npps.horizontalHeader().setStretchLastSection(True)
         # hide the data / search string column:
-        self.npp_dlg.table_npps.hideColumn(0)
-        self.npp_dlg.show()
+        self.location_dlg.table_npps.hideColumn(0)
+
+        # show the dialog
+        self.location_dlg.show()
+        result = self.location_dlg.exec_()
+        # See if OK was pressed
+        if result:
+            # show the sectorplotset dialog
+            self.sectorplotset_dlg.show()
 
 
     def filter_npps(self, string):
-        self.npp_dlg.table_npps.selectRow(0)
+        self.location_dlg.table_npps.selectRow(0)
         self.npp_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.npp_proxy_model.setFilterFixedString(string)
 
-    def open_sector_dialog(self):
+    def open_new_sector_dialog(self):
+        # fill the combo_countermeasures drop down
+        cm = CounterMeasures()
+        # TODO !!! nu even alleen om te tonen, maar de id/key moet hier ook bij komen!!
+        self.sector_dlg.combo_countermeasures.addItems(cm.values())
         self.sector_dlg.show()

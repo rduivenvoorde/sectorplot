@@ -6,15 +6,25 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>400</width>
-    <height>145</height>
+    <width>610</width>
+    <height>500</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>SectorPlot</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="2" column="0">
+   <item row="6" column="0" colspan="2">
+    <widget class="QPushButton" name="btn_open_sectorplot_dialog">
+     <property name="text">
+      <string>Open / Copy Selected Sectorplot</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="2">
+    <widget class="QTableView" name="tableView"/>
+   </item>
+   <item row="8" column="1">
     <widget class="QDialogButtonBox" name="button_box">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -24,17 +34,17 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="0">
-    <widget class="QPushButton" name="btn_open_npp_dialog">
+   <item row="1" column="0" colspan="2">
+    <widget class="QPushButton" name="btn_new_sectorplot_dialog">
      <property name="text">
-      <string>Nuclear Power Plant List</string>
+      <string>New Sectorplot</string>
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QPushButton" name="btn_open_sector_dialog">
+   <item row="2" column="0">
+    <widget class="QLabel" name="label_title">
      <property name="text">
-      <string>Sector List and New Sector</string>
+      <string>Recent Sectorplots</string>
      </property>
     </widget>
    </item>

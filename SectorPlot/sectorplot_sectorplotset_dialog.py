@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """
 /***************************************************************************
- SectorPlotNppDialog
+ SectorPlotSectorPlotSetDialog
                                  A QGIS plugin
  Plots sector areas s on risk management map
                              -------------------
@@ -27,13 +27,13 @@ from PyQt4 import QtGui, uic
 
 # this magic let compile Qt the ui files on the fly (if path known)
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
-    os.path.dirname(__file__), 'sectorplot_npp_dialog_base.ui'))
+    os.path.dirname(__file__), 'sectorplot_sectorplotset_dialog_base.ui'))
 
 # this determines the Class name base on the FORM_CLASS above
-class SectorPlotNppDialog(QtGui.QDialog, FORM_CLASS):
+class SectorPlotSectorPlotSetDialog(QtGui.QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""
-        super(SectorPlotNppDialog, self).__init__(parent)
+        super(SectorPlotSectorPlotSetDialog, self).__init__(parent)
         # Set up the user interface from Designer.
         # After setupUI you can access any designer object by doing
         # self.<objectname>, and you can use autoconnect slots - see
