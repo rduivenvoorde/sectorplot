@@ -21,7 +21,10 @@
  ***************************************************************************/
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
-from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, QAbstractItemView, QStandardItem
+from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
+    QAbstractItemView, QStandardItem, QAbstractItemView
+from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
+    QgsRectangle, QgsCoordinateTransform
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialogs
@@ -217,7 +220,6 @@ class SectorPlot:
 
 
     def open_location_dialog(self):
-
         # fill the nuclear power plant list
         npp_source = os.path.join(os.path.dirname(__file__), r'data/tabel-npp-export.txt')
         npps = NppSet(npp_source)
@@ -241,21 +243,23 @@ class SectorPlot:
                 # default one is the visible one:
                 data = QStandardItem(vals)
                 # userrole is a free form one:
-                # attach the data/npp to the first column
+                # attach the data/npp to the first visible(!) column
                 # when clicked you can get the npp from the data of that column
-                data.setData(vals, Qt.UserRole)
                 country_code = QStandardItem("%s" % (npp["countrycode"].upper()) )
+                country_code.setData(npp, Qt.UserRole)
                 site = QStandardItem("%s" % (npp["site"].upper()) )
                 block = QStandardItem("%s" % (npp["block"].upper()) )
                 self.npp_source_model.appendRow ( [data, country_code, site, block] )
         # headers
-        self.npp_source_model.setHeaderData(2, Qt.Horizontal, "Countrycode")
-        self.npp_source_model.setHeaderData(3, Qt.Horizontal, "Site")
-        self.npp_source_model.setHeaderData(4, Qt.Horizontal, "Block")
+        self.npp_source_model.setHeaderData(1, Qt.Horizontal, "Countrycode")
+        self.npp_source_model.setHeaderData(2, Qt.Horizontal, "Site")
+        self.npp_source_model.setHeaderData(3, Qt.Horizontal, "Block")
         self.location_dlg.table_npps.horizontalHeader().setStretchLastSection(True)
+        self.location_dlg.table_npps.setSelectionBehavior(QAbstractItemView.SelectRows)
         # hide the data / search string column:
         self.location_dlg.table_npps.hideColumn(0)
-
+        # handle the selection of a NPP
+        self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.select_npp)
         # show the dialog
         self.location_dlg.show()
         result = self.location_dlg.exec_()
@@ -266,9 +270,39 @@ class SectorPlot:
 
 
     def filter_npps(self, string):
-        self.location_dlg.table_npps.selectRow(0)
+        # remove selection if we start filtering AND empty lon lat fields
+        self.location_dlg.table_npps.clearSelection()
+        self.location_dlg.le_longitude.setText('')
+        self.location_dlg.le_latitude.setText('')
         self.npp_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.npp_proxy_model.setFilterFixedString(string)
+
+
+    def select_npp(self):
+        # needed to scroll To the selected row incase of using the keyboard / arrows
+        #self.location_dlg.table_npps.scrollTo(self.location_dlg.table_npps.selectedIndexes()[0])
+        # itemType holds the data (== column 1)
+        if len(self.location_dlg.table_npps.selectedIndexes())>0:
+            npp = self.location_dlg.table_npps.selectedIndexes()[0].data(Qt.UserRole)
+            self.location_dlg.le_longitude.setText(unicode(npp['longitude']))
+            self.location_dlg.le_latitude.setText(unicode(npp['latitude']))
+            self.zoom_to(npp['longitude'], npp['latitude'])
+
+
+    def zoom_to(self, lon, lat):
+        crsto = self.iface.mapCanvas().mapRenderer().destinationCrs()
+        crsfrom = QgsCoordinateReferenceSystem()
+        crsfrom.createFromId(4326)
+        crsTransform = QgsCoordinateTransform(crsfrom, crsto)
+        point = QgsPoint(float(lon), float(lat))
+        geom = QgsGeometry.fromPoint(point)
+        geom.transform(crsTransform)
+        # zoom to with center is actually setting a point rectangle and then zoom
+        center = geom.asPoint()
+        rect = QgsRectangle(center, center)
+        self.iface.mapCanvas().setExtent(rect)
+        self.iface.mapCanvas().zoomScale(100000)
+        self.iface.mapCanvas().refresh()
 
     def open_new_sector_dialog(self):
         # fill the combo_countermeasures drop down
