@@ -27,6 +27,7 @@ ALTER TABLE sectors
 
 select * from sectors;
 
-INSERT INTO sectors (name, x, y, mindistance, maxdistance, direction, angle, countermeasure, z_order, savetime, countermeasuretime, geom) VALUES (10, 20, 0, 5000, 45, 45, 'jodium', 0, ST_GeomFromText('Polygon((0 0,1 1,1 0,0 0))',4326), '2003-1-1 20:30:00'::timestamp);
+INSERT INTO sectors (name, x, y, mindistance, maxdistance, direction, angle, countermeasure, z_order, savetime, countermeasuretime, geom)
+            VALUES ('test', 10, 20, 0, 5000, 45, 45, 'jodium', 0, '2003-1-1 20:30:00'::timestamp, '2003-1-1 20:30:00'::timestamp, ST_GeomFromText('Polygon((0 0,1 1,1 0,0 0))',4326));
 
 
