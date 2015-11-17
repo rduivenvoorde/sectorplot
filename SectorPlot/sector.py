@@ -2,7 +2,7 @@ from math import ceil, floor, cos, sin, pi
 from qgis.core import QgsFeature, QgsPoint, QgsGeometry, QgsField, QgsFields
 from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform
 from PyQt4.QtCore import QVariant
-from time import strftime, gmtime
+from time import strftime, strptime, gmtime
 import psycopg2
 import psycopg2.extras
 import math
@@ -25,7 +25,7 @@ def doQueries(queries, conn_string="host='localhost' dbname='gistest' user='post
 #def 
 
 class Sector():
-    def __init__(self, name='', lon=0, lat=0, minDistance=0, maxDistance=1.0, direction=0.0, angle=45.0, counterMeasure="jodium", z_order=0, counterMeasureTime=None):
+    def __init__(self, name='', lon=0, lat=0, minDistance=0, maxDistance=1.0, direction=0.0, angle=45.0, counterMeasure="jodium", z_order=0, counterMeasureTime=None, sectorName=''):
         self.name = name
         self.lon = lon # longitude in decimal degrees
         self.lat = lat # latitude in decimal degrees
@@ -40,7 +40,8 @@ class Sector():
             self.counterMeasureTime = gmtime()
         else:
             self.counterMeasureTime = counterMeasureTime
-        self.geometry = self.calcGeometry()
+        self.sectorName = sectorName
+        self.calcGeometry()
 
     def __str__(self):
         result = 'Sector[%s, (%d,%d), %d, %d, %d, %d, %s]' % (self.name, self.lon, self.lat, self.minDistance, self.maxDistance, self.direction, self.angle, strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime))
@@ -54,12 +55,14 @@ class Sector():
         fields.append(QgsField('z_order', QVariant.Int))
         fields.append(QgsField('saveTime', QVariant.String))
         fields.append(QgsField('counterMeasureTime', QVariant.String))
+        fields.append(QgsField('sectorName', QVariant.String))
         feat.setFields(fields)
-        feat['name'] = self.name
+        feat['name'] = self.name0
         feat['counterMeasure'] = self.counterMeasure
         feat['z_order'] = self.z_order
         feat['saveTime'] = strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime)
         feat['counterMeasureTime'] = strftime("%Y-%m-%d %H:%M:%S +0000", self.counterMeasureTime)
+        feat['sectorName'] = self.sectorName
         feat.setGeometry(self.geometry)
         return feat
 
@@ -70,11 +73,36 @@ class Sector():
         newy = y + r * cos(newdir)
         return QgsPoint(newx, newy)
 
+    def _getArc(self, x, y, dist):
+        arc = []
+        arcStart = self.direction
+        if isinstance(arcStart,(int, long)):
+            loopStart = arcStart + 1
+        else:
+            loopStart = int(ceil(arcStart))
+
+        arcEnd = self.direction + (self.angle % 360)
+        if isinstance(arcEnd,(int, long)):
+            loopEnd = arcEnd - 1
+        else:
+            loopEnd = int(floor(arcEnd))
+
+        arc.append(self._getArcPoint(x, y, dist, arcStart))
+        if loopStart <= loopEnd:
+            arc.append(self._getArcPoint(x, y, dist, loopStart))
+            if loopStart < loopEnd:
+                for d in range(loopStart+1, loopEnd+1):
+                    arc.append(self._getArcPoint(x, y, dist, d))
+        arc.append(self._getArcPoint(x, y, dist, arcEnd))
+        return arc
+
+
+
     def calcGeometry(self):
 
         # scale distance for Merkator
         scale = 1.0 / (math.cos(float(self.lat) * math.pi / 180.0))
-        minR = self.maxDistance * scale
+        minR = self.minDistance * scale
         maxR = self.maxDistance * scale
         
         # get x/y in merkator from lon/lat
@@ -90,43 +118,40 @@ class Sector():
 
         # make: 0 <= direction < 360
         self.direction %= 360
+        outer = []
+        inner = []
 
         #check if sector is circle
         if self.angle >= 360:
             for d in range(0,360):
-                arc.append(self._getArcPoint(x, y, maxR, d))
+                outer.append(self._getArcPoint(x, y, maxR, d))
+            if minR > 0:
+                for d in range(0,360):
+                    inner.append(self._getArcPoint(x, y, minR, d))
+                #inner.reverse()
+                print len(inner)
+                geom = QgsGeometry.fromPolygon([outer,inner])
+            else:
+                geom = QgsGeometry.fromPolygon([outer])
         else:
-            arcStart = self.direction
-            if isinstance(arcStart,(int, long)):
-                loopStart = arcStart + 1
+            outer = self._getArc(x, y, maxR)
+            if minR > 0:
+                inner = self._getArc(x, y, minR)
+                inner.reverse()
             else:
-                loopStart = int(ceil(arcStart))
-
-            arcEnd = self.direction + (self.angle % 360)
-            if isinstance(arcEnd,(int, long)):
-                loopEnd = arcEnd - 1
-            else:
-                loopEnd = int(floor(arcEnd))
-
-            arc.append(QgsPoint(x, y))
-            arc.append(self._getArcPoint(x, y, maxR, arcStart))
-            if loopStart <= loopEnd:
-                arc.append(self._getArcPoint(x, y, maxR, loopStart))
-                if loopStart < loopEnd:
-                    for d in range(loopStart+1, loopEnd+1):
-                        arc.append(self._getArcPoint(x, y, maxR, d))
-            arc.append(self._getArcPoint(x, y, maxR, arcEnd))
+                inner = [QgsPoint(x, y)]
+            geom = QgsGeometry.fromPolygon([outer+inner])
+            
 
         xformTo4326 = QgsCoordinateTransform(crs3857, crs4326)
-        geom = QgsGeometry.fromPolygon([arc])
         geom.transform(xformTo4326)
-        return geom
+        self.geometry = geom
 
 
     def getInsertQuery(self):
         query = {}
-        query['text'] = 'INSERT INTO sectors (name, lon, lat, minDistance, maxDistance, direction, angle, countermeasure, z_order, savetime, countermeasuretime, geom)'
-        query['text'] += ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::timestamp, %s::timestamp, ST_GeomFromText(%s, 4326))'
+        query['text'] = 'INSERT INTO sectors (name, lon, lat, minDistance, maxDistance, direction, angle, countermeasure, z_order, savetime, countermeasuretime, sectorname, geom)'
+        query['text'] += ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::timestamp, %s::timestamp, %s, ST_GeomFromText(%s, 4326))'
         vals = []
         vals.append(self.name)
         vals.append(self.lon)
@@ -139,6 +164,7 @@ class Sector():
         vals.append(self.z_order)
         vals.append(strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime))
         vals.append(strftime("%Y-%m-%d %H:%M:%S +0000", self.counterMeasureTime))
+        vals.append(self.sectorName)
         vals.append(self.geometry.exportToWkt())
         query['vals'] = tuple(vals)
         return query
@@ -182,10 +208,24 @@ class SectorSet():
             queries.append(sector.getInsertQuery())
         result = doQueries(queries)
 
-    def setSavetime(self, saveTime=None):
-        if saveTime is None:
-            saveTime = gmtime()
+    def _getTime(self, t):
+        result = gmtime()
+        if type(t) is unicode or type(t) is str:
+            result = strptime(t, "%Y-%m-%d %H:%M:%S") 
+        return result
+
+    def setSaveTime(self, t=None):
+        t = self._getTime(t)
         for sector in self.sectors:
-            sector.saveTime = saveTime
+            sector.saveTime = t
+
+    def setCounterMeasureTime(self, t=None):
+        t = self._getTime(t)
+        for sector in self.sectors:
+            sector.counterMeasureTime = t
+
+    def setName(self, name=''):
+        for sector in self.sectors:
+            sector.name = name
 
 
