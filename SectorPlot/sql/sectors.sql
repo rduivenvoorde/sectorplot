@@ -6,8 +6,8 @@ CREATE TABLE sectors
 (
   id serial NOT NULL,
   name varchar(50),
-  x float,
-  y float,
+  lon float,
+  lat float,
   mindistance float,
   maxdistance float,
   direction float,
@@ -27,7 +27,8 @@ ALTER TABLE sectors
 
 select * from sectors;
 
-INSERT INTO sectors (name, x, y, mindistance, maxdistance, direction, angle, countermeasure, z_order, savetime, countermeasuretime, geom)
-            VALUES ('test', 10, 20, 0, 5000, 45, 45, 'jodium', 0, '2003-1-1 20:30:00'::timestamp, '2003-1-1 20:30:00'::timestamp, ST_GeomFromText('Polygon((0 0,1 1,1 0,0 0))',4326));
+-- delete from sectors where left(name,1)='l';
 
+-- werkt niet meer:
+-- INSERT INTO sectors (x, y, distance, direction, angle, type, z_order, geom, savetime) VALUES (10, 20, 5000, 45, 45, 'jodium', 0, ST_GeomFromText('Polygon((0 0,1 1,1 0,0 0))',4326), '2003-1-1 20:30:00'::timestamp);
 
