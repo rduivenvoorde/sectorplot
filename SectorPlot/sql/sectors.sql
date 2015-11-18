@@ -5,14 +5,14 @@
 CREATE TABLE sectors
 (
   id serial NOT NULL,
-  name varchar(50),
+  setname varchar(50),
   lon float,
   lat float,
   mindistance float,
   maxdistance float,
   direction float,
   angle float,
-  countermeasure varchar(10),
+  countermeasureid integer,
   z_order integer,
   savetime timestamp,
   countermeasuretime timestamp,
