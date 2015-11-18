@@ -37,25 +37,25 @@ class CounterMeasures():
         return QCoreApplication.translate('SectorPlot', message)
 
     COUNTER_MEASURES = [
-            {'id': 10, 'text': tr('Evacuatie')},
-            {'id' :11, 'text': tr('Onmiddelijke evacuatie')},
+            {'id': 100, 'text': tr('Evacuatie')},
+            {'id' :110, 'text': tr('Onmiddelijke evacuatie')},
 
-            {'id' :12, 'text': tr('Schuilen')},
-            {'id' :13, 'text': tr('Jodiumprofylaxe tot 18 jaar en zwangeren')},
-            {'id' :14, 'text': tr('Jodiumprofylaxe tot 40 jaar en zwangeren')},
-            {'id' :15, 'text': tr('Relocatie')},
+            {'id' :120, 'text': tr('Schuilen')},
+            {'id' :130, 'text': tr('Jodiumprofylaxe tot 18 jaar en zwangeren')},
+            {'id' :131, 'text': tr('Jodiumprofylaxe tot 40 jaar en zwangeren')},
+            {'id' :140, 'text': tr('Relocatie')},
 
-            {'id' :20, 'text': tr('Landbouwmaatregelen')},
-            {'id' :21, 'text': tr('Graasverbod')},
-            {'id' :22, 'text': tr('Sluiten van kassen')},
+            {'id' :220, 'text': tr('Landbouwmaatregelen')},
+            {'id' :221, 'text': tr('Graasverbod')},
+            {'id' :222, 'text': tr('Sluiten van kassen')},
 
-            {'id' :30, 'text': tr('Voedselbeperking')},
-            {'id' :31, 'text': tr('Drinkwaterbeperking')},
-            {'id' :32, 'text': tr('Beregening verbod onbegroeid land/weiland')},
-            {'id' :33, 'text': tr('Beregening verbod begroeid land/weiland')},
-            {'id' :34, 'text': tr('Zuiveringsslib verbod')},
+            {'id' :330, 'text': tr('Voedselbeperking')},
+            {'id' :331, 'text': tr('Drinkwaterbeperking')},
+            {'id' :332, 'text': tr('Beregening verbod onbegroeid land/weiland')},
+            {'id' :333, 'text': tr('Beregening verbod begroeid land/weiland')},
+            {'id' :334, 'text': tr('Zuiveringsslib verbod')},
 
-            {'id' :40, 'text': tr('Overige maatregelen')}
+            {'id' :400, 'text': tr('Overige maatregelen')}
     ]
 
     def __str__(self):

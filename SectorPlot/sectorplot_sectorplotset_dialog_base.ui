@@ -17,7 +17,7 @@
    <item row="5" column="0">
     <widget class="QLabel" name="label_5">
      <property name="text">
-      <string>Sector List:</string>
+      <string>Sectors:</string>
      </property>
     </widget>
    </item>
@@ -69,13 +69,6 @@
      </property>
     </widget>
    </item>
-   <item row="7" column="3">
-    <widget class="QPushButton" name="pushButton_2">
-     <property name="text">
-      <string>Up</string>
-     </property>
-    </widget>
-   </item>
    <item row="2" column="1" colspan="2">
     <widget class="QTimeEdit" name="time_edit_countermeasure">
      <property name="displayFormat">
@@ -110,13 +103,6 @@
      </property>
     </widget>
    </item>
-   <item row="7" column="0">
-    <widget class="QPushButton" name="pushButton">
-     <property name="text">
-      <string>Down</string>
-     </property>
-    </widget>
-   </item>
    <item row="2" column="0">
     <widget class="QLabel" name="label_8">
      <property name="text">
@@ -138,10 +124,10 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="3">
-    <widget class="QPushButton" name="pushButton_3">
+   <item row="7" column="3">
+    <widget class="QPushButton" name="btn_remove_selected_sectors">
      <property name="text">
-      <string>Remove</string>
+      <string>Remove Selected</string>
      </property>
     </widget>
    </item>

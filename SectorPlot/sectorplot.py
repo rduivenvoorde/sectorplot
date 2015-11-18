@@ -24,7 +24,7 @@ from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
     QAbstractItemView, QStandardItem, QAbstractItemView
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
-    QgsRectangle, QgsCoordinateTransform
+    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsFeature
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialogs
@@ -93,7 +93,12 @@ class SectorPlot:
         self.sectorplotset_dlg.table_sectors.setModel(self.sectorplotset_source_model)
         # actions
         self.sectorplotset_dlg.btn_new_sector.clicked.connect(self.open_new_sector_dialog)
+        self.sectorplotset_dlg.btn_remove_selected_sectors.clicked.connect(self.remove_selected_sectors)
 
+        # add memory Layer
+        self.sector_layer = None
+        self.crs_4326 = QgsCoordinateReferenceSystem()
+        self.crs_4326.createFromId(4326)
 
         # Declare instance attributes
         self.actions = []
@@ -215,6 +220,18 @@ class SectorPlot:
 
     def run(self):
         """Run method that performs all the real work"""
+
+        # add a memory layer to show sectors
+        if self.sector_layer is None:
+            # give the memory layer the same CRS as the source layer
+            self.sector_layer = QgsVectorLayer("Polygon?crs=epsg:4326&field=cm:string(200)&field=cmid:integer&index=yes", self.tr("Sector Layer"), "memory")
+            # use a saved style as style
+            # TODO
+            self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectors.qml'))
+            # add empty layer to the map
+            QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
+
+
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
@@ -303,9 +320,7 @@ class SectorPlot:
 #           lon = self.location_dlg.le_longitude.text()
 #            lat = self.latitude_dlg.le_longitude.text()
         crs_to = self.iface.mapCanvas().mapRenderer().destinationCrs()
-        crs_from = QgsCoordinateReferenceSystem()
-        crs_from.createFromId(4326)
-        crs_transform = QgsCoordinateTransform(crs_from, crs_to)
+        crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to)
         point = QgsPoint(float(lon), float(lat))
         geom = QgsGeometry.fromPoint(point)
         geom.transform(crs_transform)
@@ -313,7 +328,7 @@ class SectorPlot:
         center = geom.asPoint()
         rect = QgsRectangle(center, center)
         self.iface.mapCanvas().setExtent(rect)
-        self.iface.mapCanvas().zoomScale(100000)
+        self.iface.mapCanvas().zoomScale(300000)
         self.iface.mapCanvas().refresh()
 
     def open_new_sector_dialog(self):
@@ -322,43 +337,94 @@ class SectorPlot:
         self.sector_dlg.show()
         # OK pressed
         if self.sector_dlg.exec_():
-            # get values from dialog
+
+            self.add_sector(100, '0', '45', '10', '0', 'test1')
+            self.add_sector(120, '45', '45', '12', '0', 'test2')
+            self.add_sector(130, '90', '45', '13', '0', 'test3')
+            self.add_sector(140, '135', '45', '15', '0', 'test4')
+            self.add_sector(220, '180', '45', '10', '3', 'test5')
+            self.add_sector(400, '245', '65', '16', '5', 'test6')
+            #self.add_sector()
+        else:
+            # user canceled
+            # TODO clean up generated sectors
+            pass
+
+    # def add_sector(self):
+    def add_sector(self, countermeasure=-1, direction='0', angle='10', distance='10', min_distance='0', sector_name=''):
+        # get values from dialog
+        # TODO: only for testing
+        if (countermeasure<0):
             # TODO countermeasure should be number from dropdown
-            countermeasure = 1
+            countermeasure = 100
             direction = self.sector_dlg.le_direction.text()
             angle = self.sector_dlg.le_angle.text()
             distance = self.sector_dlg.le_distance.text()
             min_distance = self.sector_dlg.le_min_distance.text()
             sector_name = self.sector_dlg.le_sector_name.text()
-            # new sector
-            # TODO remove casts here as this will be handled in Sector
-            sector = Sector(None, float(self.current_sectorset.lon), float(self.current_sectorset.lat),
-                            float(min_distance), float(distance), float(direction), float(angle),
-                            countermeasure, -1, None, sector_name)
 
-            self.current_sectorset.sectors.append(sector)
+        # new sector
 
-            sector_name_item = QStandardItem(sector_name)
-            direction_item = QStandardItem(direction)
-            min_distance_item = QStandardItem(min_distance)
-            distance_item = QStandardItem(distance)
-            angle_item = QStandardItem(angle)
-            countermeasure_item = QStandardItem(self.counter_measures.get(countermeasure))
-            self.sectorplotset_source_model.appendRow ( [sector_name_item, countermeasure_item, min_distance_item,
-                                                         distance_item, direction_item, angle_item ] )
+        # TODO remove casts here as this will be handled in Sector
+        sector = Sector(None, float(self.current_sectorset.lon), float(self.current_sectorset.lat),
+                        1000*float(min_distance), 1000*float(distance), float(direction), float(angle),
+                        countermeasure, -1, None, sector_name)
 
-            self.sectorplotset_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Sector name"))
-            self.sectorplotset_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Countermeasure"))
-            self.sectorplotset_source_model.setHeaderData(2, Qt.Horizontal, self.tr("MinDist"))
-            self.sectorplotset_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Distance"))
-            self.sectorplotset_source_model.setHeaderData(4, Qt.Horizontal, self.tr("Direction"))
-            self.sectorplotset_source_model.setHeaderData(5, Qt.Horizontal, self.tr("Angle"))
-            self.sectorplotset_dlg.table_sectors.setColumnWidth(0, 150)
-            self.sectorplotset_dlg.table_sectors.setColumnWidth(1, 250)
-            self.sectorplotset_dlg.table_sectors.horizontalHeader().setStretchLastSection(True)
-            self.sectorplotset_dlg.table_sectors.horizontalHeader().setMovable(True)
-            self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragEnabled(True)
-            self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragDropMode(QAbstractItemView.InternalMove)
-            self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
-            self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
-            self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)
+        # self.current_sectorset.sectors.append(sector)
+
+        sector_name_item = QStandardItem(sector_name)
+        direction_item = QStandardItem(direction)
+        min_distance_item = QStandardItem(min_distance)
+        distance_item = QStandardItem(distance)
+        angle_item = QStandardItem(angle)
+        countermeasure_item = QStandardItem(self.counter_measures.get(countermeasure))
+        # attach the sector(data) as data to column 0
+        sector_name_item.setData(sector, Qt.UserRole)
+
+        self.sectorplotset_source_model.appendRow([sector_name_item, countermeasure_item, min_distance_item,
+                                                   distance_item, direction_item, angle_item])
+
+        # http://docs.qgis.org/testing/en/docs/pyqgis_developer_cookbook/vector.html#add-features
+        #feat = QgsFeature(self.sector_layer.pendingFields())
+        #feat.setAttributes([0, 'hello'])
+        # Or set a single attribute by key or by index:
+        #feat.setAttribute('cm', self.counter_measures.get(countermeasure))
+        #feat.setAttribute('cmid', int(countermeasure))
+        feat = QgsFeature()
+        feat.setAttributes([self.counter_measures.get(countermeasure), int(countermeasure)])
+        feat.setGeometry(sector.geometry)
+        #(result, out_feats) = self.sector_layer.dataProvider().addFeatures([feat])
+        self.sector_layer.dataProvider().addFeatures([feat])
+        self.sector_layer.updateFields()
+        self.sector_layer.updateExtents()
+        if self.iface.mapCanvas().isCachingEnabled():
+            self.sector_layer.setCacheImage(None)
+        else:
+            self.iface.mapCanvas().refresh()
+
+        # TODO only once?
+        self.sectorplotset_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Sector name"))
+        self.sectorplotset_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Countermeasure"))
+        self.sectorplotset_source_model.setHeaderData(2, Qt.Horizontal, self.tr("MinDist"))
+        self.sectorplotset_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Distance"))
+        self.sectorplotset_source_model.setHeaderData(4, Qt.Horizontal, self.tr("Direction"))
+        self.sectorplotset_source_model.setHeaderData(5, Qt.Horizontal, self.tr("Angle"))
+        # some size for sectorname and countermeasure
+        self.sectorplotset_dlg.table_sectors.setColumnWidth(0, 150)
+        self.sectorplotset_dlg.table_sectors.setColumnWidth(1, 250)
+        # make sure we select a full row when clicked on a cell
+        self.sectorplotset_dlg.table_sectors.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setStretchLastSection(True)
+        # user is able to drag/drop both columns and rows
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setMovable(True)
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragEnabled(True)
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragDropMode(QAbstractItemView.InternalMove)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)
+
+    def remove_selected_sectors(self):
+        if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
+            print self.sectorplotset_dlg.table_sectors.selectedIndexes()
+            # TODO
+            # self.location_dlg.table_npps.selectedIndexes()[0].data(Qt.UserRole)
