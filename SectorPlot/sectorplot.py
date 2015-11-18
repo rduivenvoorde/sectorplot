@@ -36,6 +36,7 @@ from sectorplot_sectorplotset_dialog import SectorPlotSectorPlotSetDialog
 from countermeasures import CounterMeasures
 
 from npp import NppSet
+from sector import Sector, SectorSet
 
 import os.path
 
@@ -82,10 +83,14 @@ class SectorPlot:
 
         # Create sector_dialog
         self.sector_dlg = SectorPlotSectorDialog()
+        # the data for the combo_countermeasures
+        self.counter_measures = CounterMeasures()
         # actions
 
         # Create sectorplotset_dialog
         self.sectorplotset_dlg = SectorPlotSectorPlotSetDialog()
+        self.sectorplotset_source_model = QStandardItemModel()
+        self.sectorplotset_dlg.table_sectors.setModel(self.sectorplotset_source_model)
         # actions
         self.sectorplotset_dlg.btn_new_sector.clicked.connect(self.open_new_sector_dialog)
 
@@ -264,12 +269,15 @@ class SectorPlot:
         self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.select_npp)
         # show the dialog
         self.location_dlg.show()
-        result = self.location_dlg.exec_()
         # See if OK was pressed
-        if result:
+        if self.location_dlg.exec_():
             # show the sectorplotset dialog
+            lon = self.location_dlg.le_longitude.text()
+            lat = self.location_dlg.le_latitude.text()
+            self.current_sectorset = SectorSet(lon, lat)
+            print self.current_sectorset
+            self.sectorplotset_dlg.lbl_location_name_lon_lat.setText('Lon: ' + lon + ' Lat: ' + lat)
             self.sectorplotset_dlg.show()
-
 
     def filter_npps(self, string):
         # remove selection if we start filtering AND empty lon lat fields
@@ -278,7 +286,6 @@ class SectorPlot:
         self.location_dlg.le_latitude.setText('')
         self.npp_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.npp_proxy_model.setFilterFixedString(string)
-
 
     def select_npp(self):
         # needed to scroll To the selected row incase of using the keyboard / arrows
@@ -290,19 +297,18 @@ class SectorPlot:
             self.location_dlg.le_latitude.setText(unicode(npp['latitude']))
             self.zoom_to(npp['longitude'], npp['latitude'])
 
-
     def zoom_to(self, lon, lat):
 #        if lon is None or lat is None:
 #            # we get them from the inputs of the dialog
 #           lon = self.location_dlg.le_longitude.text()
 #            lat = self.latitude_dlg.le_longitude.text()
-        crsto = self.iface.mapCanvas().mapRenderer().destinationCrs()
-        crsfrom = QgsCoordinateReferenceSystem()
-        crsfrom.createFromId(4326)
-        crsTransform = QgsCoordinateTransform(crsfrom, crsto)
+        crs_to = self.iface.mapCanvas().mapRenderer().destinationCrs()
+        crs_from = QgsCoordinateReferenceSystem()
+        crs_from.createFromId(4326)
+        crs_transform = QgsCoordinateTransform(crs_from, crs_to)
         point = QgsPoint(float(lon), float(lat))
         geom = QgsGeometry.fromPoint(point)
-        geom.transform(crsTransform)
+        geom.transform(crs_transform)
         # zoom to with center is actually setting a point rectangle and then zoom
         center = geom.asPoint()
         rect = QgsRectangle(center, center)
@@ -311,8 +317,48 @@ class SectorPlot:
         self.iface.mapCanvas().refresh()
 
     def open_new_sector_dialog(self):
-        # fill the combo_countermeasures drop down
-        cm = CounterMeasures()
         # TODO !!! nu even alleen om te tonen, maar de id/key moet hier ook bij komen!!
-        self.sector_dlg.combo_countermeasures.addItems(cm.values())
+        self.sector_dlg.combo_countermeasures.addItems(self.counter_measures.values())
         self.sector_dlg.show()
+        # OK pressed
+        if self.sector_dlg.exec_():
+            # get values from dialog
+            # TODO countermeasure should be number from dropdown
+            countermeasure = 1
+            direction = self.sector_dlg.le_direction.text()
+            angle = self.sector_dlg.le_angle.text()
+            distance = self.sector_dlg.le_distance.text()
+            min_distance = self.sector_dlg.le_min_distance.text()
+            sector_name = self.sector_dlg.le_sector_name.text()
+            # new sector
+            # TODO remove casts here as this will be handled in Sector
+            sector = Sector(None, float(self.current_sectorset.lon), float(self.current_sectorset.lat),
+                            float(min_distance), float(distance), float(direction), float(angle),
+                            countermeasure, -1, None, sector_name)
+
+            self.current_sectorset.sectors.append(sector)
+
+            sector_name_item = QStandardItem(sector_name)
+            direction_item = QStandardItem(direction)
+            min_distance_item = QStandardItem(min_distance)
+            distance_item = QStandardItem(distance)
+            angle_item = QStandardItem(angle)
+            countermeasure_item = QStandardItem(self.counter_measures.get(countermeasure))
+            self.sectorplotset_source_model.appendRow ( [sector_name_item, countermeasure_item, min_distance_item,
+                                                         distance_item, direction_item, angle_item ] )
+
+            self.sectorplotset_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Sector name"))
+            self.sectorplotset_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Countermeasure"))
+            self.sectorplotset_source_model.setHeaderData(2, Qt.Horizontal, self.tr("MinDist"))
+            self.sectorplotset_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Distance"))
+            self.sectorplotset_source_model.setHeaderData(4, Qt.Horizontal, self.tr("Direction"))
+            self.sectorplotset_source_model.setHeaderData(5, Qt.Horizontal, self.tr("Angle"))
+            self.sectorplotset_dlg.table_sectors.setColumnWidth(0, 150)
+            self.sectorplotset_dlg.table_sectors.setColumnWidth(1, 250)
+            self.sectorplotset_dlg.table_sectors.horizontalHeader().setStretchLastSection(True)
+            self.sectorplotset_dlg.table_sectors.horizontalHeader().setMovable(True)
+            self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragEnabled(True)
+            self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragDropMode(QAbstractItemView.InternalMove)
+            self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
+            self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
+            self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)

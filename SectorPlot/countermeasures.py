@@ -73,6 +73,14 @@ class CounterMeasures():
             values.append(cm['text'])
         return values
 
+    def get(self,  id):
+        text = ''
+        for cm in self.COUNTER_MEASURES:
+            if cm['id'] == int(id):
+                text = cm['text']
+                break
+        return text
+
     def all(self):
         return self.COUNTER_MEASURES
 
@@ -83,14 +91,17 @@ class CounterMeasures():
         return list
 
 
-# test
+if __name__ == "__main__":
 
-cm = CounterMeasures()
-print cm
-print
-print cm.keys()
-print
-for m in cm.all():
-    print "%i %s" % (m['id'], m['text'])
-print
-print cm.list()
+    # test
+    cm = CounterMeasures()
+    print cm
+    print
+    print cm.keys()
+    print
+    for m in cm.all():
+        print "%i %s" % (m['id'], m['text'])
+    print
+    print cm.list()
+    print
+    print cm.get(40)

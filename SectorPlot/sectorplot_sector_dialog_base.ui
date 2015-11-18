@@ -7,41 +7,82 @@
     <x>0</x>
     <y>0</y>
     <width>591</width>
-    <height>234</height>
+    <height>312</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Sectorplot</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="1" column="1" colspan="2">
-    <widget class="QLineEdit" name="lineEdit"/>
-   </item>
-   <item row="2" column="1" colspan="2">
-    <widget class="QLineEdit" name="lineEdit_2"/>
-   </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="label_2">
+   <item row="5" column="2">
+    <widget class="QCheckBox" name="cb_min_distance">
      <property name="text">
-      <string>Direction (start, degrees)</string>
+      <string>Custom Min Distance</string>
      </property>
     </widget>
    </item>
-   <item row="2" column="0">
-    <widget class="QLabel" name="label_3">
+   <item row="3" column="0">
+    <widget class="QLabel" name="lbl_angle">
      <property name="text">
       <string>Angle (degrees)</string>
      </property>
     </widget>
    </item>
    <item row="0" column="0">
-    <widget class="QLabel" name="label">
+    <widget class="QLabel" name="lbl_countermeasures">
      <property name="text">
       <string>Counter Meausure</string>
      </property>
     </widget>
    </item>
-   <item row="5" column="0" colspan="3">
+   <item row="2" column="0">
+    <widget class="QLabel" name="lbl_direction">
+     <property name="text">
+      <string>Direction (start, degrees)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="1">
+    <widget class="QLineEdit" name="le_min_distance">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="inputMask">
+      <string>00000; </string>
+     </property>
+     <property name="text">
+      <string>0</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0">
+    <widget class="QLabel" name="lbl_distance">
+     <property name="text">
+      <string>Distance (max, km)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QLabel" name="lbl_min_distance">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
+     <property name="text">
+      <string>Distance (min, km)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="lbl_sector_name">
+     <property name="text">
+      <string>Sector name (optional)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="1" colspan="2">
+    <widget class="QLineEdit" name="le_sector_name"/>
+   </item>
+   <item row="7" column="0" colspan="3">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -51,45 +92,38 @@
      </property>
     </widget>
    </item>
-   <item row="3" column="0">
-    <widget class="QLabel" name="label_4">
+   <item row="4" column="1" colspan="2">
+    <widget class="QLineEdit" name="le_distance">
+     <property name="inputMask">
+      <string>00000; </string>
+     </property>
      <property name="text">
-      <string>Distance (max, km)</string>
+      <string>20</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="1" colspan="2">
+    <widget class="QLineEdit" name="le_direction">
+     <property name="inputMask">
+      <string>000; </string>
+     </property>
+     <property name="text">
+      <string>45</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="1" colspan="2">
+    <widget class="QLineEdit" name="le_angle">
+     <property name="inputMask">
+      <string>000; </string>
+     </property>
+     <property name="text">
+      <string>45</string>
      </property>
     </widget>
    </item>
    <item row="0" column="1" colspan="2">
     <widget class="QComboBox" name="combo_countermeasures"/>
-   </item>
-   <item row="3" column="1" colspan="2">
-    <widget class="QLineEdit" name="lineEdit_3"/>
-   </item>
-   <item row="4" column="0">
-    <widget class="QLabel" name="label_5">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="text">
-      <string>Distance (min, km)</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="1">
-    <widget class="QLineEdit" name="lineEdit_4">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="text">
-      <string>0</string>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="2">
-    <widget class="QCheckBox" name="checkBox">
-     <property name="text">
-      <string>Custom Min Distance</string>
-     </property>
-    </widget>
    </item>
   </layout>
  </widget>

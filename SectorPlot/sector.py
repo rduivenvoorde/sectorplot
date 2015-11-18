@@ -108,7 +108,7 @@ class Sector():
         minR = self.minDistance * scale
         maxR = self.maxDistance * scale
         
-        # get x/y in merkator from lon/lat
+        # get x/y in mercator from lon/lat
         crs4326 = QgsCoordinateReferenceSystem(4326)
         crs3857 = QgsCoordinateReferenceSystem(3857)
         xformTo3857 = QgsCoordinateTransform(crs4326, crs3857)

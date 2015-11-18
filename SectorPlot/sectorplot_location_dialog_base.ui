@@ -46,7 +46,11 @@
     </widget>
    </item>
    <item row="3" column="3" colspan="2">
-    <widget class="QLineEdit" name="le_search_npp"/>
+    <widget class="QLineEdit" name="le_search_npp">
+     <property name="text">
+      <string>Search</string>
+     </property>
+    </widget>
    </item>
    <item row="4" column="0" colspan="5">
     <widget class="QTableView" name="table_npps"/>
