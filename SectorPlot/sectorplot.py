@@ -77,6 +77,8 @@ class SectorPlot:
         # Create location_dialog
         self.location_dlg = SectorPlotLocationDialog()
         # actions
+        #self.location_dlg.le_longitude.textChanged.connect(self.zoom_to)
+        #self.location_dlg.le_latitude.textChanged.connect(self.zoom_to)
 
         # Create sector_dialog
         self.sector_dlg = SectorPlotSectorDialog()
@@ -290,6 +292,10 @@ class SectorPlot:
 
 
     def zoom_to(self, lon, lat):
+#        if lon is None or lat is None:
+#            # we get them from the inputs of the dialog
+#           lon = self.location_dlg.le_longitude.text()
+#            lat = self.latitude_dlg.le_longitude.text()
         crsto = self.iface.mapCanvas().mapRenderer().destinationCrs()
         crsfrom = QgsCoordinateReferenceSystem()
         crsfrom.createFromId(4326)
