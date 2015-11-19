@@ -17,6 +17,7 @@ CREATE TABLE sectors
   savetime timestamp,
   countermeasuretime timestamp,
   sectorname varchar(50),
+  setid integer,
   geom geometry(Polygon, 4326),
   CONSTRAINT sectors_pkey PRIMARY KEY (id)
 )
@@ -27,6 +28,9 @@ ALTER TABLE sectors
   OWNER TO postgres;
 
 select * from sectors;
+
+select currval(pg_get_serial_sequence('sectors', 'id'))
+select  nextval(pg_get_serial_sequence('sectors', 'id'))
 
 -- delete from sectors where left(name,1)='d';
 

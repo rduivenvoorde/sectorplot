@@ -3,22 +3,35 @@ from qgis.core import QgsFeature, QgsPoint, QgsGeometry, QgsField, QgsFields
 from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform
 from PyQt4.QtCore import QVariant
 from time import strftime, strptime, gmtime
+import datetime
 import psycopg2
 import psycopg2.extras
 import math
 
 
+crs4326 = QgsCoordinateReferenceSystem(4326)
+crs3857 = QgsCoordinateReferenceSystem(3857)
+xformTo3857 = QgsCoordinateTransform(crs4326, crs3857)
+xformTo4326 = QgsCoordinateTransform(crs3857, crs4326)
+
 
 def doQueries(queries, conn_string="host='localhost' dbname='gistest' user='postgres' password='postgres'"):
     conn = psycopg2.connect(conn_string)
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    #cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cursor = conn.cursor(cursor_factory = psycopg2.extras.NamedTupleCursor)
     for query in queries:
         cursor.execute(query['text'], query['vals'])
-    #memory = cursor.fetchall()
+    #print(cursor.statusmessage)
+    #print(cursor.rowcount)
+    if 'SELECT' in str(cursor.statusmessage):
+        memory = cursor.fetchall()
+    else:
+        memory = None
     conn.commit()
     cursor.close()
     conn.close()
-    #return memory
+    if memory is not None:
+        return memory
 
 
 def getTime(t):
@@ -28,27 +41,64 @@ def getTime(t):
     return result
 
 
-#def 
+
 
 class Sector():
-    def __init__(self, setName=None, lon=0, lat=0, minDistance=0, maxDistance=1.0, direction=0.0, angle=45.0, counterMeasureId=-1, z_order=-1, counterMeasureTime=None, sectorName=None):
+    def __init__(self, setName=None, lon=0, lat=0, minDistance=0, maxDistance=1, direction=0, angle=45, counterMeasureId=-1, z_order=-1, saveTime=None, counterMeasureTime=None, sectorName=None, setId=-1):
         self.setName = setName
-        self.lon = lon # longitude in decimal degrees
-        self.lat = lat # latitude in decimal degrees
-        self.minDistance = minDistance
-        self.maxDistance = maxDistance
-        self.direction = direction
-        self.angle = angle
-        self.counterMeasureId = counterMeasureId
-        self.z_order = z_order
-        self.saveTime = gmtime()
+        self.lon = float(lon)
+        self.lat = float(lat)
+        self.minDistance = float(minDistance)
+        self.maxDistance = float(maxDistance)
+        self.direction = float(direction)
+        self.angle = float(angle)
+        self.counterMeasureId = int(counterMeasureId)
+        self.z_order = int(z_order)
+        self.saveTime = getTime(saveTime)
         self.counterMeasureTime = getTime(counterMeasureTime)
         self.sectorName = sectorName
+        self.setId = int(setId)
         self.calcGeometry()
 
     def __str__(self):
-        result = 'Sector[%s, (%d,%d), %d, %d, %d, %d, %s]' % (self.setName, self.lon, self.lat, self.minDistance, self.maxDistance, self.direction, self.angle, strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime))
+        result = 'Sector[%s, (%d,%d), %d, %d, %d, %d, %s, %d]' % (self.setName, self.lon, self.lat, self.minDistance, self.maxDistance, self.direction, self.angle, strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime), self.setId)
         return result
+
+    def display(self, doGeometry=False):
+        print('--- Sector ---')
+        print('  setName: ' + str(self.setName))
+        print('  lon: ' + str(self.lon))
+        print('  lat: ' + str(self.lat))
+        print('  minDistance: ' + str(self.minDistance))
+        print('  maxDistance: ' + str(self.maxDistance))
+        print('  direction: ' + str(self.direction))
+        print('  angle: ' + str(self.angle))
+        print('  counterMeasureId: ' + str(self.counterMeasureId))
+        print('  z_order: ' + str(self.z_order))
+        print('  saveTime: ' + str(self.saveTime))
+        print('  counterMeasureTime: ' + str(self.counterMeasureTime))
+        print('  sectorName: ' + str(self.sectorName))
+        print('  setId: ' + str(self.setId))
+        if doGeometry:
+            print('  geometry: ' + str(self.geometry))
+        print('--------------')
+        
+
+    def setByDbRecord(self, rec):
+        self.setName = rec.setname
+        self.lon = rec.lon
+        self.lat = rec.lat
+        self.minDistance = rec.mindistance
+        self.maxDistance = rec.maxdistance
+        self.direction = rec.direction
+        self.angle = rec.angle
+        self.counterMeasureId = rec.countermeasureid
+        self.z_order = rec.z_order
+        self.saveTime = rec.savetime.timetuple()
+        self.counterMeasureTime = rec.countermeasuretime.timetuple()
+        self.sectorName = rec.sectorname
+        self.setId = rec.setid
+        self.calcGeometry()
 
     def getQgsFeature(self):
         feat = QgsFeature()
@@ -66,6 +116,7 @@ class Sector():
         feat['saveTime'] = strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime)
         feat['counterMeasureTime'] = strftime("%Y-%m-%d %H:%M:%S +0000", self.counterMeasureTime)
         feat['sectorName'] = self.sectorName
+        feat['setId'] = self.setId
         feat.setGeometry(self.geometry)
         return feat
 
@@ -103,15 +154,12 @@ class Sector():
 
     def calcGeometry(self):
 
-        # scale distance for Merkator
+        # scale distance for Mercator
         scale = 1.0 / (math.cos(float(self.lat) * math.pi / 180.0))
         minR = self.minDistance * scale
         maxR = self.maxDistance * scale
         
-        # get x/y in mercator from lon/lat
-        crs4326 = QgsCoordinateReferenceSystem(4326)
-        crs3857 = QgsCoordinateReferenceSystem(3857)
-        xformTo3857 = QgsCoordinateTransform(crs4326, crs3857)
+        # get x/y in Mercator from lon/lat
         pnt = QgsPoint(self.lon, self.lat)
         pnt = xformTo3857.transform(pnt)
         x = pnt.x()
@@ -146,7 +194,6 @@ class Sector():
             geom = QgsGeometry.fromPolygon([outer+inner])
             
 
-        xformTo4326 = QgsCoordinateTransform(crs3857, crs4326)
         geom.transform(xformTo4326)
         self.geometry = geom
 
@@ -154,8 +201,9 @@ class Sector():
     def getInsertQuery(self):
         query = {}
         query['text'] = 'INSERT INTO sectors'
-        query['text'] += ' (setname, lon, lat, minDistance, maxDistance, direction, angle, countermeasureid, z_order, savetime, countermeasuretime, sectorname, geom)'
-        query['text'] += ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::timestamp, %s::timestamp, %s, ST_GeomFromText(%s, 4326))'
+        query['text'] += ' (setname, lon, lat, minDistance, maxDistance, direction, angle, countermeasureid, z_order, savetime, countermeasuretime, sectorname, setid, geom)'
+        query['text'] += ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::timestamp, %s::timestamp, %s, %s, ST_GeomFromText(%s, 4326))'
+        query['text'] += ';'
         vals = []
         vals.append(self.setName)
         vals.append(self.lon)
@@ -169,6 +217,7 @@ class Sector():
         vals.append(strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime))
         vals.append(strftime("%Y-%m-%d %H:%M:%S +0000", self.counterMeasureTime))
         vals.append(self.sectorName)
+        vals.append(self.setId)
         vals.append(self.geometry.exportToWkt())
         query['vals'] = tuple(vals)
         return query
@@ -196,9 +245,11 @@ class Roos():
 
 
 class SectorSet():
-    def __init__(self, lon=0, lat=0):
+    def __init__(self, lon=0, lat=0, name=None, setId=-1):
         self.lon = lon
         self.lat = lat
+        self.name = name
+        self.setId = setId
         #self.roos = Roos()
         self.sectors = []
 
@@ -206,7 +257,22 @@ class SectorSet():
         result = 'SectorSet[ %s sectors]' % len(self.sectors)
         return result
 
-    def exportToDatabase(self):
+    def display(self, doGeometry=False):
+        print('--- SectorSet ---')
+        print('  lon: ' + str(self.lon))
+        print('  lat: ' + str(self.lat))
+        print('  name: ' + str(self.name))
+        print('  setId: ' + str(self.setId))
+        for s in self.sectors:
+            print('    ' + str(s))
+        print('-----------------')
+
+    def exportToDatabase(self, newSetId=True):
+        if newSetId:
+            queries = [{'text': "SELECT nextval(pg_get_serial_sequence('sectors', 'id')) as newsetid", 'vals':()}]
+            result = doQueries(queries)
+            setId = result[0].newsetid
+            self.setSetId(setId)
         queries = []
         for sector in self.sectors:
             queries.append(sector.getInsertQuery())
@@ -222,11 +288,64 @@ class SectorSet():
         for sector in self.sectors:
             sector.counterMeasureTime = t
 
-    def setSetName(self, setName=None):
+    def setSetName(self, setName):
+        self.setName = setName
         for sector in self.sectors:
             sector.setName = setName
 
+    def setSetId(self, setId):
+        self.setId = setId
+        for sector in self.sectors:
+            sector.setId = setId
 
 
 
+
+class SectorSets(list):
+
+    def __init__(self):
+        pass
+    
+    def __str__(self):
+        result = 'SectorSets[' + str(len(self)) + ']'
+        return result
+    
+    def _clear(self):
+        del self[:]
+
+    def findSectorSet(self, setId):
+        for sectorSet in self:
+            if sectorSet.setId == setId:
+                return sectorSet
+        return None
+    
+    def addToSectorSet(self, sector):
+        sectorSet = self.findSectorSet(sector.setId)
+        if sectorSet is not None:
+            sectorSet.sectors.append(sector)
+        else:
+            sectorSet = SectorSet(sector.lon, sector.lat, sector.setName, sector.setId)
+            self.append(sectorSet)
+            sectorSet.sectors.append(sector)
+    
+    def _getImportQuery(self):
+        query = {}
+        query['text'] = 'SELECT * FROM sectors ORDER BY savetime, z_order'
+        #query['text'] = 'SELECT * FROM sectors limit 1'
+        query['text'] += ';'
+        vals = []
+        query['vals'] = tuple(vals)
+        return query
+
+    def importFromDatabase(self):
+        self._clear()
+        q = self._getImportQuery()
+        db_sectors = doQueries([q])
+        for dbs in db_sectors:
+            s = Sector()
+            s.setByDbRecord(dbs)
+            self.addToSectorSet(s)
+
+        
+        
 
