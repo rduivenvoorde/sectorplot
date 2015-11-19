@@ -365,10 +365,14 @@ class SectorPlot:
 
         # new sector
 
-        # TODO remove casts here as this will be handled in Sector
-        sector = Sector(None, float(self.current_sectorset.lon), float(self.current_sectorset.lat),
-                        1000*float(min_distance), 1000*float(distance), float(direction), float(angle),
-                        countermeasure, -1, None, sector_name)
+        sector = Sector(lon=self.current_sectorset.lon,
+                        lat=self.current_sectorset.lat,
+                        minDistance=1000*float(min_distance), 
+                        maxDistance=1000*float(distance), 
+                        direction=direction,
+                        angle=angle,
+                        counterMeasureId=countermeasure,
+                        sectorName=sector_name)
 
         # self.current_sectorset.sectors.append(sector)
 
