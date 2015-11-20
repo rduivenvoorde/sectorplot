@@ -36,7 +36,7 @@ from sectorplot_sectorplotset_dialog import SectorPlotSectorPlotSetDialog
 from countermeasures import CounterMeasures
 
 from npp import NppSet
-from sector import Sector, SectorSet
+from sector import Sector, SectorSet, SectorSets
 
 import os.path
 
@@ -71,12 +71,18 @@ class SectorPlot:
                 QCoreApplication.installTranslator(self.translator)
 
         # Create the dialog (after translation) and keep reference
-        self.dlg = SectorPlotDialog()
+        self.sectorplotlist_dlg = SectorPlotDialog()
+        self.sectorplotlist_dlg.table_sectorplot_sets.horizontalHeader().setStretchLastSection(True)
+        self.sectorplotlist_dlg.table_sectorplot_sets.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.sectorplot_list = None
+        self.sectorplotlist_source_model = None
         # dlg actions
-        self.dlg.btn_new_sectorplot_dialog.clicked.connect(self.open_location_dialog)
+        self.sectorplotlist_dlg.btn_new_sectorplot_dialog.clicked.connect(self.open_location_dialog)
 
         # Create location_dialog
         self.location_dlg = SectorPlotLocationDialog()
+        self.npp_source_model = None
+        self.npp_proxy_model = None
         # actions
         #self.location_dlg.le_longitude.textChanged.connect(self.zoom_to)
         #self.location_dlg.le_latitude.textChanged.connect(self.zoom_to)
@@ -121,7 +127,6 @@ class SectorPlot:
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('SectorPlot', message)
-
 
     def add_action(
         self,
@@ -206,7 +211,6 @@ class SectorPlot:
             callback=self.run,
             parent=self.iface.mainWindow())
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
@@ -217,31 +221,61 @@ class SectorPlot:
         # remove the toolbar
         del self.toolbar
 
-
     def run(self):
-        """Run method that performs all the real work"""
-
-        # add a memory layer to show sectors
+        """Start the plugin"""
+        # add a memory layer to show sectors if not yet available
         if self.sector_layer is None:
             # give the memory layer the same CRS as the source layer
-            self.sector_layer = QgsVectorLayer("Polygon?crs=epsg:4326&field=cm:string(200)&field=cmid:integer&index=yes", self.tr("Sector Layer"), "memory")
+            #self.sector_layer = QgsVectorLayer("Polygon?crs=epsg:4326&field=cm:string(200)&field=cmid:integer&index=yes", self.tr("Sector Layer"), "memory")
+            self.sector_layer = QgsVectorLayer("Polygon?crs=epsg:4326&index=yes", self.tr("Sector Layer"), "memory")
             # use a saved style as style
-            # TODO
-            self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectors.qml'))
+            # TODO new qml based on color column
+            # self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectors.qml'))
             # add empty layer to the map
             QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
+        # open a new dialog
+        self.open_sectorplotlist_dialog()
 
+    def open_sectorplotlist_dialog(self):
+        # show the dialog with recent sectorplotsets
+        self.sectorplot_list = SectorSets()
+        self.sectorplot_list.importFromDatabase()
+        # create emtpy model for new list
+        self.sectorplotlist_source_model = QStandardItemModel()
+        self.sectorplotlist_dlg.table_sectorplot_sets.setModel(self.sectorplotlist_source_model)
+        for sectorplot_set in self.sectorplot_list:
+            lon = sectorplot_set.lon
+            lat = sectorplot_set.lat
+            name = QStandardItem("%s" % sectorplot_set.name )
+            set_id = QStandardItem("%s" % sectorplot_set.setId )
+            time = QStandardItem(sectorplot_set.getSaveTimeString())
+            # attach the sectorplot_set as data to the first row item
+            set_id.setData(sectorplot_set, Qt.UserRole)
+            self.sectorplotlist_source_model.appendRow([set_id, name, time])
+        # headers
+        self.sectorplotlist_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Id"))
+        self.sectorplotlist_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Name"))
+        self.sectorplotlist_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Time"))
+        self.sectorplotlist_dlg.table_sectorplot_sets.selectionModel().selectionChanged.connect(self.select_sectorplot_set)
 
-        # show the dialog
-        self.dlg.show()
-        # Run the dialog event loop
-        result = self.dlg.exec_()
+        self.sectorplotlist_dlg.show()
         # See if OK was pressed
-        if result:
-            # Do something useful here - delete the line containing pass and
-            # substitute with your code.
-            pass
+        if self.sectorplotlist_dlg.exec_():
+            print "Cleaning up with OK"
+            self.sectorplotlist_source_model = None
+            self.sectorplot_list = None
+        else:
+            print "Cleaning up with Cancel"
+            self.sectorplotlist_source_model = None
+            self.sectorplot_list = None
 
+    def select_sectorplot_set(self):
+        if len(self.sectorplotlist_dlg.table_sectorplot_sets.selectedIndexes())>0:
+            sectorplot_set = self.sectorplotlist_dlg.table_sectorplot_sets.selectedIndexes()[0].data(Qt.UserRole)
+            # zoom to and show
+            self.zoom_to(sectorplot_set.lon, sectorplot_set.lat)
+            print sectorplot_set.getSectorFeatures()
+            self.add_sector_features(sectorplot_set.getSectorFeatures())
 
     def open_location_dialog(self):
         # fill the nuclear power plant list
@@ -255,7 +289,7 @@ class SectorPlot:
         self.location_dlg.table_npps.setModel(self.npp_proxy_model)
         self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.location_dlg.le_search_npp.textChanged.connect(self.filter_npps)
-        self.location_dlg.le_search_npp.setPlaceholderText("search")
+        self.location_dlg.le_search_npp.setPlaceholderText(self.tr("Search"))
         if (len(npps)):
             # load the npps in the table in dialog
             for npp in npps:
@@ -275,9 +309,9 @@ class SectorPlot:
                 block = QStandardItem("%s" % (npp["block"].upper()) )
                 self.npp_source_model.appendRow ( [data, country_code, site, block] )
         # headers
-        self.npp_source_model.setHeaderData(1, Qt.Horizontal, "Countrycode")
-        self.npp_source_model.setHeaderData(2, Qt.Horizontal, "Site")
-        self.npp_source_model.setHeaderData(3, Qt.Horizontal, "Block")
+        self.npp_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Countrycode"))
+        self.npp_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Site"))
+        self.npp_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Block"))
         self.location_dlg.table_npps.horizontalHeader().setStretchLastSection(True)
         self.location_dlg.table_npps.setSelectionBehavior(QAbstractItemView.SelectRows)
         # hide the data / search string column:
@@ -292,9 +326,21 @@ class SectorPlot:
             lon = self.location_dlg.le_longitude.text()
             lat = self.location_dlg.le_latitude.text()
             self.current_sectorset = SectorSet(lon, lat)
-            print self.current_sectorset
-            self.sectorplotset_dlg.lbl_location_name_lon_lat.setText('Lon: ' + lon + ' Lat: ' + lat)
-            self.sectorplotset_dlg.show()
+            self.open_sectorplotset_dialog(lon, lat)
+
+    def open_sectorplotset_dialog(self, lon, lat):
+        self.sectorplotset_dlg.lbl_location_name_lon_lat.setText(self.tr('Lon: ') + lon + self.tr(' Lat: ') + lat)
+        self.sectorplotset_dlg.show()
+        # OK will save to db
+        if self.sectorplotset_dlg.exec_():
+            # NOW get the sectors from the model/dialog, put them in a sectorset
+            # data=sector is attached to column 0
+            for row in range(0, self.sectorplotset_source_model.rowCount()):
+                sector = self.sectorplotset_source_model.item(row, 0).data(Qt.UserRole)
+                print sector
+                self.current_sectorset.sectors.append(sector)
+            # save to DB
+            self.current_sectorset.exportToDatabase()
 
     def filter_npps(self, string):
         # remove selection if we start filtering AND empty lon lat fields
@@ -388,6 +434,7 @@ class SectorPlot:
         self.sectorplotset_source_model.appendRow([sector_name_item, countermeasure_item, min_distance_item,
                                                    distance_item, direction_item, angle_item])
 
+        # TODO: use the sector.getQgsFeature()
         # http://docs.qgis.org/testing/en/docs/pyqgis_developer_cookbook/vector.html#add-features
         #feat = QgsFeature(self.sector_layer.pendingFields())
         #feat.setAttributes([0, 'hello'])
@@ -397,14 +444,8 @@ class SectorPlot:
         feat = QgsFeature()
         feat.setAttributes([self.counter_measures.get(countermeasure), int(countermeasure)])
         feat.setGeometry(sector.geometry)
-        #(result, out_feats) = self.sector_layer.dataProvider().addFeatures([feat])
-        self.sector_layer.dataProvider().addFeatures([feat])
-        self.sector_layer.updateFields()
-        self.sector_layer.updateExtents()
-        if self.iface.mapCanvas().isCachingEnabled():
-            self.sector_layer.setCacheImage(None)
-        else:
-            self.iface.mapCanvas().refresh()
+
+        self.add_sector_features([feat])
 
         # TODO only once?
         self.sectorplotset_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Sector name"))
@@ -427,8 +468,19 @@ class SectorPlot:
         self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
         self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)
 
+    def add_sector_features(self, features_list=[], remove_all=False):
+        #if remove_all:
+        #    self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
+        #(result, out_feats) = self.sector_layer.dataProvider().addFeatures([feat])
+        self.sector_layer.dataProvider().addFeatures(features_list)
+        self.sector_layer.updateFields()
+        self.sector_layer.updateExtents()
+        if self.iface.mapCanvas().isCachingEnabled():
+            self.sector_layer.setCacheImage(None)
+        else:
+            self.iface.mapCanvas().refresh()
+
     def remove_selected_sectors(self):
         if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
-            print self.sectorplotset_dlg.table_sectors.selectedIndexes()
-            # TODO
-            # self.location_dlg.table_npps.selectedIndexes()[0].data(Qt.UserRole)
+            # TODO make then we can only select one row at a time
+            self.sectorplotset_source_model.removeRow(self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row())

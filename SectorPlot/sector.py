@@ -109,8 +109,9 @@ class Sector():
         fields.append(QgsField('saveTime', QVariant.String))
         fields.append(QgsField('counterMeasureTime', QVariant.String))
         fields.append(QgsField('sectorName', QVariant.String))
+        fields.append(QgsField('setId', QVariant.Int))
         feat.setFields(fields)
-        feat['settName'] = self.setName
+        feat['setName'] = self.setName
         feat['counterMeasureId'] = self.counterMeasureId
         feat['z_order'] = self.z_order
         feat['saveTime'] = strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime)
@@ -283,6 +284,13 @@ class SectorSet():
         for sector in self.sectors:
             sector.saveTime = t
 
+    def getSaveTimeString(self):
+        if len(self.sectors) == 0:
+            return ''
+        else:
+            # all sectors should have the same saveTime!
+            return strftime("%Y-%m-%d %H:%M:%S +0000", self.sectors[0].saveTime)
+
     def setCounterMeasureTime(self, t=None):
         t = getTime(t)
         for sector in self.sectors:
@@ -298,7 +306,11 @@ class SectorSet():
         for sector in self.sectors:
             sector.setId = setId
 
-
+    def getSectorFeatures(self):
+        features = []
+        for sector in self.sectors:
+            features.append(sector.getQgsFeature())
+        return features
 
 
 class SectorSets(list):
