@@ -7,7 +7,7 @@ import datetime
 import psycopg2
 import psycopg2.extras
 import math
-
+import credentials
 
 crs4326 = QgsCoordinateReferenceSystem(4326)
 crs3857 = QgsCoordinateReferenceSystem(3857)
@@ -15,9 +15,8 @@ xformTo3857 = QgsCoordinateTransform(crs4326, crs3857)
 xformTo4326 = QgsCoordinateTransform(crs3857, crs4326)
 
 
-def doQueries(queries, conn_string="host='localhost' dbname='gistest' user='postgres' password='postgres'"):
+def do_queries(queries, conn_string=credentials.conn_strings['example']):
     conn = psycopg2.connect(conn_string)
-    #cursor = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cursor = conn.cursor(cursor_factory = psycopg2.extras.NamedTupleCursor)
     for query in queries:
         cursor.execute(query['text'], query['vals'])
@@ -279,13 +278,13 @@ class SectorSet():
     def exportToDatabase(self, newSetId=True):
         if newSetId:
             queries = [{'text': "SELECT nextval(pg_get_serial_sequence('sectors', 'id')) as newsetid", 'vals':()}]
-            result = doQueries(queries)
+            result = do_queries(queries)
             setId = result[0].newsetid
             self.setSetId(setId)
         queries = []
         for sector in self.sectors:
             queries.append(sector.getInsertQuery())
-        result = doQueries(queries)
+        result = do_queries(queries)
 
     def setSaveTime(self, t=None):
         t = getTime(t)
@@ -368,7 +367,7 @@ class SectorSets(list):
     def importFromDatabase(self):
         self._clear()
         q = self._getImportQuery()
-        db_sectors = doQueries([q])
+        db_sectors = do_queries([q])
         for dbs in db_sectors:
             s = Sector()
             s.setByDbRecord(dbs)

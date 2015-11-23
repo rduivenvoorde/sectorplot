@@ -25,13 +25,15 @@ CREATE TABLE sectors
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE sectors
-  OWNER TO postgres;
+-- ALTER TABLE sectors
+--   OWNER TO postgres;
 
-select * from sectors;
+create extension postgis;
+select version()
 
-select currval(pg_get_serial_sequence('sectors', 'id'))
-select  nextval(pg_get_serial_sequence('sectors', 'id'))
+
+
+-- select * from sectors;
 
 -- delete from sectors where left(name,1)='d';
 
