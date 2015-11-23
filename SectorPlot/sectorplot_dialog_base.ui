@@ -17,7 +17,7 @@
    <item row="6" column="0" colspan="2">
     <widget class="QPushButton" name="btn_open_sectorplot_dialog">
      <property name="text">
-      <string>Open / Copy Selected Sectorplot</string>
+      <string>Copy Selected Sectorplot</string>
      </property>
     </widget>
    </item>
