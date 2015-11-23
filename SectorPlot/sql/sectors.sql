@@ -18,6 +18,7 @@ CREATE TABLE sectors
   countermeasuretime timestamp,
   sectorname varchar(50),
   setid integer,
+  color varchar(9),
   geom geometry(Polygon, 4326),
   CONSTRAINT sectors_pkey PRIMARY KEY (id)
 )

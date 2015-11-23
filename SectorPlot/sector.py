@@ -46,7 +46,7 @@ def timeToString(t):
 
 
 class Sector():
-    def __init__(self, setName=None, lon=0, lat=0, minDistance=0, maxDistance=1, direction=0, angle=45, counterMeasureId=-1, z_order=-1, saveTime=None, counterMeasureTime=None, sectorName=None, setId=-1):
+    def __init__(self, setName=None, lon=0, lat=0, minDistance=0, maxDistance=1, direction=0, angle=45, counterMeasureId=-1, z_order=-1, saveTime=None, counterMeasureTime=None, sectorName=None, setId=-1, color='#ffffff'):
         self.setName = setName
         self.lon = float(lon)
         self.lat = float(lat)
@@ -60,6 +60,7 @@ class Sector():
         self.counterMeasureTime = getTime(counterMeasureTime)
         self.sectorName = sectorName
         self.setId = int(setId)
+        self.color = color
         self.calcGeometry()
 
     def __str__(self):
@@ -81,6 +82,7 @@ class Sector():
         print('  counterMeasureTime: ' + str(self.counterMeasureTime))
         print('  sectorName: ' + str(self.sectorName))
         print('  setId: ' + str(self.setId))
+        print('  color: ' + str(self.color))
         if doGeometry:
             print('  geometry: ' + str(self.geometry))
         print('--------------')
@@ -100,6 +102,7 @@ class Sector():
         self.counterMeasureTime = rec.countermeasuretime.timetuple()
         self.sectorName = rec.sectorname
         self.setId = rec.setid
+        self.color = rec.color
         self.calcGeometry()
 
     def getQgsFeature(self):
@@ -112,6 +115,7 @@ class Sector():
         fields.append(QgsField('counterMeasureTime', QVariant.String))
         fields.append(QgsField('sectorName', QVariant.String))
         fields.append(QgsField('setId', QVariant.Int))
+        fields.append(QgsField('color', QVariant.String))
         feat.setFields(fields)
         feat['setName'] = self.setName
         feat['counterMeasureId'] = self.counterMeasureId
@@ -120,6 +124,7 @@ class Sector():
         feat['counterMeasureTime'] = timeToString(self.counterMeasureTime)
         feat['sectorName'] = self.sectorName
         feat['setId'] = self.setId
+        feat['color'] = self.color
         feat.setGeometry(self.geometry)
         return feat
 
@@ -204,8 +209,8 @@ class Sector():
     def getInsertQuery(self):
         query = {}
         query['text'] = 'INSERT INTO sectors'
-        query['text'] += ' (setname, lon, lat, minDistance, maxDistance, direction, angle, countermeasureid, z_order, savetime, countermeasuretime, sectorname, setid, geom)'
-        query['text'] += ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::timestamp, %s::timestamp, %s, %s, ST_GeomFromText(%s, 4326))'
+        query['text'] += ' (setname, lon, lat, minDistance, maxDistance, direction, angle, countermeasureid, z_order, savetime, countermeasuretime, sectorname, setid, color, geom)'
+        query['text'] += ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::timestamp, %s::timestamp, %s, %s, %s, ST_GeomFromText(%s, 4326))'
         query['text'] += ';'
         vals = []
         vals.append(self.setName)
@@ -221,6 +226,7 @@ class Sector():
         vals.append(timeToString(self.counterMeasureTime))
         vals.append(self.sectorName)
         vals.append(self.setId)
+        vals.append(self.color)
         vals.append(self.geometry.exportToWkt())
         query['vals'] = tuple(vals)
         return query
