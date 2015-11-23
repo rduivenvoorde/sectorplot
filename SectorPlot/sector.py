@@ -321,11 +321,12 @@ class SectorSet():
         for sector in self.sectors:
             sector.setId = setId
 
-    def getSectorFeatures(self):
-        features = []
+    def get_qgs_features(self):
+        result = []
         for sector in self.sectors:
-            features.append(sector.getQgsFeature())
-        return features
+            result.append(sector.getQgsFeature())
+        return result
+
 
 
 class SectorSets(list):
@@ -373,6 +374,4 @@ class SectorSets(list):
             s.setByDbRecord(dbs)
             self.addToSectorSet(s)
 
-        
-        
 
