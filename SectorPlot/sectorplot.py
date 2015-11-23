@@ -82,12 +82,11 @@ class SectorPlot:
         self.sectorplotsets_dlg.table_sectorplot_sets.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.sectorplotsets_dlg.table_sectorplot_sets.setSelectionMode(QAbstractItemView.SingleSelection)
 
-        self.sectorplot_list = None
-        self.sectorplotlist_source_model = None
+        self.sectorplotsets = None
+        self.sectorplotsets_source_model = None
         # dlg actions
         self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.clicked.connect(self.open_location_dialog)
         self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.clicked.connect(self.new_sectorplotset_dialog)
-
 
         # Create location_dialog
         self.location_dlg = SectorPlotLocationDialog()
@@ -103,6 +102,7 @@ class SectorPlot:
 
         # Create sector_dialog
         self.sector_dlg = SectorPlotSectorDialog()
+        self.sector_dlg.cb_min_distance.stateChanged.connect(self.enable_min_distance)
 
         # the data for the combo_countermeasures
         self.counter_measures = CounterMeasures()
@@ -114,6 +114,14 @@ class SectorPlot:
         self.sectorplotset_dlg.table_sectors.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.sectorplotset_dlg.table_sectors.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.sectorplotset_dlg.table_sectors.setSelectionMode(QAbstractItemView.SingleSelection)
+        # user is able to drag/drop both columns and rows
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setMovable(True)
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragEnabled(True)
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragDropMode(QAbstractItemView.InternalMove)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)
+
         self.sectorplotset_source_model = QStandardItemModel()
         self.sectorplotset_dlg.table_sectors.setModel(self.sectorplotset_source_model)
         # actions
@@ -270,15 +278,15 @@ class SectorPlot:
 
     def open_sectorplotsets_dialog(self):
         # show the dialog with recent sectorplotsets
-        self.sectorplot_list = SectorSets()
-        self.sectorplot_list.importFromDatabase()
+        self.sectorplotsets = SectorSets()
+        self.sectorplotsets.importFromDatabase()
         # create emtpy model for new list
-        self.sectorplotlist_source_model = QStandardItemModel()
-        self.sectorplotsets_dlg.table_sectorplot_sets.setModel(self.sectorplotlist_source_model)
+        self.sectorplotsets_source_model = QStandardItemModel()
+        self.sectorplotsets_dlg.table_sectorplot_sets.setModel(self.sectorplotsets_source_model)
         # be sure that the copy button is disabled (as nothing is selected?)
         self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(False)
 
-        for sectorplot_set in self.sectorplot_list:
+        for sectorplot_set in self.sectorplotsets:
             lon = sectorplot_set.lon
             lat = sectorplot_set.lat
             name = QStandardItem("%s" % sectorplot_set.name )
@@ -288,12 +296,12 @@ class SectorPlot:
             # attach the sectorplot_set as data to the first row item
             set_id.setData(sectorplot_set, Qt.UserRole)
             #self.sectorplotlist_source_model.appendRow([set_id, name, save_time, countermeasure_time])
-            self.sectorplotlist_source_model.insertRow(0, [set_id, name, save_time, countermeasure_time])
+            self.sectorplotsets_source_model.insertRow(0, [set_id, name, save_time, countermeasure_time])
         # headers
-        self.sectorplotlist_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Id"))
-        self.sectorplotlist_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Name"))
-        self.sectorplotlist_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Save Time"))
-        self.sectorplotlist_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Countermeasure Time"))
+        self.sectorplotsets_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Id"))
+        self.sectorplotsets_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Name"))
+        self.sectorplotsets_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Save Time"))
+        self.sectorplotsets_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Countermeasure Time"))
 
         self.sectorplotsets_dlg.table_sectorplot_sets.selectionModel().selectionChanged.connect(self.select_sectorplotset)
 
@@ -301,12 +309,12 @@ class SectorPlot:
         # See if OK was pressed
         if self.sectorplotsets_dlg.exec_():
             print "Cleaning up with OK"
-            self.sectorplotlist_source_model = None
-            self.sectorplot_list = None
+            self.sectorplotsets_source_model = None
+            self.sectorplotsets = None
         else:
             print "Cleaning up with Cancel"
-            self.sectorplotlist_source_model = None
-            self.sectorplot_list = None
+            self.sectorplotsets_source_model = None
+            self.sectorplotsets = None
 
     def select_sectorplotset(self):
         if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes())>0:
@@ -375,18 +383,24 @@ class SectorPlot:
 
     def new_sectorplotset_dialog(self, lon=None, lat=None, name=''):
         if self.current_sectorset is None:
-            self.msg(name)
             # create a SectorSet based on location dialog
             self.current_sectorset = SectorSet(lon, lat)
             self.current_sectorset.setSetName(name)
         else:
             # deep clone the current one
+            #self.msg('deep copy')
+            #self.msg('voor %s %s' % (self.current_sectorset.lon, self.current_sectorset.lat))
             self.current_sectorset = deepcopy(self.current_sectorset)
+            #self.msg('na %s %s' % self.current_sectorset.lon)
 
-        self.sectorplotset_dlg.lbl_location_name_lon_lat.setText(self.tr('Lon: %s') % lon + self.tr(' Lat: %s') % lat)
+        self.sectorplotset_dlg.lbl_location_name_lon_lat.setText(self.tr('Lon: %s') % self.current_sectorset.lon +
+                                                                 self.tr(' Lat: %s') % self.current_sectorset.lat)
         self.sectorplotset_dlg.le_sectorplot_name.setText('%s' % self.current_sectorset.name)
         # IF SectorplotSet has sectors: show them
-        # TODO
+        if len(self.current_sectorset.sectors) > 0:
+            for sector in self.current_sectorset.sectors:
+                sector.calcGeometry()
+                self.add_sector(sector)
 
         self.sectorplotset_dlg.show()
         # OK will save to db
@@ -469,15 +483,18 @@ class SectorPlot:
             self.add_sector(sector)
         else:
             # user canceled
-            # TODO clean up generated sectors
+            # TODO clean up generated sector?
             pass
+
+    def enable_min_distance(self):
+        self.sector_dlg.le_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
 
     def add_sector(self, sector):
         sector_name_item = QStandardItem(sector.sectorName)
-        direction_item = QStandardItem(sector.direction)
-        min_distance_item = QStandardItem(sector.minDistance)
-        distance_item = QStandardItem(sector.maxDistance)
-        angle_item = QStandardItem(sector.angle)
+        direction_item = QStandardItem("%s" % sector.direction)
+        min_distance_item = QStandardItem("%s" % sector.minDistance)
+        distance_item = QStandardItem("%s" % sector.maxDistance)
+        angle_item = QStandardItem("%s" % sector.angle)
         countermeasure_item = QStandardItem(self.counter_measures.get(sector.counterMeasureId))
         # attach the sector(data) as data to column 0
         sector_name_item.setData(sector, Qt.UserRole)
@@ -493,19 +510,12 @@ class SectorPlot:
         self.sectorplotset_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Distance"))
         self.sectorplotset_source_model.setHeaderData(4, Qt.Horizontal, self.tr("Direction"))
         self.sectorplotset_source_model.setHeaderData(5, Qt.Horizontal, self.tr("Angle"))
-        # some size for sectorname and countermeasure
+
+        # some size for sectorname and countermeasure NOTE: AFTER adding the data
         self.sectorplotset_dlg.table_sectors.setColumnWidth(0, 150)
         self.sectorplotset_dlg.table_sectors.setColumnWidth(1, 250)
-        # TODO MOVE TO TOP??
-        # user is able to drag/drop both columns and rows
-        self.sectorplotset_dlg.table_sectors.horizontalHeader().setMovable(True)
-        self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragEnabled(True)
-        self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragDropMode(QAbstractItemView.InternalMove)
-        self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
-        self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
-        self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)
 
-    # TODO REMOVE THIS ONE
+    # TODO REMOVE THIS ONE ??
     def add_sector_features(self, features_list=[], remove_all=True):
         if remove_all:
             self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
@@ -531,8 +541,9 @@ class SectorPlot:
 
     def remove_selected_sectors(self):
         if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
-            # TODO make then we can only select one row at a time
             self.sectorplotset_source_model.removeRow(self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row())
+            self.create_sectorset_from_sectors()
+            self.show_current_sectorplot()
 
     def msg(self, msg):
         QMessageBox.warning(self.iface.mainWindow(), "MESSAGE !!!", msg,QMessageBox.Ok, QMessageBox.Ok)
