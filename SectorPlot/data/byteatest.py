@@ -18,7 +18,6 @@ class MyBinaryTest():
     host = 'jrodos.dev.cal-net.nl'
     database = 'RodosHome'
 
-
     def __init__(self):
         pass
 
