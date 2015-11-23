@@ -77,6 +77,10 @@ print sss
 for ss in sss:
     ss.display()
 
+ss.sectors[0].display()
+
+print ss.get_save_time_string()
+print ss.get_counter_measure_time_string()
 
 
 #layer =  QgsVectorLayer('Polygon', 'poly' , "memory")

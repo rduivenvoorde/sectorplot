@@ -40,6 +40,8 @@ def getTime(t):
         result = strptime(t, "%Y-%m-%d %H:%M:%S") 
     return result
 
+def timeToString(t):
+    return strftime("%Y-%m-%d %H:%M:%S +0000", t)
 
 
 
@@ -114,8 +116,8 @@ class Sector():
         feat['setName'] = self.setName
         feat['counterMeasureId'] = self.counterMeasureId
         feat['z_order'] = self.z_order
-        feat['saveTime'] = strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime)
-        feat['counterMeasureTime'] = strftime("%Y-%m-%d %H:%M:%S +0000", self.counterMeasureTime)
+        feat['saveTime'] = timeToString(self.saveTime)
+        feat['counterMeasureTime'] = timeToString(self.counterMeasureTime)
         feat['sectorName'] = self.sectorName
         feat['setId'] = self.setId
         feat.setGeometry(self.geometry)
@@ -215,8 +217,8 @@ class Sector():
         vals.append(self.angle)
         vals.append(self.counterMeasureId)
         vals.append(self.z_order)
-        vals.append(strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime))
-        vals.append(strftime("%Y-%m-%d %H:%M:%S +0000", self.counterMeasureTime))
+        vals.append(timeToString(self.saveTime))
+        vals.append(timeToString(self.counterMeasureTime))
         vals.append(self.sectorName)
         vals.append(self.setId)
         vals.append(self.geometry.exportToWkt())
@@ -284,12 +286,19 @@ class SectorSet():
         for sector in self.sectors:
             sector.saveTime = t
 
-    def getSaveTimeString(self):
+    def get_save_time_string(self):
         if len(self.sectors) == 0:
             return ''
         else:
             # all sectors should have the same saveTime!
-            return strftime("%Y-%m-%d %H:%M:%S +0000", self.sectors[0].saveTime)
+            return timeToString(self.sectors[0].saveTime)
+
+    def get_counter_measure_time_string(self):
+        if len(self.sectors) == 0:
+            return ''
+        else:
+            # all sectors should have the same saveTime!
+            return timeToString(self.sectors[0].counterMeasureTime)
 
     def setCounterMeasureTime(self, t=None):
         t = getTime(t)
