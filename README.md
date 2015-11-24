@@ -4,7 +4,7 @@ QGIS plugin for drawing and managing sector plots.
 
 ## Credentials
 
-Create a file `credentials.py` and add the following code with your own connection string(s).
+Create a file `credentials.py` in the `Sectorplot` folder and add the following code with your own connection string(s).
 
 ```python
 conn_strings = {
