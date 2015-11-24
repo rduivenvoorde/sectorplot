@@ -1,0 +1,25 @@
+
+# om hexcolor_to_rgb te kunnen gebruiken in de sector.qml
+# onderstaande even runnen in de python console van QGIS
+# dit registreert een functie 'hexcolor_to_rgb' in de group 'Custom'
+# en wordt gebruikt in onze sectors.qml (styling)
+# om de kleur van de sector uit de 'colors' kolom the halen
+
+# in styling expression gebruik:
+#
+#   hexcolor_to_rgb("color")+',127'
+#
+# (en dit komt in de qml terecht
+
+
+@qgsfunction(args='auto', group='Custom')
+def hexcolor_to_rgb(s, feature, parent):
+	s = s.strip('#')
+	if len(s) == 3:
+		s = 2 * s[0] + 2 * s[1] + 2 * s[2]
+	if len(s) == 6:
+		r = int(s[0]+s[1], 16)
+		g = int(s[2]+s[3], 16)
+		b = int(s[4]+s[5], 16)
+		return str(r) + ',' + str(g) + ',' + str(b)
+	return '0,0,0'

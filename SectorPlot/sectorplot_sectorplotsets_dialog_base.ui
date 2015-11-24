@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SectorPlotDialog</class>
- <widget class="QDialog" name="SectorPlotDialog">
+ <class>SectorPlotSetsDialog</class>
+ <widget class="QDialog" name="SectorPlotSetsDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -11,11 +11,14 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Sectorplot List</string>
+   <string>Recent Sectorplots</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="6" column="0" colspan="2">
-    <widget class="QPushButton" name="btn_open_sectorplot_dialog">
+    <widget class="QPushButton" name="btn_copy_sectorplotset_dialog">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="text">
       <string>Copy Selected Sectorplot</string>
      </property>
@@ -35,7 +38,7 @@
     </widget>
    </item>
    <item row="1" column="0" colspan="2">
-    <widget class="QPushButton" name="btn_new_sectorplot_dialog">
+    <widget class="QPushButton" name="btn_new_sectorplotset_dialog">
      <property name="text">
       <string>New Sectorplot</string>
      </property>
@@ -55,7 +58,7 @@
   <connection>
    <sender>button_box</sender>
    <signal>accepted()</signal>
-   <receiver>SectorPlotDialog</receiver>
+   <receiver>SectorPlotSetsDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -71,7 +74,7 @@
   <connection>
    <sender>button_box</sender>
    <signal>rejected()</signal>
-   <receiver>SectorPlotDialog</receiver>
+   <receiver>SectorPlotSetsDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

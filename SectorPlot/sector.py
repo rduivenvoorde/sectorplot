@@ -311,7 +311,7 @@ class SectorSet():
             sector.counterMeasureTime = t
 
     def setSetName(self, setName):
-        self.setName = setName
+        self.name = setName
         for sector in self.sectors:
             sector.setName = setName
 
