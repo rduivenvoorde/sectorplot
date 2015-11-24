@@ -33,7 +33,7 @@
           <prop k="border_width_map_unit_scale" v="0,0,0,0,0,0"/>
           <prop k="color" v="221,223,53,255"/>
           <prop k="color_dd_active" v="1"/>
-          <prop k="color_dd_expression" v="hexcolor_to_rgb(&quot;color&quot;)+',127'"/>
+          <prop k="color_dd_expression" v="set_color_part( color,  'alpha', 127)"/>
           <prop k="color_dd_field" v="color"/>
           <prop k="color_dd_useexpr" v="1"/>
           <prop k="joinstyle" v="bevel"/>
