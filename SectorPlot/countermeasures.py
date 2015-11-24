@@ -36,26 +36,27 @@ class CounterMeasures():
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
         return QCoreApplication.translate('SectorPlot', message)
 
+    # NOTE colors are Web Named Colors from ColorZilla Color Picker firefox extension !
     COUNTER_MEASURES = [
-            {'id': 100, 'text': tr('Evacuatie')},
-            {'id' :110, 'text': tr('Onmiddelijke evacuatie')},
+            {'id': 100, 'text': tr('Evacuatie'), 'color': '#ff0000'},
+            {'id' :110, 'text': tr('Onmiddelijke evacuatie'), 'color': '#ff0000'},
 
-            {'id' :120, 'text': tr('Schuilen')},
-            {'id' :130, 'text': tr('Jodiumprofylaxe tot 18 jaar en zwangeren')},
-            {'id' :131, 'text': tr('Jodiumprofylaxe tot 40 jaar en zwangeren')},
-            {'id' :140, 'text': tr('Relocatie')},
+            {'id' :120, 'text': tr('Schuilen'), 'color': '#ffff00'},
+            {'id' :130, 'text': tr('Jodiumprofylaxe tot 18 jaar en zwangeren'), 'color': '#0000ff'},
+            {'id' :131, 'text': tr('Jodiumprofylaxe tot 40 jaar en zwangeren'), 'color': '#add8e6'},
+            {'id' :140, 'text': tr('Relocatie'), 'color': '#a9a9a9'},
 
-            {'id' :220, 'text': tr('Landbouwmaatregelen')},
-            {'id' :221, 'text': tr('Graasverbod')},
-            {'id' :222, 'text': tr('Sluiten van kassen')},
+            {'id' :220, 'text': tr('Landbouwmaatregelen'), 'color': '#006400'},
+            {'id' :221, 'text': tr('Graasverbod'), 'color': '#006400'},
+            {'id' :222, 'text': tr('Sluiten van kassen'), 'color': '#90ee90'},
 
-            {'id' :330, 'text': tr('Voedselbeperking')},
-            {'id' :331, 'text': tr('Drinkwaterbeperking')},
-            {'id' :332, 'text': tr('Beregening verbod onbegroeid land/weiland')},
-            {'id' :333, 'text': tr('Beregening verbod begroeid land/weiland')},
-            {'id' :334, 'text': tr('Zuiveringsslib verbod')},
+            {'id' :330, 'text': tr('Voedselbeperking'), 'color': '#d3d3d3'},
+            {'id' :331, 'text': tr('Drinkwaterbeperking'), 'color': '#d3d3d3'},
+            {'id' :332, 'text': tr('Beregening verbod onbegroeid land/weiland'), 'color': '#d3d3d3'},
+            {'id' :333, 'text': tr('Beregening verbod begroeid land/weiland'), 'color': '#d3d3d3'},
+            {'id' :334, 'text': tr('Zuiveringsslib verbod'), 'color': '#d3d3d3'},
 
-            {'id' :400, 'text': tr('Overige maatregelen')}
+            {'id' :400, 'text': tr('Overige maatregelen'), 'color': '#d3d3d3'}
     ]
 
     def __str__(self):

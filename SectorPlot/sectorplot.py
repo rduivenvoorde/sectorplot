@@ -102,7 +102,8 @@ class SectorPlot:
 
         # Create sector_dialog
         self.sector_dlg = SectorPlotSectorDialog()
-        self.sector_dlg.cb_min_distance.stateChanged.connect(self.enable_min_distance)
+        self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
+        self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_select_countermeasure)
 
         # the data for the combo_countermeasures
         self.counter_measures = CounterMeasures()
@@ -127,8 +128,10 @@ class SectorPlot:
         # actions
         self.sectorplotset_dlg.btn_new_sector.clicked.connect(self.open_new_sector_dialog)
         self.sectorplotset_dlg.btn_remove_selected_sectors.clicked.connect(self.remove_selected_sectors)
+        #self.sectorplotset_dlg.table_sectors.verticalHeader().sectionMoved.connect(self.sectorplotsetdlg_sector_moved)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().sectionMoved.connect(self.create_sectorset_from_sectors)
 
-        self.current_sectorset = None
+        self.new_sectorplotset()
 
         # add memory Layer
         self.sector_layer = None
@@ -138,7 +141,6 @@ class SectorPlot:
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&SectorPlot')
-        # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'SectorPlot')
         self.toolbar.setObjectName(u'SectorPlot')
 
@@ -276,6 +278,10 @@ class SectorPlot:
         # open a the dialog with the sectorplotsets from the database
         self.open_sectorplotsets_dialog()
 
+    def new_sectorplotset(self):
+        self.current_sectorset = None
+        self.sectorplotset_source_model.clear();
+
     def open_sectorplotsets_dialog(self):
         # show the dialog with recent sectorplotsets
         self.sectorplotsets = SectorSets()
@@ -308,11 +314,9 @@ class SectorPlot:
         self.sectorplotsets_dlg.show()
         # See if OK was pressed
         if self.sectorplotsets_dlg.exec_():
-            print "Cleaning up with OK"
             self.sectorplotsets_source_model = None
             self.sectorplotsets = None
         else:
-            print "Cleaning up with Cancel"
             self.sectorplotsets_source_model = None
             self.sectorplotsets = None
 
@@ -331,8 +335,7 @@ class SectorPlot:
 
     def open_location_dialog(self):
         # starting NEW sectorplot(set), so remove all sectorplots from current sectorlayer, by adding empty array
-        self.add_sector_features([])
-        self.current_sectorset = None
+        self.new_sectorplotset()
         self.location_dlg.selected_npp_name = ''
         # fill the nuclear power plant list
         npp_source = os.path.join(os.path.dirname(__file__), r'data/tabel-npp-export.txt')
@@ -388,11 +391,9 @@ class SectorPlot:
             self.current_sectorset.setSetName(name)
         else:
             # deep clone the current one
-            #self.msg('deep copy')
-            #self.msg('voor %s %s' % (self.current_sectorset.lon, self.current_sectorset.lat))
             self.current_sectorset = deepcopy(self.current_sectorset)
-            #self.msg('na %s %s' % self.current_sectorset.lon)
-
+            # clean up the sectorset model
+            self.sectorplotset_source_model.clear();
         self.sectorplotset_dlg.lbl_location_name_lon_lat.setText(self.tr('Lon: %s') % self.current_sectorset.lon +
                                                                  self.tr(' Lat: %s') % self.current_sectorset.lat)
         self.sectorplotset_dlg.le_sectorplot_name.setText('%s' % self.current_sectorset.name)
@@ -410,14 +411,8 @@ class SectorPlot:
             self.current_sectorset.exportToDatabase()
             # (re)open ectorplotlist_dialog
             self.open_sectorplotsets_dialog()
-
-    def create_sectorset_from_sectors(self):
-        # NOW get the sectors from the model/dialog, put them in a sectorset
-        # data=sector is attached to column 0
-        self.current_sectorset.sectors = []
-        for row in range(0, self.sectorplotset_source_model.rowCount()):
-            sector = self.sectorplotset_source_model.item(row, 0).data(Qt.UserRole)
-            self.current_sectorset.sectors.append(sector)
+        else:
+            self.new_sectorplotset()
 
     def filter_npps(self, string):
         # remove selection if we start filtering AND empty lon lat fields
@@ -456,15 +451,17 @@ class SectorPlot:
         self.iface.mapCanvas().refresh()
 
     def open_new_sector_dialog(self):
-        # TODO !!! nu even alleen om te tonen, maar de id/key moet hier ook bij komen!!
-        self.sector_dlg.combo_countermeasures.addItems(self.counter_measures.values())
+        for counter_measure in self.counter_measures.all():
+            # addItem sets both the text for the dropdown AND adds a data-item to it
+            self.sector_dlg.combo_countermeasures.addItem(counter_measure['text'], counter_measure)
         self.sector_dlg.show()
         # OK pressed
         if self.sector_dlg.exec_():
-            # TODO countermeasure should be number from dropdown
-            countermeasure = 100
-            # TODO color should come from dialog
-            color = '#ff0000'
+            cm = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
+            # countermeasureid and (default) color from dropdown
+            countermeasure = cm['id']
+            color = cm['color']
+            # TODO color should come from optional colordropdown in dialog
             direction = self.sector_dlg.le_direction.text()
             angle = self.sector_dlg.le_angle.text()
             distance = self.sector_dlg.le_distance.text()
@@ -486,8 +483,13 @@ class SectorPlot:
             # TODO clean up generated sector?
             pass
 
-    def enable_min_distance(self):
+    def sector_dlg_enable_min_distance(self):
         self.sector_dlg.le_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
+
+    def sector_dlg_select_countermeasure(self):
+        cm = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
+        # default: put countermeasure text in sector name. Category 'overig' is to be set by the user!!
+        self.sector_dlg.le_sector_name.setText(cm['text'])
 
     def add_sector(self, sector):
         sector_name_item = QStandardItem(sector.sectorName)
@@ -515,29 +517,38 @@ class SectorPlot:
         self.sectorplotset_dlg.table_sectors.setColumnWidth(0, 150)
         self.sectorplotset_dlg.table_sectors.setColumnWidth(1, 250)
 
-    # TODO REMOVE THIS ONE ??
-    def add_sector_features(self, features_list=[], remove_all=True):
-        if remove_all:
-            self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
-        self.sector_layer.dataProvider().addFeatures(features_list)
-        self.sector_layer.updateFields()
-        self.sector_layer.updateExtents()
-        if self.iface.mapCanvas().isCachingEnabled():
-            self.sector_layer.setCacheImage(None)
-        else:
-            self.iface.mapCanvas().refresh()
+    def create_sectorset_from_sectors(self):
+        # NOW get the sectors from the model/dialog, put them in a sectorset in the order they are seen in the table
+        # create an array with 'None's so we can place the sectors on the right spot
+        self.current_sectorset.sectors = [None] * self.sectorplotset_source_model.rowCount()
+        for row in range(0, self.sectorplotset_source_model.rowCount()):
+            # data=sector is attached to column 0
+            sector = self.sectorplotset_source_model.item(row, 0).data(Qt.UserRole)
+            z = self.sectorplotset_dlg.table_sectors.verticalHeader().visualIndex(row)
+            # set the z-order based on the visual position in the table
+            sector.z_order = z
+            # and insert the sector in the right position of the sectorset
+            self.current_sectorset.sectors[z] = sector
+        self.current_sectorset.setSetName(self.sectorplotset_dlg.le_sectorplot_name.text())
+        # set save time (for the SectorplotSet == for all sectors in it)
+        self.current_sectorset.setSaveTime()
+        # show it!
+        self.show_current_sectorplot()
 
     def show_current_sectorplot(self):
         self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
-        self.sector_layer.dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
+        if self.current_sectorset is not None:
+            self.sector_layer.dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
+            self.zoom_to(self.current_sectorset.lon, self.current_sectorset.lat)
         self.sector_layer.updateFields()
         self.sector_layer.updateExtents()
-        self.zoom_to(self.current_sectorset.lon, self.current_sectorset.lat)
         if self.iface.mapCanvas().isCachingEnabled():
             self.sector_layer.setCacheImage(None)
         else:
             self.iface.mapCanvas().refresh()
 
+    def sectorplotsetdlg_sector_moved(self, a, b, c):
+        self.create_sectorset_from_sectors()
 
     def remove_selected_sectors(self):
         if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
@@ -545,5 +556,5 @@ class SectorPlot:
             self.create_sectorset_from_sectors()
             self.show_current_sectorplot()
 
-    def msg(self, msg):
-        QMessageBox.warning(self.iface.mainWindow(), "MESSAGE !!!", msg,QMessageBox.Ok, QMessageBox.Ok)
+    def msg(self, msg=""):
+        QMessageBox.warning(self.iface.mainWindow(), "MESSAGE !!!", msg, QMessageBox.Ok, QMessageBox.Ok)
