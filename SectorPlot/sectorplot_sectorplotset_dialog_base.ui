@@ -88,7 +88,10 @@
     </widget>
    </item>
    <item row="7" column="1" colspan="2">
-    <widget class="QPushButton" name="pushButton_5">
+    <widget class="QPushButton" name="btn_open_selected_sector">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="text">
       <string>Open Selected Sector</string>
      </property>
@@ -122,9 +125,12 @@
     <widget class="QTableView" name="table_sectors"/>
    </item>
    <item row="7" column="3" colspan="2">
-    <widget class="QPushButton" name="btn_remove_selected_sectors">
+    <widget class="QPushButton" name="btn_remove_selected_sector">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="text">
-      <string>Remove Selected</string>
+      <string>Remove Selected Sector</string>
      </property>
     </widget>
    </item>
