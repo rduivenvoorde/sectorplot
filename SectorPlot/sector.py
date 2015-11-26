@@ -15,9 +15,9 @@ xformTo3857 = QgsCoordinateTransform(crs4326, crs3857)
 xformTo4326 = QgsCoordinateTransform(crs3857, crs4326)
 
 
-def do_queries(queries, conn_string=credentials.conn_strings['example']):
+def do_queries(queries, conn_string=credentials.conn_strings['local']):
     conn = psycopg2.connect(conn_string)
-    cursor = conn.cursor(cursor_factory = psycopg2.extras.NamedTupleCursor)
+    cursor = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
     for query in queries:
         cursor.execute(query['text'], query['vals'])
     #print(cursor.statusmessage)
@@ -36,16 +36,19 @@ def do_queries(queries, conn_string=credentials.conn_strings['example']):
 def getTime(t):
     result = gmtime()
     if type(t) is unicode or type(t) is str:
-        result = strptime(t, "%Y-%m-%d %H:%M:%S") 
+        result = strptime(t, "%Y-%m-%d %H:%M:%S")
     return result
+
 
 def timeToString(t):
     return strftime("%Y-%m-%d %H:%M:%S +0000", t)
 
 
-
 class Sector():
-    def __init__(self, setName=None, lon=0, lat=0, minDistance=0, maxDistance=1, direction=0, angle=45, counterMeasureId=-1, z_order=-1, saveTime=None, counterMeasureTime=None, sectorName=None, setId=-1, color='#ffffff'):
+    def __init__(self, setName=None, lon=0, lat=0, minDistance=0,
+                 maxDistance=1, direction=0, angle=45, counterMeasureId=-1,
+                 z_order=-1, saveTime=None, counterMeasureTime=None,
+                 sectorName=None, setId=-1, color='#ffffff'):
         self.setName = setName
         self.lon = float(lon)
         self.lat = float(lat)
@@ -85,7 +88,23 @@ class Sector():
         if doGeometry:
             print('  geometry: ' + str(self.geometry))
         print('--------------')
-        
+
+    def clone(self):
+        return Sector(
+            setName=self.setName,
+            lon=self.lon,
+            lat=self.lat,
+            minDistance=self.minDistance,
+            maxDistance=self.maxDistance,
+            direction=self.direction,
+            angle=self.angle,
+            counterMeasureId=self.counterMeasureId,
+            z_order=self.z_order,
+            saveTime=self.saveTime,
+            counterMeasureTime=self.counterMeasureTime,
+            sectorName=self.sectorName,
+            setId=self.setId,
+            color=self.color)
 
     def setByDbRecord(self, rec):
         self.setName = rec.setname
@@ -127,7 +146,6 @@ class Sector():
         feat.setGeometry(self.geometry)
         return feat
 
-
     def _getArcPoint(self, x, y, r, direction):
         newdir = direction/180.0*pi
         newx = x + r * sin(newdir)
@@ -137,13 +155,13 @@ class Sector():
     def _getArc(self, x, y, dist):
         arc = []
         arcStart = self.direction
-        if isinstance(arcStart,(int, long)):
+        if isinstance(arcStart, (int, long)):
             loopStart = arcStart + 1
         else:
             loopStart = int(ceil(arcStart))
 
         arcEnd = self.direction + (self.angle % 360)
-        if isinstance(arcEnd,(int, long)):
+        if isinstance(arcEnd, (int, long)):
             loopEnd = arcEnd - 1
         else:
             loopEnd = int(floor(arcEnd))
@@ -157,21 +175,19 @@ class Sector():
         arc.append(self._getArcPoint(x, y, dist, arcEnd))
         return arc
 
-
-
     def calcGeometry(self):
 
         # scale distance for Mercator
         scale = 1.0 / (math.cos(float(self.lat) * math.pi / 180.0))
         minR = self.minDistance * scale
         maxR = self.maxDistance * scale
-        
+
         # get x/y in Mercator from lon/lat
         pnt = QgsPoint(self.lon, self.lat)
         pnt = xformTo3857.transform(pnt)
         x = pnt.x()
         y = pnt.y()
-        
+
         arc = []
 
         # make: 0 <= direction < 360
@@ -181,14 +197,14 @@ class Sector():
 
         #check if sector is circle
         if self.angle >= 360:
-            for d in range(0,360):
+            for d in range(0, 360):
                 outer.append(self._getArcPoint(x, y, maxR, d))
             if minR > 0:
-                for d in range(0,360):
+                for d in range(0, 360):
                     inner.append(self._getArcPoint(x, y, minR, d))
                 #inner.reverse()
                 print len(inner)
-                geom = QgsGeometry.fromPolygon([outer,inner])
+                geom = QgsGeometry.fromPolygon([outer, inner])
             else:
                 geom = QgsGeometry.fromPolygon([outer])
         else:
@@ -199,11 +215,9 @@ class Sector():
             else:
                 inner = [QgsPoint(x, y)]
             geom = QgsGeometry.fromPolygon([outer+inner])
-            
 
         geom.transform(xformTo4326)
         self.geometry = geom
-
 
     def getInsertQuery(self):
         query = {}
@@ -231,7 +245,6 @@ class Sector():
         return query
 
 
-
 class Roos():
     def __init__(self, lon=0, lat=0, distances=[1], count=8):
         self.distances = distances
@@ -240,7 +253,7 @@ class Roos():
         if count > 0:
             angle = 360 / count
             for dist in distances:
-                direction = 0                
+                direction = 0
                 for i in range(self.count):
                     sec = Sector('q'+str(i+1), lon, lat, 0, dist, direction, angle)
                     self.sectors.append(sec)
@@ -249,7 +262,6 @@ class Roos():
     def __str__(self):
         result = 'Roos[%s, %d, %d]' % (str(self.distances), self.count, len(self.sectors))
         return result
-        
 
 
 class SectorSet():
@@ -275,9 +287,21 @@ class SectorSet():
             print('    ' + str(s))
         print('-----------------')
 
+    def clone(self, clearSetId=True):
+        result = SectorSet(
+            lon=self.lon,
+            lat=self.lat,
+            name=self.name,
+            setId=self.setId)
+        for s in self.sectors:
+            result.sectors.append(s.clone())
+        if clearSetId:
+            result.set_setId(-1)
+        return result
+
     def exportToDatabase(self, newSetId=True):
         if newSetId:
-            queries = [{'text': "SELECT nextval(pg_get_serial_sequence('sectors', 'id')) as newsetid", 'vals':()}]
+            queries = [{'text': "SELECT nextval(pg_get_serial_sequence('sectors', 'id')) as newsetid", 'vals': ()}]
             result = do_queries(queries)
             setId = result[0].newsetid
             self.setSetId(setId)
@@ -327,16 +351,15 @@ class SectorSet():
         return result
 
 
-
 class SectorSets(list):
 
     def __init__(self):
         pass
-    
+
     def __str__(self):
         result = 'SectorSets[' + str(len(self)) + ']'
         return result
-    
+
     def _clear(self):
         del self[:]
 
@@ -345,7 +368,7 @@ class SectorSets(list):
             if sectorSet.setId == setId:
                 return sectorSet
         return None
-    
+
     def addToSectorSet(self, sector):
         sectorSet = self.findSectorSet(sector.setId)
         if sectorSet is not None:
@@ -354,7 +377,7 @@ class SectorSets(list):
             sectorSet = SectorSet(sector.lon, sector.lat, sector.setName, sector.setId)
             self.append(sectorSet)
             sectorSet.sectors.append(sector)
-    
+
     def _getImportQuery(self):
         query = {}
         query['text'] = 'SELECT * FROM sectors ORDER BY savetime, z_order'
@@ -372,5 +395,3 @@ class SectorSets(list):
             s = Sector()
             s.setByDbRecord(dbs)
             self.addToSectorSet(s)
-
-
