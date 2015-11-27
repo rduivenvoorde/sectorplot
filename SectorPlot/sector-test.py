@@ -82,10 +82,15 @@ ss.sectors[0].display()
 print ss.get_save_time_string()
 print ss.get_counter_measure_time_string()
 
+ss.display()
+ss2 = ss.clone()
+ss2.display
+
 
 # generate insert query
-s = Sector('Name', 5.5, 52.5, 10000, 20000, 50, 30, sectorName='SectorName', color='#ff00ff')
-print s.getInsertQuery()
+#s = Sector('Name', 5.5, 52.5, 10000, 20000, 50, 30, sectorName='SectorName', color='#ff00ff')
+#print s.getInsertQuery()
+
 
 
 
