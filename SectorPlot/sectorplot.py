@@ -61,7 +61,7 @@ class SectorPlot:
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
-            'SectorPlot_{}.qm'.format(locale))
+            '{}.qm'.format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -74,42 +74,34 @@ class SectorPlot:
 
         # Create the dialogs (after translation!) and keep references
 
-        #
+        # The Sectorplot Sets dialog, showing recent Sectorplots
         self.sectorplotsets_dlg = SectorPlotSetsDialog()
         self.sectorplotsets_dlg.table_sectorplot_sets.horizontalHeader().setStretchLastSection(True)
         self.sectorplotsets_dlg.table_sectorplot_sets.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.sectorplotsets_dlg.table_sectorplot_sets.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.sectorplotsets_dlg.table_sectorplot_sets.setSelectionMode(QAbstractItemView.SingleSelection)
-
+        # dlg actions
+        self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.clicked.connect(self.locationdlg_open_dialog)
+        self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.clicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
+        # inits
         self.sectorplotsets = None
         self.sectorplotsets_source_model = None
-        # dlg actions
-        self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.clicked.connect(self.open_location_dialog)
-        self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.clicked.connect(self.new_sectorplotset_dialog)
 
         # Create location_dialog
-        self.location_dlg = SectorPlotLocationDialog()
+        self.location_dlg = SectorPlotLocationDialog(parent=self.sectorplotsets_dlg)
         self.location_dlg.table_npps.horizontalHeader().setStretchLastSection(True)
         self.location_dlg.table_npps.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.location_dlg.table_npps.setSelectionMode(QAbstractItemView.SingleSelection)
+        # inits
         self.npp_source_model = None
         self.npp_proxy_model = None
         # actions
         self.location_dlg.le_longitude.textChanged.connect(self.locationdlg_lonlat_changed)
         self.location_dlg.le_latitude.textChanged.connect(self.locationdlg_lonlat_changed)
 
-        # Create sector_dialog
-        self.sector_dlg = SectorPlotSectorDialog()
-        self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
-        self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
-
-        # the data for the combo_countermeasures
-        self.counter_measures = CounterMeasures()
-        # actions
-
         # Create sectorplotset_dialog
-        self.sectorplotset_dlg = SectorPlotSectorPlotSetDialog()
+        self.sectorplotset_dlg = SectorPlotSectorPlotSetDialog(parent=self.sectorplotsets_dlg)
         self.sectorplotset_dlg.table_sectors.horizontalHeader().setStretchLastSection(True)
         self.sectorplotset_dlg.table_sectors.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.sectorplotset_dlg.table_sectors.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -121,19 +113,28 @@ class SectorPlot:
         self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
         self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
         self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)
-
+        # actions
+        self.sectorplotset_dlg.btn_new_sector.clicked.connect(self.sectorplotsetdlg_open_new_sector_dialog)
+        self.sectorplotset_dlg.btn_open_selected_sector.clicked.connect(self.sectorplotsetdlg_open_sector_for_edit_dialog)
+        self.sectorplotset_dlg.btn_remove_selected_sector.clicked.connect(self.sectorplotsetdlg_remove_sector_from_table)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().sectionMoved.connect(self.sectorplotsetdlg_create_sectorset_from_sector_table)
+        self.sectorplotset_dlg.table_sectors.clicked.connect(self.sectorplotsetdlg_sector_selected)
+        # inits
         self.sectorplotset_source_model = QStandardItemModel()
         self.sectorplotset_dlg.table_sectors.setModel(self.sectorplotset_source_model)
+
+        # Create sector_dialog
+        self.sector_dlg = SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
+        self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
+        self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
         # actions
-        self.sectorplotset_dlg.btn_new_sector.clicked.connect(self.open_new_sector_dialog)
-        self.sectorplotset_dlg.btn_open_selected_sector.clicked.connect(self.open_sector_for_edit_dialog)
-        self.sectorplotset_dlg.btn_remove_selected_sector.clicked.connect(self.remove_sector_from_table)
-        self.sectorplotset_dlg.table_sectors.verticalHeader().sectionMoved.connect(self.create_sectorset_from_sector_table)
-        self.sectorplotset_dlg.table_sectors.clicked.connect(self.sectorplotsetdlg_sector_selected)
+        # inits
+        # the data for the combo_countermeasures
+        self.counter_measures = CounterMeasures()
 
         self.current_sectorset = None
 
-        # add memory Layer
+        # memory Layer
         self.sector_layer = None
         self.crs_4326 = QgsCoordinateReferenceSystem()
         self.crs_4326.createFromId(4326)
@@ -252,6 +253,11 @@ class SectorPlot:
         # remove the toolbar
         del self.toolbar
 
+    def msg(self, parent, msg=""):
+        if parent is None:
+            parent = self.iface.mainWindow()
+        QMessageBox.warning(parent, self.MSG_BOX_TITLE, "%s" % msg, QMessageBox.Ok, QMessageBox.Ok)
+
     def run(self):
         """Start the plugin"""
         # we REALLY need OTF ON
@@ -277,15 +283,40 @@ class SectorPlot:
             QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
         # open a the dialog with the sectorplotsets from the database
         self.new_sectorplotset()
-        self.open_sectorplotsets_dialog()
+        self.sectorplotsetsdlg_open_dialog()
 
     def new_sectorplotset(self):
         self.current_sectorset = None
         self.sectorplotset_source_model.clear()
         # show... nothing
-        self.show_current_sectorplot_on_map()
+        self.show_current_sectorplotset_on_map()
 
-    def open_sectorplotsets_dialog(self):
+    def show_current_sectorplotset_on_map(self):
+        self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
+        if self.current_sectorset is not None:
+            self.sector_layer.dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
+            self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat)
+        #self.sector_layer.updateFields()
+        #self.sector_layer.updateExtents()
+        if self.iface.mapCanvas().isCachingEnabled():
+            self.sector_layer.setCacheImage(None)
+        else:
+            self.iface.mapCanvas().refresh()
+
+    def zoom_map_to_lonlat(self, lon, lat, scale=300000):
+        crs_to = self.iface.mapCanvas().mapRenderer().destinationCrs()
+        crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to)
+        point = QgsPoint(float(lon), float(lat))
+        geom = QgsGeometry.fromPoint(point)
+        geom.transform(crs_transform)
+        # zoom to with center is actually setting a point rectangle and then zoom
+        center = geom.asPoint()
+        rect = QgsRectangle(center, center)
+        self.iface.mapCanvas().setExtent(rect)
+        self.iface.mapCanvas().zoomScale(scale)
+        self.iface.mapCanvas().refresh()
+
+    def sectorplotsetsdlg_open_dialog(self):
         # show the dialog with recent sectorplotsets
         self.sectorplotsets = SectorSets()
         self.sectorplotsets.importFromDatabase()
@@ -296,7 +327,6 @@ class SectorPlot:
         self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
         # be sure that the copy button is disabled (as nothing is selected?)
         self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(False)
-
         for sectorplot_set in self.sectorplotsets:
             lon = sectorplot_set.lon
             lat = sectorplot_set.lat
@@ -313,19 +343,18 @@ class SectorPlot:
         self.sectorplotsets_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Name"))
         self.sectorplotsets_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Save Time"))
         self.sectorplotsets_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Countermeasure Time"))
-        self.sectorplotsets_dlg.table_sectorplot_sets.selectionModel().selectionChanged.connect(self.select_sectorplotset)
+        self.sectorplotsets_dlg.table_sectorplot_sets.selectionModel().selectionChanged.connect(self.sectorplotsetsdlg_select_sectorplotset)
         # resize columns to fit text contents
         self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
         self.sectorplotsets_dlg.show()
         # See if OK was pressed
         if self.sectorplotsets_dlg.exec_():
-            self.new_sectorplotset()
-            self.sectorplotsets = None
-        else:
-            self.new_sectorplotset()
-            self.sectorplotsets = None
+            pass
+            # whatever the uses pushes:
+        self.new_sectorplotset()
+        self.sectorplotsets = None
 
-    def select_sectorplotset(self):
+    def sectorplotsetsdlg_select_sectorplotset(self):
         if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
             # ONLY select the this selected one (multiple selection should not be possible)
             #self.sectorplotlist_dlg.table_sectorplot_sets.selectRow(0)
@@ -335,12 +364,37 @@ class SectorPlot:
             # make this sectorplot(set) current
             self.current_sectorset = self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()[0].data(Qt.UserRole)
             # zoom to and show
-            self.show_current_sectorplot_on_map()
+            self.show_current_sectorplotset_on_map()
             self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(True)
+        else:
+            # disable the button
+            self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(False)
 
-    def open_location_dialog(self):
-        # starting NEW sectorplot(set), so remove all sectorplots from current sectorlayer, by adding empty array
+    def sectorplotsetsdlg_new_sectorplotset_dialog(self, lon=None, lat=None, name=''):
+        if self.current_sectorset is None:
+            # create a SectorSet based on location dialog
+            self.current_sectorset = SectorSet(lon, lat)
+            self.current_sectorset.setSetName(name)
+            self.sectorplotset_source_model.clear()
+        else:
+            # deep clone the current one
+            self.current_sectorset = self.current_sectorset.clone()
+            # clean up the sectorset model
+            self.sectorplotset_source_model.clear()
+        self.sectorplotset_dlg.lbl_location_name_lon_lat.setText(self.tr('Lon: %s') % self.current_sectorset.lon +
+                                                                 self.tr(' Lat: %s') % self.current_sectorset.lat)
+        self.sectorplotset_dlg.le_sectorplot_name.setText('%s' % self.current_sectorset.name)
+        # IF SectorplotSet has sectors: show them
+        if len(self.current_sectorset.sectors) > 0:
+            for sector in self.current_sectorset.sectors:
+                sector.calcGeometry()
+                self.sectorplotsetdlg_add_sector_to_table(sector)
+        self.sectorplotset_dlg.show()
+        self.sectorplotsetdlg_save_to_db()
+
+    def locationdlg_open_dialog(self):
         self.new_sectorplotset()
+        self.sectorplotsets_dlg.table_sectorplot_sets.clearSelection()
         self.location_dlg.selected_npp_name = ''
         # fill the nuclear power plant list
         npp_source = os.path.join(os.path.dirname(__file__), r'data/tabel-npp-export.txt')
@@ -352,7 +406,7 @@ class SectorPlot:
         self.npp_proxy_model.setFilterKeyColumn(0)
         self.location_dlg.table_npps.setModel(self.npp_proxy_model)
         self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.location_dlg.le_search_npp.textChanged.connect(self.filter_npps)
+        self.location_dlg.le_search_npp.textChanged.connect(self.locationdlg_filter_npps)
         self.location_dlg.le_search_npp.setPlaceholderText(self.tr("Search"))
         if (len(npps)):
             # load the npps in the table in dialog
@@ -379,7 +433,7 @@ class SectorPlot:
         # hide the data / search string column:
         self.location_dlg.table_npps.hideColumn(0)
         # handle the selection of a NPP
-        self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.select_npp)
+        self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.locationdlg_select_npp)
         # show the location dialog
         self.location_dlg.show()
         # See if OK was pressed
@@ -387,45 +441,9 @@ class SectorPlot:
             lon = self.location_dlg.le_longitude.text()
             lat = self.location_dlg.le_latitude.text()
             set_name = self.location_dlg.selected_npp_name
-            self.new_sectorplotset_dialog(lon, lat, set_name)
+            self.sectorplotsetsdlg_new_sectorplotset_dialog(lon, lat, set_name)
 
-    def new_sectorplotset_dialog(self, lon=None, lat=None, name=''):
-        if self.current_sectorset is None:
-            # create a SectorSet based on location dialog
-            self.current_sectorset = SectorSet(lon, lat)
-            self.current_sectorset.setSetName(name)
-            self.sectorplotset_source_model.clear()
-        else:
-            # deep clone the current one
-            self.current_sectorset = self.current_sectorset.clone()
-            # clean up the sectorset model
-            self.sectorplotset_source_model.clear()
-        self.sectorplotset_dlg.lbl_location_name_lon_lat.setText(self.tr('Lon: %s') % self.current_sectorset.lon +
-                                                                 self.tr(' Lat: %s') % self.current_sectorset.lat)
-        self.sectorplotset_dlg.le_sectorplot_name.setText('%s' % self.current_sectorset.name)
-        # IF SectorplotSet has sectors: show them
-        if len(self.current_sectorset.sectors) > 0:
-            for sector in self.current_sectorset.sectors:
-                sector.calcGeometry()
-                self.add_sector_to_table(sector)
-
-        self.sectorplotset_dlg.show()
-        # OK will save to db
-        if self.sectorplotset_dlg.exec_():
-            self.create_sectorset_from_sector_table()
-            # save to DB
-            # TODO: check if this returns an id, OR -1 in case of error
-            self.current_sectorset.exportToDatabase()
-            # (re)open sectorplotlist_dialog
-            self.open_sectorplotsets_dialog()
-            # TODO: and select the first last one ?? OR the one with the id we just got returned (safer)
-            self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(0)
-        else:
-            # go back to (old) selected one
-            self.current_sectorset = self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()[0].data(Qt.UserRole)
-            self.show_current_sectorplot_on_map()
-
-    def filter_npps(self, string):
+    def locationdlg_filter_npps(self, string):
         # remove selection if we start filtering AND empty lon lat fields
         self.location_dlg.table_npps.clearSelection()
         self.location_dlg.le_longitude.setText('')
@@ -433,7 +451,7 @@ class SectorPlot:
         self.npp_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.npp_proxy_model.setFilterFixedString(string)
 
-    def select_npp(self):
+    def locationdlg_select_npp(self):
         # needed to scroll To the selected row incase of using the keyboard / arrows
         #self.location_dlg.table_npps.scrollTo(self.location_dlg.table_npps.selectedIndexes()[0])
         # itemType holds the data (== column 1)
@@ -455,9 +473,9 @@ class SectorPlot:
 
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
-    def open_new_sector_dialog(self, bool=False, old_sector=None):
+    def sectorplotsetdlg_open_new_sector_dialog(self, bool=False, old_sector=None):
         # we create a shiny new dialog to be sure all is initted ok
-        self.sector_dlg = SectorPlotSectorDialog()
+        self.sector_dlg = SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
         self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
         self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
         # TODO: realtime view of sector? So you can see what you are doing ...
@@ -514,19 +532,20 @@ class SectorPlot:
             row = -1
             if old_sector is not None:
                 row = self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row()
-            self.add_sector_to_table(new_sector, row)
+            self.sectorplotsetdlg_add_sector_to_table(new_sector, row)
         else:
             # user canceled
             # set the data of the selected row BACK to the old_sector (original sector)
-            self.sectorplotset_source_model.item(self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0) \
-                .setData(self.sectorplotset_dlg.old_sector, Qt.UserRole)
+            if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
+                self.sectorplotset_source_model.item(self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0) \
+                    .setData(self.sectorplotset_dlg.old_sector, Qt.UserRole)
             self.sectorplotset_dlg.old_sector = None
 
-    def open_sector_for_edit_dialog(self):
+    def sectorplotsetdlg_open_sector_for_edit_dialog(self):
         if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
             sector = self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].data(Qt.UserRole)
             self.sectorplotset_dlg.old_sector = sector
-            self.open_new_sector_dialog(True, sector.clone())
+            self.sectorplotsetdlg_open_new_sector_dialog(True, sector.clone())
 
     def sectorplotsetdlg_sector_selected(self):
         self.sectorplotset_dlg.btn_remove_selected_sector.setEnabled(True)
@@ -545,46 +564,9 @@ class SectorPlot:
 
     def sectorplotsetdlg_sector_moved(self, a, b, c):
         # user changed the order of the sectors by dragging a row in the table
-        self.create_sectorset_from_sector_table()
+        self.sectorplotsetdlg_create_sectorset_from_sector_table()
 
-    def show_current_sectorplot_on_map(self):
-        self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
-        if self.current_sectorset is not None:
-            self.sector_layer.dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
-            self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat)
-        #self.sector_layer.updateFields()
-        #self.sector_layer.updateExtents()
-        if self.iface.mapCanvas().isCachingEnabled():
-            self.sector_layer.setCacheImage(None)
-        else:
-            self.iface.mapCanvas().refresh()
-
-    def zoom_map_to_lonlat(self, lon, lat, scale=300000):
-        crs_to = self.iface.mapCanvas().mapRenderer().destinationCrs()
-        crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to)
-        point = QgsPoint(float(lon), float(lat))
-        geom = QgsGeometry.fromPoint(point)
-        geom.transform(crs_transform)
-        # zoom to with center is actually setting a point rectangle and then zoom
-        center = geom.asPoint()
-        rect = QgsRectangle(center, center)
-        self.iface.mapCanvas().setExtent(rect)
-        self.iface.mapCanvas().zoomScale(scale)
-        self.iface.mapCanvas().refresh()
-
-    def sector_dlg_enable_min_distance(self):
-        self.sector_dlg.le_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
-        self.sector_dlg.lbl_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
-        # set to zero back if set back
-        if self.sector_dlg.cb_min_distance.isChecked() is False:
-            self.sector_dlg.le_min_distance.setText("0")
-
-    def sector_dlg_countermeasure_selected(self):
-        countermeasure = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
-        # default: put countermeasure text in sector name. Category 'overig' is to be set by the user!!
-        self.sector_dlg.le_sector_name.setText(countermeasure['text'])
-
-    def add_sector_to_table(self, sector, row=-1):
+    def sectorplotsetdlg_add_sector_to_table(self, sector, row=-1):
         sector_name_item = QStandardItem(sector.sectorName)
         direction_item = QStandardItem("%s" % int(sector.direction))
         angle_item = QStandardItem("%s" % int(sector.angle))
@@ -604,16 +586,16 @@ class SectorPlot:
                                                        distance_item, direction_item, angle_item])
             # and select it again
             self.sectorplotset_dlg.table_sectors.selectRow(row)
-        self.create_sectorset_from_sector_table()
+        self.sectorplotsetdlg_create_sectorset_from_sector_table()
         self.sectorplotsetdlg_set_headers()
 
-    def remove_sector_from_table(self):
+    def sectorplotsetdlg_remove_sector_from_table(self):
         if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
             self.sectorplotset_source_model.removeRow(self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row())
-            self.create_sectorset_from_sector_table()
-            self.show_current_sectorplot_on_map()
+            self.sectorplotsetdlg_create_sectorset_from_sector_table()
+            self.show_current_sectorplotset_on_map()
 
-    def create_sectorset_from_sector_table(self):
+    def sectorplotsetdlg_create_sectorset_from_sector_table(self):
         # NOW get the sectors from the model/dialog, put them in a sectorset in the order they are seen in the table
         # create an array with 'None's so we can place the sectors on the right spot
         self.current_sectorset.sectors = [None] * self.sectorplotset_source_model.rowCount()
@@ -629,7 +611,46 @@ class SectorPlot:
         # set save time (for the SectorplotSet == for all sectors in it)
         self.current_sectorset.setSaveTime()
         # show it!
-        self.show_current_sectorplot_on_map()
+        self.show_current_sectorplotset_on_map()
 
-    def msg(self, msg="", context=""):
-        QMessageBox.warning(self.iface.mainWindow(), "MESSAGE !!!", "%s [%s]" % (msg, context), QMessageBox.Ok, QMessageBox.Ok)
+    def sectorplotsetdlg_save_to_db(self):
+        # OK will save to db
+        if self.sectorplotset_dlg.exec_():
+            self.sectorplotsetdlg_create_sectorset_from_sector_table()
+            if self.current_sectorset.name is None or len(self.current_sectorset.name) == 0:
+                # no name set, please provide one
+                self.sectorplotset_dlg.show()
+                msg = self.tr("You did not provide a name for this Sectorplot. \nPlease provide one.")
+                self.msg(self.sectorplotset_dlg, msg)
+                self.sectorplotsetdlg_save_to_db()
+            elif len(self.current_sectorset.sectors) == 0:
+                # no name set, please provide one
+                self.sectorplotset_dlg.show()
+                msg = self.tr("You did not provide a sector for this Sectorplot. \nPlease provide at least one.")
+                self.msg(self.sectorplotset_dlg, msg)
+                self.sectorplotsetdlg_save_to_db()
+            else:
+                # save to DB
+                # TODO: check if this returns an id, OR -1 in case of error
+                self.current_sectorset.exportToDatabase()
+                # (re)open sectorplotlist_dialog
+                self.sectorplotsetsdlg_open_dialog()
+                # TODO: and select the first last one ?? OR the one with the id we just got returned (safer)
+                self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(0)
+        else:
+            # go back to (old) selected one, IF there was one selected
+            if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
+                self.current_sectorset = self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()[0].data(Qt.UserRole)
+                self.show_current_sectorplotset_on_map()
+
+    def sector_dlg_enable_min_distance(self):
+        self.sector_dlg.le_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
+        self.sector_dlg.lbl_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
+        # set to zero back if set back
+        if self.sector_dlg.cb_min_distance.isChecked() is False:
+            self.sector_dlg.le_min_distance.setText("0")
+
+    def sector_dlg_countermeasure_selected(self):
+        countermeasure = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
+        # default: put countermeasure text in sector name. Category 'overig' is to be set by the user!!
+        self.sector_dlg.le_sector_name.setText(countermeasure['text'])
