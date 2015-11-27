@@ -3,7 +3,7 @@ import psycopg2.extras
 import credentials
 
 
-def do_queries(queries, conn_string=credentials.conn_strings['db02.dev.cal-net.nl']):
+def do_queries(queries, conn_string=credentials.conn_string):
     conn = psycopg2.connect(conn_string)
     cursor = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
     for query in queries:

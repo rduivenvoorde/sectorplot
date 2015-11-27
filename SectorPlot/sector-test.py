@@ -7,7 +7,7 @@ from sector import Sector, Roos, SectorSet, SectorSets
 import time
 
 
-doGenerateData = True
+doGenerateData = False
 doExport = True
 
 
