@@ -4,33 +4,14 @@ from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform
 from PyQt4.QtCore import QVariant
 from time import strftime, strptime, gmtime
 import datetime
-import psycopg2
-import psycopg2.extras
 import math
-import credentials
+from dbconnect import do_queries
+
 
 crs4326 = QgsCoordinateReferenceSystem(4326)
 crs3857 = QgsCoordinateReferenceSystem(3857)
 xformTo3857 = QgsCoordinateTransform(crs4326, crs3857)
 xformTo4326 = QgsCoordinateTransform(crs3857, crs4326)
-
-
-def do_queries(queries, conn_string=credentials.conn_strings['local']):
-    conn = psycopg2.connect(conn_string)
-    cursor = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
-    for query in queries:
-        cursor.execute(query['text'], query['vals'])
-    #print(cursor.statusmessage)
-    #print(cursor.rowcount)
-    if 'SELECT' in str(cursor.statusmessage):
-        memory = cursor.fetchall()
-    else:
-        memory = None
-    conn.commit()
-    cursor.close()
-    conn.close()
-    if memory is not None:
-        return memory
 
 
 def getTime(t):
@@ -296,7 +277,7 @@ class SectorSet():
         for s in self.sectors:
             result.sectors.append(s.clone())
         if clearSetId:
-            result.set_setId(-1)
+            result.setSetId(-1)
         return result
 
     def exportToDatabase(self, newSetId=True):
