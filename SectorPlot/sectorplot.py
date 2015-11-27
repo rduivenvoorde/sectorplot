@@ -22,7 +22,7 @@
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
-    QAbstractItemView, QStandardItem, QAbstractItemView, QMessageBox
+    QAbstractItemView, QStandardItem, QAbstractItemView, QMessageBox, QColorDialog
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
     QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsFeature
 # Initialize Qt resources from file resources.py
@@ -96,8 +96,8 @@ class SectorPlot:
         self.npp_source_model = None
         self.npp_proxy_model = None
         # actions
-        #self.location_dlg.le_longitude.textChanged.connect(self.zoom_to)
-        #self.location_dlg.le_latitude.textChanged.connect(self.zoom_to)
+        self.location_dlg.le_longitude.textChanged.connect(self.locationdlg_lonlat_changed)
+        self.location_dlg.le_latitude.textChanged.connect(self.locationdlg_lonlat_changed)
 
         # Create sector_dialog
         self.sector_dlg = SectorPlotSectorDialog()
@@ -442,7 +442,16 @@ class SectorPlot:
             self.location_dlg.le_longitude.setText(unicode(npp['longitude']))
             self.location_dlg.le_latitude.setText(unicode(npp['latitude']))
             self.location_dlg.selected_npp_name = npp['block']
-            self.zoom_to(npp['longitude'], npp['latitude'])
+            self.zoom_map_to_lonlat(npp['longitude'], npp['latitude'])
+
+    def locationdlg_lonlat_changed(self):
+        lon = self.location_dlg.le_longitude.text()
+        lat = self.location_dlg.le_latitude.text()
+        if lon is None or len(lon) == 0:
+            lon = 0
+        if lat is None or len(lat) == 0:
+            lat = 0
+        self.zoom_map_to_lonlat(lon, lat)
 
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
@@ -468,7 +477,17 @@ class SectorPlot:
             self.sector_dlg.le_distance.setText("%s" % (int(old_sector.maxDistance)/1000))
             if old_sector.minDistance != 0:
                 self.sector_dlg.le_min_distance.setText("%s" % (int(old_sector.minDistance)/1000))
+                self.sector_dlg.le_min_distance.setEnabled(True)
+                self.sector_dlg.lbl_min_distance.setEnabled(True)
+                self.sector_dlg.cb_min_distance.setChecked(True)
         self.sector_dlg.show()
+
+        #test = QColorDialog(self.sector_dlg)
+        # test.setOption(QColorDialog.ShowAlphaChannel)
+        #test.open()
+
+        #QColorDialog.getColor()
+
         # OK pressed
         if self.sector_dlg.exec_():
             cm = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
@@ -532,7 +551,7 @@ class SectorPlot:
         self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
         if self.current_sectorset is not None:
             self.sector_layer.dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
-            self.zoom_to(self.current_sectorset.lon, self.current_sectorset.lat)
+            self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat)
         #self.sector_layer.updateFields()
         #self.sector_layer.updateExtents()
         if self.iface.mapCanvas().isCachingEnabled():
@@ -540,7 +559,7 @@ class SectorPlot:
         else:
             self.iface.mapCanvas().refresh()
 
-    def zoom_to(self, lon, lat):
+    def zoom_map_to_lonlat(self, lon, lat, scale=300000):
         crs_to = self.iface.mapCanvas().mapRenderer().destinationCrs()
         crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to)
         point = QgsPoint(float(lon), float(lat))
@@ -550,12 +569,15 @@ class SectorPlot:
         center = geom.asPoint()
         rect = QgsRectangle(center, center)
         self.iface.mapCanvas().setExtent(rect)
-        self.iface.mapCanvas().zoomScale(300000)
+        self.iface.mapCanvas().zoomScale(scale)
         self.iface.mapCanvas().refresh()
 
     def sector_dlg_enable_min_distance(self):
         self.sector_dlg.le_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
         self.sector_dlg.lbl_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
+        # set to zero back if set back
+        if self.sector_dlg.cb_min_distance.isChecked() is False:
+            self.sector_dlg.le_min_distance.setText("0")
 
     def sector_dlg_countermeasure_selected(self):
         countermeasure = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
