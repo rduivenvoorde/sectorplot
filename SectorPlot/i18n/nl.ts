@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE TS><TS version="2.0">
+<!DOCTYPE TS>
+<TS version="2.0" language="nl">
 <context>
     <name>@default</name>
     <message>
         <location filename="test_translations.py" line="48"/>
         <source>Good morning</source>
-        <translation type="unfinished"></translation>
+        <translation type="unfinished">Goedemorgen</translation>
     </message>
     <message>
         <location filename="countermeasures.py" line="41"/>
@@ -93,132 +94,132 @@
     <message>
         <location filename="sectorplot_sector_dialog_base.ui" line="20"/>
         <source>Custom Min Distance</source>
-        <translation type="unfinished"></translation>
+        <translation>Aangepaste Vanaf Afstand</translation>
     </message>
     <message>
         <location filename="sectorplot_sector_dialog_base.ui" line="27"/>
         <source>Angle (degrees)</source>
-        <translation type="unfinished"></translation>
+        <translation>Openingshoek (gr.)</translation>
     </message>
     <message>
         <location filename="sectorplot_sector_dialog_base.ui" line="34"/>
         <source>Counter Meausure</source>
-        <translation type="unfinished"></translation>
+        <translation>Tegenmaatregel</translation>
     </message>
     <message>
         <location filename="sectorplot_sector_dialog_base.ui" line="41"/>
         <source>Direction (start, degrees)</source>
-        <translation type="unfinished"></translation>
+        <translation>Starthoek (gr.)</translation>
     </message>
     <message>
         <location filename="sectorplot_sector_dialog_base.ui" line="98"/>
         <source>00000; </source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="sectorplot_sector_dialog_base.ui" line="121"/>
         <source>0</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="sectorplot_sector_dialog_base.ui" line="61"/>
         <source>Distance (max, km)</source>
-        <translation type="unfinished"></translation>
+        <translation>Afstand (max, km)</translation>
     </message>
     <message>
         <location filename="sectorplot_sector_dialog_base.ui" line="71"/>
         <source>Distance (min, km)</source>
-        <translation type="unfinished"></translation>
+        <translation>Afstand (min, km)</translation>
     </message>
     <message>
         <location filename="sectorplot_sector_dialog_base.ui" line="78"/>
         <source>Sector name (optional)</source>
-        <translation type="unfinished"></translation>
+        <translation>Sectornaam (optioneel)</translation>
     </message>
     <message>
         <location filename="sectorplot_sector_dialog_base.ui" line="118"/>
         <source>000; </source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="14"/>
         <source>New Sectorplot</source>
-        <translation type="unfinished"></translation>
+        <translation>Nieuwe Sectorplot</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="20"/>
         <source>[sector plot name + location]</source>
-        <translation type="unfinished"></translation>
+        <translation>[sectorplotnaam + lokatie]</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="27"/>
         <source>Sectorplot Name</source>
-        <translation type="unfinished"></translation>
+        <translation>Sectorplotnaam</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="34"/>
         <source>Id:</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="41"/>
         <source>Sectors:</source>
-        <translation type="unfinished"></translation>
+        <translation>Sectoren:</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="48"/>
         <source>[name]</source>
-        <translation type="unfinished"></translation>
+        <translation>[naam]</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="55"/>
         <source>[on save]</source>
-        <translation type="unfinished"></translation>
+        <translation>[na opslaan]</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="62"/>
         <source>Location</source>
-        <translation type="unfinished"></translation>
+        <translation>Lokatie</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="69"/>
         <source>hh:mm</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="79"/>
         <source>Save Time</source>
-        <translation type="unfinished"></translation>
+        <translation>Tijd van Opslaan</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="86"/>
         <source>Counter Measure Time</source>
-        <translation type="unfinished"></translation>
+        <translation>Maatregeltijd</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="96"/>
         <source>Open Selected Sector</source>
-        <translation type="unfinished"></translation>
+        <translation>Open Geselecteerde Sector</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="103"/>
         <source>[id]</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="117"/>
         <source>dd-MM-yyyy</source>
-        <translation type="unfinished"></translation>
+        <translation></translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="133"/>
         <source>Remove Selected Sector</source>
-        <translation type="unfinished"></translation>
+        <translation>Verwijder Geselecteerde Sector</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotset_dialog_base.ui" line="150"/>
         <source>Add New Sector</source>
-        <translation type="unfinished"></translation>
+        <translation>Nieuwe Sector Toevoegen</translation>
     </message>
 </context>
 <context>
@@ -374,17 +375,17 @@ Please enable OTF for this project or open a project with OTF enabled.</source>
     <message>
         <location filename="sectorplot_sectorplotsets_dialog_base.ui" line="50"/>
         <source>Recent Sectorplots</source>
-        <translation type="unfinished"></translation>
+        <translation>Recente Sectorplots</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotsets_dialog_base.ui" line="23"/>
         <source>Copy Selected Sectorplot</source>
-        <translation type="unfinished"></translation>
+        <translation>Kopieer Geselecteerde Sectorplot</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotsets_dialog_base.ui" line="43"/>
         <source>New Sectorplot</source>
-        <translation type="unfinished"></translation>
+        <translation>Nieuwe Sectorplot</translation>
     </message>
 </context>
 </TS>

@@ -16,7 +16,7 @@ import unittest
 
 from PyQt4.QtGui import QDialogButtonBox, QDialog
 
-from sectorplot_sectorplotsets_dialog import SectorPlotDialog
+from sectorplot_sectorplotsets_dialog import SectorPlotSetsDialog
 
 from utilities import get_qgis_app
 QGIS_APP = get_qgis_app()
