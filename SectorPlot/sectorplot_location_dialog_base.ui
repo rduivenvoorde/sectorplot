@@ -17,45 +17,65 @@
    <string>Set Sectorplot Location</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
-   <item row="10" column="3">
-    <widget class="QLabel" name="label_4">
-     <property name="text">
-      <string>Latitude</string>
-     </property>
-    </widget>
-   </item>
-   <item row="10" column="4">
-    <widget class="QLineEdit" name="le_latitude">
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
    <item row="10" column="0">
     <widget class="QLabel" name="label_2">
      <property name="text">
-      <string>Longitude</string>
+      <string>Longitude (deg -180/180) </string>
      </property>
     </widget>
    </item>
-   <item row="10" column="1">
-    <widget class="QLineEdit" name="le_longitude">
+   <item row="10" column="2">
+    <widget class="QLabel" name="label_4">
+     <property name="text">
+      <string>Latitude(deg -85/85)</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="0" colspan="4">
+    <widget class="QTableView" name="table_npps"/>
+   </item>
+   <item row="10" column="3">
+    <widget class="QLineEdit" name="le_latitude">
+     <property name="inputMask">
+      <string/>
+     </property>
      <property name="text">
       <string/>
      </property>
     </widget>
    </item>
-   <item row="3" column="3" colspan="2">
+   <item row="3" column="2" colspan="2">
     <widget class="QLineEdit" name="le_search_npp">
      <property name="text">
       <string/>
      </property>
     </widget>
    </item>
-   <item row="4" column="0" colspan="5">
-    <widget class="QTableView" name="table_npps"/>
+   <item row="9" column="0" colspan="4">
+    <widget class="Line" name="line_2">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
    </item>
-   <item row="11" column="4">
+   <item row="10" column="1">
+    <widget class="QLineEdit" name="le_longitude">
+     <property name="inputMask">
+      <string/>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="6" column="0">
+    <widget class="QLabel" name="label_5">
+     <property name="text">
+      <string>Or</string>
+     </property>
+    </widget>
+   </item>
+   <item row="11" column="3">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
       <enum>Qt::Horizontal</enum>
@@ -72,26 +92,6 @@
      </property>
     </widget>
    </item>
-   <item row="10" column="2">
-    <spacer name="horizontalSpacer">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-     <property name="sizeHint" stdset="0">
-      <size>
-       <width>40</width>
-       <height>20</height>
-      </size>
-     </property>
-    </spacer>
-   </item>
-   <item row="6" column="0">
-    <widget class="QLabel" name="label_5">
-     <property name="text">
-      <string>Or</string>
-     </property>
-    </widget>
-   </item>
    <item row="7" column="0">
     <widget class="QPushButton" name="btn_location_from_map">
      <property name="text">
@@ -99,14 +99,7 @@
      </property>
     </widget>
    </item>
-   <item row="9" column="0" colspan="5">
-    <widget class="Line" name="line_2">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item row="7" column="1" colspan="4">
+   <item row="7" column="1" colspan="3">
     <widget class="QLabel" name="label_3">
      <property name="text">
       <string>Click in map to set the sectorplot location</string>

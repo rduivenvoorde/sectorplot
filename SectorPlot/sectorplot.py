@@ -22,7 +22,7 @@
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
-    QAbstractItemView, QStandardItem, QAbstractItemView, QMessageBox, QColorDialog
+    QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QDoubleValidator
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
     QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsFeature
 # Initialize Qt resources from file resources.py
@@ -96,6 +96,11 @@ class SectorPlot:
         # inits
         self.npp_source_model = None
         self.npp_proxy_model = None
+        self.lon_validator = QDoubleValidator(-180, 180, 8, self.location_dlg.le_longitude)
+        # epsg:3857 valid untill about -85/85 ! Not sure if this is ok?
+        self.lat_validator = QDoubleValidator(-85, 85, 8, self.location_dlg.le_latitude)
+        self.location_dlg.le_longitude.setValidator(self.lon_validator)
+        self.location_dlg.le_latitude.setValidator(self.lat_validator)
         # actions
         self.location_dlg.le_longitude.textChanged.connect(self.locationdlg_lonlat_changed)
         self.location_dlg.le_latitude.textChanged.connect(self.locationdlg_lonlat_changed)
@@ -303,7 +308,7 @@ class SectorPlot:
         else:
             self.iface.mapCanvas().refresh()
 
-    def zoom_map_to_lonlat(self, lon, lat, scale=300000):
+    def zoom_map_to_lonlat(self, lon, lat, scale=3000000):
         crs_to = self.iface.mapCanvas().mapRenderer().destinationCrs()
         crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to)
         point = QgsPoint(float(lon), float(lat))
@@ -394,8 +399,11 @@ class SectorPlot:
 
     def locationdlg_open_dialog(self):
         self.new_sectorplotset()
+        self.location_dlg.le_longitude.clear()
+        self.location_dlg.le_latitude.clear()
         self.sectorplotsets_dlg.table_sectorplot_sets.clearSelection()
         self.location_dlg.selected_npp_name = ''
+
         # fill the nuclear power plant list
         npp_source = os.path.join(os.path.dirname(__file__), r'data/tabel-npp-export.txt')
         npps = NppSet(npp_source)
@@ -436,12 +444,33 @@ class SectorPlot:
         self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.locationdlg_select_npp)
         # show the location dialog
         self.location_dlg.show()
+        self.locationdlg_set_location()
+
+    def locationdlg_set_location(self):
         # See if OK was pressed
         if self.location_dlg.exec_():
             lon = self.location_dlg.le_longitude.text()
             lat = self.location_dlg.le_latitude.text()
-            set_name = self.location_dlg.selected_npp_name
-            self.sectorplotsetsdlg_new_sectorplotset_dialog(lon, lat, set_name)
+            if not self.locationdlg_lon_check(lon, lat):
+                # problem validating the lat lon coordinates
+                self.msg(self.sectorplotsets_dlg, self.tr("One of the coordinates is not valid, please check and correct."))
+                self.locationdlg_set_location()
+            else:
+                # location coordinates OK
+                set_name = self.location_dlg.selected_npp_name
+                self.sectorplotsetsdlg_new_sectorplotset_dialog(lon, lat, set_name)
+
+    def locationdlg_lonlat_changed(self):
+        lon = self.location_dlg.le_longitude.text()
+        lat = self.location_dlg.le_latitude.text()
+        if self.locationdlg_lon_check(lon, lat):
+            self.zoom_map_to_lonlat(lon, lat)
+
+    def locationdlg_lon_check(self, lon, lat):
+        lat_state, ln, pos = self.lat_validator.validate(lat, 0)
+        lon_state, lt, pos = self.lon_validator.validate(lon, 0)
+        # only return True for full accaptence, not for intermediate ok's
+        return lat_state == QDoubleValidator.Acceptable and lon_state == QDoubleValidator.Acceptable
 
     def locationdlg_filter_npps(self, string):
         # remove selection if we start filtering AND empty lon lat fields
@@ -461,15 +490,6 @@ class SectorPlot:
             self.location_dlg.le_latitude.setText(unicode(npp['latitude']))
             self.location_dlg.selected_npp_name = npp['block']
             self.zoom_map_to_lonlat(npp['longitude'], npp['latitude'])
-
-    def locationdlg_lonlat_changed(self):
-        lon = self.location_dlg.le_longitude.text()
-        lat = self.location_dlg.le_latitude.text()
-        if lon is None or len(lon) == 0:
-            lon = 0
-        if lat is None or len(lat) == 0:
-            lat = 0
-        self.zoom_map_to_lonlat(lon, lat)
 
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
