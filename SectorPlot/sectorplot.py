@@ -23,7 +23,7 @@
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
     QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator, \
-    QCursor, QPixmap
+    QCursor, QPixmap, QWidget
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
     QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry
 from qgis.gui import QgsMapTool
@@ -107,9 +107,9 @@ class SectorPlot:
         self.npp_proxy_model = None
         self.xy_tool = GetPointTool(self.iface.mapCanvas(), self.locationdlg_xy_clicked)
         self.lon_validator = QDoubleValidator(-180, 180, 12, self.location_dlg.le_longitude)
+        self.location_dlg.le_longitude.setValidator(self.lon_validator)
         # epsg:3857 valid untill about -85/85 ! Not sure if this is ok?
         self.lat_validator = QDoubleValidator(-85, 85, 12, self.location_dlg.le_latitude)
-        self.location_dlg.le_longitude.setValidator(self.lon_validator)
         self.location_dlg.le_latitude.setValidator(self.lat_validator)
 
         # SectorplotSet_dialog showing current sectorplot (list of sectors in this plot)
@@ -143,6 +143,10 @@ class SectorPlot:
         # inits
         # the data for the combo_countermeasures
         self.counter_measures = CounterMeasures()
+        self.degree_validator = QDoubleValidator(-360, 360, 2)
+        self.positive_degree_validator = QDoubleValidator(1, 360, 2)
+        self.distance_validator = QDoubleValidator(1, 999, 0)
+        self.min_distance_validator = QDoubleValidator(0, 999, 0)
 
         self.current_sectorset = None
 
@@ -272,7 +276,7 @@ class SectorPlot:
 
     def run(self):
         """Start the plugin"""
-        # we REALLY need OTF ON
+        # we REALLY need OTF enabled
         if self.iface.mapCanvas().hasCrsTransformEnabled() == False:
             QMessageBox.warning(self.iface.mainWindow(), self.MSG_BOX_TITLE, self.tr(
                 "This Plugin ONLY works when you have OTF (On The Fly Reprojection) enabled for current QGIS Project.\n\n" +
@@ -315,6 +319,7 @@ class SectorPlot:
         else:
             self.iface.mapCanvas().refresh()
 
+    # TODO: remove the scale part?
     def zoom_map_to_lonlat(self, lon, lat, scale=300000):
         crs_to = self.iface.mapCanvas().mapRenderer().destinationCrs()
         crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to)
@@ -325,7 +330,7 @@ class SectorPlot:
         center = geom.asPoint()
         rect = QgsRectangle(center, center)
         self.iface.mapCanvas().setExtent(rect)
-        self.iface.mapCanvas().zoomScale(scale)
+        #self.iface.mapCanvas().zoomScale(scale)
         self.iface.mapCanvas().refresh()
 
     def sectorplotsetsdlg_open_dialog(self, selected_id=-1):
@@ -411,7 +416,7 @@ class SectorPlot:
                 sector.calcGeometry()
                 self.sectorplotsetdlg_add_sector_to_table(sector)
         self.sectorplotset_dlg.show()
-        self.sectorplotsetdlg_ok_and_save_to_db()
+        self.sectorplotsetdlg_finish()
 
     def locationdlg_open_dialog(self):
         self.new_sectorplotset()
@@ -460,29 +465,15 @@ class SectorPlot:
         self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.locationdlg_select_npp)
         # show the location dialog
         self.location_dlg.show()
-        self.locationdlg_set_location()
-
-    def locationdlg_set_location(self):
-        # See if OK was pressed
-        if self.location_dlg.exec_():
-            lon = self.location_dlg.le_longitude.text()
-            lat = self.location_dlg.le_latitude.text()
-            if self.locationdlg_lonlat_ok(lon, lat):
-                # location coordinates OK
-                set_name = self.location_dlg.selected_npp_name
-                self.sectorplotsetsdlg_new_sectorplotset_dialog(lon, lat, set_name)
-            else:
-                # problem validating the lat lon coordinates
-                self.msg(self.sectorplotsets_dlg, self.tr("One of the coordinates is not valid, please check and correct."))
-                self.locationdlg_set_location()
+        self.locationdlg_finish()
 
     def locationdlg_lonlat_changed(self):
         lon = self.location_dlg.le_longitude.text()
         lat = self.location_dlg.le_latitude.text()
-        if self.locationdlg_lonlat_ok(lon, lat):
+        if self.locationdlg_lonlat_checked(lon, lat):
             self.zoom_map_to_lonlat(lon, lat)
 
-    def locationdlg_lonlat_ok(self, lon, lat):
+    def locationdlg_lonlat_checked(self, lon, lat):
         lat_state, ln, pos = self.lat_validator.validate(lat, 0)
         lon_state, lt, pos = self.lon_validator.validate(lon, 0)
         # only return True for full accaptence, not for intermediate ok's
@@ -521,6 +512,20 @@ class SectorPlot:
         self.location_dlg.le_latitude.setText(unicode(xy4326.y()))
         self.iface.mapCanvas().unsetMapTool(self.xy_tool)
 
+    def locationdlg_finish(self):
+        # See if OK was pressed
+        if self.location_dlg.exec_():
+            lon = self.location_dlg.le_longitude.text()
+            lat = self.location_dlg.le_latitude.text()
+            if self.locationdlg_lonlat_checked(lon, lat):
+                # location coordinates OK
+                set_name = self.location_dlg.selected_npp_name
+                self.sectorplotsetsdlg_new_sectorplotset_dialog(lon, lat, set_name)
+            else:
+                # problem validating the lat lon coordinates
+                self.msg(self.sectorplotsets_dlg, self.tr("One of the coordinates is not valid.\nPlease check and correct."))
+                self.locationdlg_finish()
+
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
     def sectorplotsetdlg_open_new_sector_dialog(self, bool=False, old_sector=None):
@@ -529,8 +534,11 @@ class SectorPlot:
         self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
         self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
         self.sector_dlg.btn_color.clicked.connect(self.sector_dlg_btn_color_clicked)
-        self.sector_dlg.le_color.setReadOnly(True)
-        # TODO: realtime view of sector? So you can see what you are doing ...
+        self.sector_dlg.le_color.setReadOnly(True) # not editing of color in the LineEdit here
+        self.sector_dlg.le_direction.setValidator(self.degree_validator)
+        self.sector_dlg.le_angle.setValidator(self.positive_degree_validator)
+        self.sector_dlg.le_distance.setValidator(self.distance_validator)
+        self.sector_dlg.le_min_distance.setValidator(self.min_distance_validator)
         for counter_measure in self.counter_measures.all():
             # addItem sets both the text for the dropdown AND adds a data-item to it
             self.sector_dlg.combo_countermeasures.addItem(counter_measure['text'], counter_measure)
@@ -550,41 +558,15 @@ class SectorPlot:
                 self.sector_dlg.le_min_distance.setEnabled(True)
                 self.sector_dlg.lbl_min_distance.setEnabled(True)
                 self.sector_dlg.cb_min_distance.setChecked(True)
+        # tab order, start with the countermeasures
+        self.sector_dlg.combo_countermeasures.setFocus()
+        QWidget.setTabOrder(self.sector_dlg.combo_countermeasures, self.sector_dlg.le_direction)
+        QWidget.setTabOrder(self.sector_dlg.le_direction, self.sector_dlg.le_angle)
+        QWidget.setTabOrder(self.sector_dlg.le_angle, self.sector_dlg.le_distance)
+        QWidget.setTabOrder(self.sector_dlg.le_distance, self.sector_dlg.cb_min_distance)
+        QWidget.setTabOrder(self.sector_dlg.cb_min_distance, self.sector_dlg.le_sector_name)
         self.sector_dlg.show()
-        # OK pressed in Sector dialog(!)
-        if self.sector_dlg.exec_():
-            cm = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
-            # countermeasureid and (default) color from dropdown
-            countermeasure = cm['id']
-            color = self.sector_dlg.le_color.text()
-            direction = self.sector_dlg.le_direction.text()
-            angle = self.sector_dlg.le_angle.text()
-            distance = self.sector_dlg.le_distance.text()
-            min_distance = self.sector_dlg.le_min_distance.text()
-            sector_name = self.sector_dlg.le_sector_name.text()
-            new_sector = Sector(lon=self.current_sectorset.lon,
-                                lat=self.current_sectorset.lat,
-                                minDistance=1000*float(min_distance),
-                                maxDistance=1000*float(distance),
-                                direction=direction,
-                                angle=angle,
-                                counterMeasureId=countermeasure,
-                                sectorName=sector_name,
-                                color=color)
-            # new sector or editing an excisting one?
-            # check this by looking if something was selected in the table
-            # -1 if nothing was selected aka we were creating a new one
-            row = -1
-            if old_sector is not None:
-                row = self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row()
-            self.sectorplotsetdlg_add_sector_to_table(new_sector, row)
-        else:
-            # user canceled
-            # set the data of the selected row BACK to the old_sector (original sector)
-            if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
-                self.sectorplotset_source_model.item(self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0) \
-                    .setData(self.sectorplotset_dlg.old_sector, Qt.UserRole)
-            self.sectorplotset_dlg.old_sector = None
+        self.sector_dlg_finish(old_sector)
 
     def sectorplotsetdlg_open_sector_for_edit_dialog(self):
         if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
@@ -658,7 +640,7 @@ class SectorPlot:
         # show it!
         self.show_current_sectorplotset_on_map()
 
-    def sectorplotsetdlg_ok_and_save_to_db(self):
+    def sectorplotsetdlg_finish(self):
         # OK will save to db
         if self.sectorplotset_dlg.exec_():
             self.sectorplotsetdlg_create_sectorset_from_sector_table()
@@ -667,13 +649,13 @@ class SectorPlot:
                 self.sectorplotset_dlg.show()
                 msg = self.tr("You did not provide a name for this Sectorplot. \nPlease provide one.")
                 self.msg(self.sectorplotset_dlg, msg)
-                self.sectorplotsetdlg_ok_and_save_to_db()
+                self.sectorplotsetdlg_finish()
             elif len(self.current_sectorset.sectors) == 0:
                 # no name set, please provide one
                 self.sectorplotset_dlg.show()
                 msg = self.tr("You did not provide a sector for this Sectorplot. \nPlease provide at least one.")
                 self.msg(self.sectorplotset_dlg, msg)
-                self.sectorplotsetdlg_ok_and_save_to_db()
+                self.sectorplotsetdlg_finish()
             else:
                 # save to DB
                 id = self.current_sectorset.exportToDatabase()
@@ -681,10 +663,11 @@ class SectorPlot:
                 # (re)open sectorplotlist_dialog on row with just saved id
                 self.sectorplotsetsdlg_open_dialog(id)
         else:
+            self.current_sectorset = None
             # go back to (old) selected one, IF there was one selected
             if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
                 self.current_sectorset = self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()[0].data(Qt.UserRole)
-                self.show_current_sectorplotset_on_map()
+            self.show_current_sectorplotset_on_map()
 
     def sector_dlg_enable_min_distance(self):
         self.sector_dlg.le_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
@@ -692,6 +675,9 @@ class SectorPlot:
         # set to zero back if set back
         if self.sector_dlg.cb_min_distance.isChecked() is False:
             self.sector_dlg.le_min_distance.setText("0")
+            self.sector_dlg.le_sector_name.setFocus()
+        else:
+            self.sector_dlg.le_min_distance.setFocus()
 
     def sector_dlg_btn_color_clicked(self):
         color = QColorDialog.getColor()
@@ -713,6 +699,62 @@ class SectorPlot:
         self.sector_dlg.le_sector_name.setText(countermeasure['text'])
         self.sector_dlg_set_color(countermeasure['color'])
 
+    def sector_dlg_finish(self, old_sector):
+        # OK pressed in Sector dialog(!)
+        if self.sector_dlg.exec_():
+            # do some checking...
+            # check direction
+            if self.degree_validator.validate(self.sector_dlg.le_direction.text(), 0)[0] != QDoubleValidator.Acceptable:
+                self.msg(self.sector_dlg, self.tr("The Direction value is not valid [-360, 360].\nPlease check and correct."))
+            # check angle
+            elif self.positive_degree_validator.validate(self.sector_dlg.le_angle.text(), 0)[0] != QDoubleValidator.Acceptable:
+                self.msg(self.sector_dlg, self.tr("The Angle value is not valid [1, 360].\nPlease check and correct."))
+            # check max distance
+            elif self.distance_validator.validate(self.sector_dlg.le_distance.text(), 0)[0] != QDoubleValidator.Acceptable:
+                self.msg(self.sector_dlg, self.tr("The Distance value is not valid [1, 999].\nPlease check and correct."))
+            # check min distance
+            elif self.min_distance_validator.validate(self.sector_dlg.le_min_distance.text(), 0)[0] != QDoubleValidator.Acceptable:
+                self.msg(self.sector_dlg, self.tr("The Min Distance value is not valid [1, 999].\nPlease check and correct."))
+            # check if min_distance < then distance
+            elif float(self.sector_dlg.le_min_distance.text()) >= float(self.sector_dlg.le_distance.text()):
+                self.msg(self.sector_dlg, self.tr("The Min Distance value is not valid: \nMin Distance value is bigger then Distance value.\nPlease check and correct."))
+            else:
+                # OK, all seems fine. let's create a sector and add it to the sector table
+                cm = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
+                # countermeasureid and (default) color from dropdown
+                countermeasure = cm['id']
+                color = self.sector_dlg.le_color.text()
+                direction = self.sector_dlg.le_direction.text()
+                angle = self.sector_dlg.le_angle.text()
+                distance = self.sector_dlg.le_distance.text()
+                min_distance = self.sector_dlg.le_min_distance.text()
+                sector_name = self.sector_dlg.le_sector_name.text()
+                new_sector = Sector(lon=self.current_sectorset.lon,
+                                    lat=self.current_sectorset.lat,
+                                    minDistance=1000*float(min_distance),
+                                    maxDistance=1000*float(distance),
+                                    direction=direction,
+                                    angle=angle,
+                                    counterMeasureId=countermeasure,
+                                    sectorName=sector_name,
+                                    color=color)
+                # new sector or editing an excisting one?
+                # check this by looking if something was selected in the table
+                # -1 if nothing was selected aka we were creating a new one
+                row = -1
+                if old_sector is not None:
+                    row = self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row()
+                self.sectorplotsetdlg_add_sector_to_table(new_sector, row)
+                return
+            # mmm, one of the validators failed: reopen it after the msg was OK'ed
+            self.sector_dlg_finish(old_sector)
+        else:
+            # user canceled
+            # set the data of the selected row BACK to the old_sector (original sector)
+            if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
+                self.sectorplotset_source_model.item(self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0) \
+                    .setData(self.sectorplotset_dlg.old_sector, Qt.UserRole)
+            self.sectorplotset_dlg.old_sector = None
 
 class GetPointTool(QgsMapTool):
 
