@@ -68,7 +68,6 @@ class SectorPlot:
         if os.path.exists(locale_path):
             self.translator = QTranslator()
             self.translator.load(locale_path)
-
             if qVersion() > '4.3.3':
                 QCoreApplication.installTranslator(self.translator)
 
@@ -382,7 +381,6 @@ class SectorPlot:
         #self.sectorplotsets = None
 
     def sectorplotsetsdlg_select_sectorplotset(self):
-        # TODO een nieuwe aanmaken op basis van een oude, wordt nog niet getoond na het opslaan in db ??
         if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
             # needed to scroll To the selected row incase of using the keyboard / arrows
             self.sectorplotsets_dlg.table_sectorplot_sets.scrollTo(
@@ -528,7 +526,7 @@ class SectorPlot:
 
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
-    def sectorplotsetdlg_open_new_sector_dialog(self, bool=False, old_sector=None):
+    def sectorplotsetdlg_open_new_sector_dialog(self, bool=False, edited_sector=None):
         # NOTE! we create a shiny new dialog to be sure all is initted ok
         self.sector_dlg = SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
         self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
@@ -542,22 +540,27 @@ class SectorPlot:
         for counter_measure in self.counter_measures.all():
             # addItem sets both the text for the dropdown AND adds a data-item to it
             self.sector_dlg.combo_countermeasures.addItem(counter_measure['text'], counter_measure)
-        if old_sector is not None:
+        if edited_sector is not None:
             # prefill the dialog with the values of the original sector
             # select the right countermeasure in the combo (but not that the sectorName can be changed too)
             for i in range(0, self.sector_dlg.combo_countermeasures.count()):
-                if old_sector.counterMeasureId == self.sector_dlg.combo_countermeasures.itemData(i)['id']:
+                if edited_sector.counterMeasureId == self.sector_dlg.combo_countermeasures.itemData(i)['id']:
                     self.sector_dlg.combo_countermeasures.setCurrentIndex(i)
                     break
-            self.sector_dlg.le_sector_name.setText(old_sector.sectorName)
-            self.sector_dlg.le_direction.setText("%s" % int(old_sector.direction))
-            self.sector_dlg.le_angle.setText("%s" % int(old_sector.angle))
-            self.sector_dlg.le_distance.setText("%s" % (int(old_sector.maxDistance)/1000))
-            if old_sector.minDistance != 0:
-                self.sector_dlg.le_min_distance.setText("%s" % (int(old_sector.minDistance)/1000))
+            self.sector_dlg.le_sector_name.setText(edited_sector.sectorName)
+            self.sector_dlg.le_direction.setText("%s" % int(edited_sector.direction))
+            self.sector_dlg.le_angle.setText("%s" % int(edited_sector.angle))
+            self.sector_dlg.le_distance.setText("%s" % (int(edited_sector.maxDistance)/1000))
+            # use can have overridden the color
+            self.sector_dlg_set_color(edited_sector.color)
+            if edited_sector.minDistance != 0:
+                self.sector_dlg.le_min_distance.setText("%s" % (int(edited_sector.minDistance)/1000))
                 self.sector_dlg.le_min_distance.setEnabled(True)
                 self.sector_dlg.lbl_min_distance.setEnabled(True)
                 self.sector_dlg.cb_min_distance.setChecked(True)
+        else:
+            # ok creating a fresh new sector from scratch, be sure to deselect sectors in the sector table!
+            self.sectorplotset_dlg.table_sectors.clearSelection()
         # tab order, start with the countermeasures
         self.sector_dlg.combo_countermeasures.setFocus()
         QWidget.setTabOrder(self.sector_dlg.combo_countermeasures, self.sector_dlg.le_direction)
@@ -566,7 +569,8 @@ class SectorPlot:
         QWidget.setTabOrder(self.sector_dlg.le_distance, self.sector_dlg.cb_min_distance)
         QWidget.setTabOrder(self.sector_dlg.cb_min_distance, self.sector_dlg.le_sector_name)
         self.sector_dlg.show()
-        self.sector_dlg_finish(old_sector)
+        self.msg(None, "finishing with %s" % edited_sector)
+        self.sector_dlg_finish(edited_sector)
 
     def sectorplotsetdlg_open_sector_for_edit_dialog(self):
         if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
@@ -623,8 +627,8 @@ class SectorPlot:
             self.show_current_sectorplotset_on_map()
 
     def sectorplotsetdlg_create_sectorset_from_sector_table(self):
-        # NOW get the sectors from the model/dialog, put them in a sectorset in the order they are seen in the table
-        # create an array with 'None's so we can place the sectors on the right spot
+        # NOW get the sectors from the model/dialog, put them in a sectorset in the order they are seen in the table.
+        # First: create an array with 'None's so we can place the sectors on the right spot in the right order
         self.current_sectorset.sectors = [None] * self.sectorplotset_source_model.rowCount()
         for row in range(0, self.sectorplotset_source_model.rowCount()):
             # data=sector is attached to column 0
@@ -704,25 +708,37 @@ class SectorPlot:
         if self.sector_dlg.exec_():
             # do some checking...
             # check direction
-            if self.degree_validator.validate(self.sector_dlg.le_direction.text(), 0)[0] != QDoubleValidator.Acceptable:
-                self.msg(self.sector_dlg, self.tr("The Direction value is not valid [-360, 360].\nPlease check and correct."))
+            acceptable = QDoubleValidator.Acceptable
+            if self.degree_validator.validate(self.sector_dlg.le_direction.text(), 0)[0] != acceptable:
+                self.msg(self.sector_dlg,
+                         self.tr("The Direction value is not valid [%s, %s].\nPlease check and correct.") %
+                         (self.degree_validator.bottom(), self.degree_validator.top()))
             # check angle
-            elif self.positive_degree_validator.validate(self.sector_dlg.le_angle.text(), 0)[0] != QDoubleValidator.Acceptable:
-                self.msg(self.sector_dlg, self.tr("The Angle value is not valid [1, 360].\nPlease check and correct."))
+            elif self.positive_degree_validator.validate(self.sector_dlg.le_angle.text(), 0)[0] != acceptable:
+                self.msg(self.sector_dlg,
+                         self.tr("The Angle value is not valid [%s, %s].\nPlease check and correct.") %
+                         (self.positive_degree_validator.bottom(), self.positive_degree_validator.top()))
             # check max distance
-            elif self.distance_validator.validate(self.sector_dlg.le_distance.text(), 0)[0] != QDoubleValidator.Acceptable:
-                self.msg(self.sector_dlg, self.tr("The Distance value is not valid [1, 999].\nPlease check and correct."))
+            elif self.distance_validator.validate(self.sector_dlg.le_distance.text(), 0)[0] != acceptable:
+                self.msg(self.sector_dlg,
+                         self.tr("The Distance value is not valid [%s, %s].\nPlease check and correct.") %
+                         (self.distance_validator.bottom(), self.distance_validator.top()))
             # check min distance
-            elif self.min_distance_validator.validate(self.sector_dlg.le_min_distance.text(), 0)[0] != QDoubleValidator.Acceptable:
-                self.msg(self.sector_dlg, self.tr("The Min Distance value is not valid [1, 999].\nPlease check and correct."))
+            elif self.min_distance_validator.validate(self.sector_dlg.le_min_distance.text(), 0)[0] != acceptable:
+                self.msg(self.sector_dlg,
+                         self.tr("The Min Distance value is not valid [%s, %s].\nPlease check and correct.") %
+                         (self.min_distance_validator.bottom(), self.min_distance_validator.top()))
             # check if min_distance < then distance
             elif float(self.sector_dlg.le_min_distance.text()) >= float(self.sector_dlg.le_distance.text()):
-                self.msg(self.sector_dlg, self.tr("The Min Distance value is not valid: \nMin Distance value is bigger then Distance value.\nPlease check and correct."))
+                self.msg(self.sector_dlg, self.tr("The Min Distance value is not valid:\n"
+                                                  "Min Distance value is bigger then Distance value.\n"
+                                                  "Please check and correct."))
             else:
                 # OK, all seems fine. let's create a sector and add it to the sector table
-                cm = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
+                countermeasure = \
+                    self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
                 # countermeasureid and (default) color from dropdown
-                countermeasure = cm['id']
+                countermeasure_id = countermeasure['id']
                 color = self.sector_dlg.le_color.text()
                 direction = self.sector_dlg.le_direction.text()
                 angle = self.sector_dlg.le_angle.text()
@@ -735,25 +751,26 @@ class SectorPlot:
                                     maxDistance=1000*float(distance),
                                     direction=direction,
                                     angle=angle,
-                                    counterMeasureId=countermeasure,
+                                    counterMeasureId=countermeasure_id,
                                     sectorName=sector_name,
                                     color=color)
                 # new sector or editing an excisting one?
-                # check this by looking if something was selected in the table
-                # -1 if nothing was selected aka we were creating a new one
-                row = -1
-                if old_sector is not None:
+                # if we have an old_sector in the set dialog (== we had a selected one), select it again
+                row = -1  # -1 means append it as last sector in the table
+                if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
                     row = self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row()
                 self.sectorplotsetdlg_add_sector_to_table(new_sector, row)
+                # ok, this is the old one to keep in case the user cancels or reopens for edit again
+                #self.sectorplotset_dlg.old_sector = new_sector
                 return
-            # mmm, one of the validators failed: reopen it after the msg was OK'ed
+            # mmm, one of the validators failed: reopen it after the msg was OK'ed with an
             self.sector_dlg_finish(old_sector)
         else:
             # user canceled
             # set the data of the selected row BACK to the old_sector (original sector)
             if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
-                self.sectorplotset_source_model.item(self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0) \
-                    .setData(self.sectorplotset_dlg.old_sector, Qt.UserRole)
+                self.sectorplotset_source_model.item(
+                    self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
             self.sectorplotset_dlg.old_sector = None
 
 class GetPointTool(QgsMapTool):
