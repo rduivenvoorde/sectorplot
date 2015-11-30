@@ -290,6 +290,7 @@ class SectorSet():
         for sector in self.sectors:
             queries.append(sector.getInsertQuery())
         result = do_queries(queries)
+        return self.setId
 
     def setSaveTime(self, t=None):
         t = getTime(t)
