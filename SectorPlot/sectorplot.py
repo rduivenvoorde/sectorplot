@@ -22,9 +22,11 @@
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
-    QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator
+    QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator, \
+    QCursor, QPixmap
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
-    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsFeature
+    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry
+from qgis.gui import QgsMapTool
 # Initialize Qt resources from file resources.py
 import resources
 # Import the code for the dialogs
@@ -96,17 +98,19 @@ class SectorPlot:
         self.location_dlg.table_npps.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.location_dlg.table_npps.setSelectionMode(QAbstractItemView.SingleSelection)
-        # inits
-        self.npp_source_model = None
-        self.npp_proxy_model = None
-        self.lon_validator = QDoubleValidator(-180, 180, 8, self.location_dlg.le_longitude)
-        # epsg:3857 valid untill about -85/85 ! Not sure if this is ok?
-        self.lat_validator = QDoubleValidator(-85, 85, 8, self.location_dlg.le_latitude)
-        self.location_dlg.le_longitude.setValidator(self.lon_validator)
-        self.location_dlg.le_latitude.setValidator(self.lat_validator)
         # actions
         self.location_dlg.le_longitude.textChanged.connect(self.locationdlg_lonlat_changed)
         self.location_dlg.le_latitude.textChanged.connect(self.locationdlg_lonlat_changed)
+        self.location_dlg.btn_location_from_map.clicked.connect(self.locationdlg_btn_location_clicked)
+        # inits
+        self.npp_source_model = None
+        self.npp_proxy_model = None
+        self.xy_tool = GetPointTool(self.iface.mapCanvas(), self.locationdlg_xy_clicked)
+        self.lon_validator = QDoubleValidator(-180, 180, 12, self.location_dlg.le_longitude)
+        # epsg:3857 valid untill about -85/85 ! Not sure if this is ok?
+        self.lat_validator = QDoubleValidator(-85, 85, 12, self.location_dlg.le_latitude)
+        self.location_dlg.le_longitude.setValidator(self.lon_validator)
+        self.location_dlg.le_latitude.setValidator(self.lat_validator)
 
         # SectorplotSet_dialog showing current sectorplot (list of sectors in this plot)
         self.sectorplotset_dlg = SectorPlotSectorPlotSetDialog(parent=self.sectorplotsets_dlg)
@@ -324,7 +328,7 @@ class SectorPlot:
         self.iface.mapCanvas().zoomScale(scale)
         self.iface.mapCanvas().refresh()
 
-    def sectorplotsetsdlg_open_dialog(self):
+    def sectorplotsetsdlg_open_dialog(self, selected_id=-1):
         # show the dialog with recent sectorplotsets
         self.sectorplotsets = SectorSets()
         self.sectorplotsets.importFromDatabase()
@@ -354,21 +358,27 @@ class SectorPlot:
         self.sectorplotsets_dlg.table_sectorplot_sets.selectionModel().selectionChanged.connect(self.sectorplotsetsdlg_select_sectorplotset)
         # resize columns to fit text contents
         self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
+        # select the row of 'selected_id' if given and >= 0
+        selected_row = 0
+        if selected_id >= 0:
+            for row in range(0, self.sectorplotsets_source_model.rowCount()):
+                sectorplot = self.sectorplotsets_source_model.item(row, 0).data(Qt.UserRole)
+                if sectorplot.setId == selected_id:
+                    selected_row = row
+                    break;
+        self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(selected_row)
         self.sectorplotsets_dlg.show()
-        # select the first row == last edited as this is the first time you open and you are probably interested in the most recent change?
-        self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(0)
         # See if OK was pressed
         if self.sectorplotsets_dlg.exec_():
             pass
             # whatever the uses pushes:
-        self.new_sectorplotset()
-        self.sectorplotsets = None
+        # TODO still working here without cleaning?
+        #self.new_sectorplotset()
+        #self.sectorplotsets = None
 
     def sectorplotsetsdlg_select_sectorplotset(self):
         # TODO een nieuwe aanmaken op basis van een oude, wordt nog niet getoond na het opslaan in db ??
         if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
-            # ONLY select the this selected one (multiple selection should not be possible)
-            #self.sectorplotlist_dlg.table_sectorplot_sets.selectRow(0)
             # needed to scroll To the selected row incase of using the keyboard / arrows
             self.sectorplotsets_dlg.table_sectorplot_sets.scrollTo(
                 self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()[0])
@@ -422,7 +432,7 @@ class SectorPlot:
         self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.location_dlg.le_search_npp.textChanged.connect(self.locationdlg_filter_npps)
         self.location_dlg.le_search_npp.setPlaceholderText(self.tr("Search"))
-        if (len(npps)):
+        if len(npps):
             # load the npps in the table in dialog
             for npp in npps:
                 # prepare a commaseparated string to search in from the values of the npp dict
@@ -496,6 +506,20 @@ class SectorPlot:
             self.location_dlg.le_latitude.setText(unicode(npp['latitude']))
             self.location_dlg.selected_npp_name = npp['block']
             self.zoom_map_to_lonlat(npp['longitude'], npp['latitude'])
+
+    def locationdlg_btn_location_clicked(self):
+        #self.xy_tool.activate()
+        self.iface.mapCanvas().setMapTool(self.xy_tool)
+
+    def locationdlg_xy_clicked(self, xy):
+        # we retrieve an x,y from the mapcanvas in the project crs
+        # set it to epsg:4326 if different
+        crs_from = self.iface.mapCanvas().mapRenderer().destinationCrs()
+        crs_transform = QgsCoordinateTransform(crs_from, self.crs_4326)
+        xy4326 = crs_transform.transform(xy)
+        self.location_dlg.le_longitude.setText(unicode(xy4326.x()))
+        self.location_dlg.le_latitude.setText(unicode(xy4326.y()))
+        self.iface.mapCanvas().unsetMapTool(self.xy_tool)
 
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
@@ -652,12 +676,10 @@ class SectorPlot:
                 self.sectorplotsetdlg_ok_and_save_to_db()
             else:
                 # save to DB
-                # TODO: check if this returns an id, OR -1 in case of error
-                self.current_sectorset.exportToDatabase()
-                # (re)open sectorplotlist_dialog
-                self.sectorplotsetsdlg_open_dialog()
-                # TODO: and select the first last one ?? OR the one with the id we just got returned (safer)
-                self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(0)
+                id = self.current_sectorset.exportToDatabase()
+                # TODO better check on db errors here, exportToDatabase() should return more info to us
+                # (re)open sectorplotlist_dialog on row with just saved id
+                self.sectorplotsetsdlg_open_dialog(id)
         else:
             # go back to (old) selected one, IF there was one selected
             if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
@@ -690,3 +712,43 @@ class SectorPlot:
         # default: put countermeasure text in sector name. Category 'overig' is to be set by the user!!
         self.sector_dlg.le_sector_name.setText(countermeasure['text'])
         self.sector_dlg_set_color(countermeasure['color'])
+
+
+class GetPointTool(QgsMapTool):
+
+    def __init__(self, canvas, callback):
+        QgsMapTool.__init__(self, canvas)
+        self.callback = callback
+        self.pos = None
+        # self.canvas = canvas
+        self.cursor = QCursor(QPixmap(["16 16 4 1", "  c None", ". c #000000", "+ c #FFFFFF", "- c #FF0000",
+                                    "                ",
+                                    "       +.+      ",
+                                    "      ++.++     ",
+                                    "     +.....+    ",
+                                    "    +.     .+   ",
+                                    "   +.   .   .+  ",
+                                    "  +.    .    .+ ",
+                                    " ++.    -    .++",
+                                    " ... ..---.. ...",
+                                    " ++.    -    .++",
+                                    "  +.    .    .+ ",
+                                    "   +.   .   .+  ",
+                                    "   ++.     .+   ",
+                                    "    ++.....+    ",
+                                    "      ++.++     ",
+                                    "       +.+      "]))
+
+    def canvasPressEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            self.pos = self.toMapCoordinates(e.pos())
+
+    def canvasReleaseEvent(self, e):
+        if e.button() == Qt.LeftButton:
+            self.callback(self.pos)
+
+    def activate(self):
+        self.canvas().setCursor(self.cursor)
+
+    def deactivate(self):
+        self.pos = None
