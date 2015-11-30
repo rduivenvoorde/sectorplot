@@ -3,7 +3,7 @@
  <class>SectorPlotNPPDialog</class>
  <widget class="QDialog" name="SectorPlotNPPDialog">
   <property name="windowModality">
-   <enum>Qt::ApplicationModal</enum>
+   <enum>Qt::WindowModal</enum>
   </property>
   <property name="geometry">
    <rect>

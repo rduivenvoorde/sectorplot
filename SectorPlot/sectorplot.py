@@ -22,7 +22,7 @@
 """
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
 from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
-    QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QDoubleValidator
+    QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
     QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsFeature
 # Initialize Qt resources from file resources.py
@@ -71,10 +71,12 @@ class SectorPlot:
                 QCoreApplication.installTranslator(self.translator)
 
         self.MSG_BOX_TITLE = self.tr("SectorPlot Plugin")
+        # ALPHA is a fixed number for opacity, used in other sld's (Geoserver etc)
+        self.ALPHA = 127
 
         # Create the dialogs (after translation!) and keep references
 
-        # The Sectorplot Sets dialog, showing recent Sectorplots
+        # The SectorplotSetS dialog, showing recent Sectorplots
         self.sectorplotsets_dlg = SectorPlotSetsDialog()
         self.sectorplotsets_dlg.table_sectorplot_sets.horizontalHeader().setStretchLastSection(True)
         self.sectorplotsets_dlg.table_sectorplot_sets.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -83,11 +85,12 @@ class SectorPlot:
         # dlg actions
         self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.clicked.connect(self.locationdlg_open_dialog)
         self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.clicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
+        self.sectorplotsets_dlg.table_sectorplot_sets.doubleClicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
         # inits
         self.sectorplotsets = None
         self.sectorplotsets_source_model = None
 
-        # Create location_dialog
+        # The Location_dialog for setting x/y lat/lon
         self.location_dlg = SectorPlotLocationDialog(parent=self.sectorplotsets_dlg)
         self.location_dlg.table_npps.horizontalHeader().setStretchLastSection(True)
         self.location_dlg.table_npps.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -105,7 +108,7 @@ class SectorPlot:
         self.location_dlg.le_longitude.textChanged.connect(self.locationdlg_lonlat_changed)
         self.location_dlg.le_latitude.textChanged.connect(self.locationdlg_lonlat_changed)
 
-        # Create sectorplotset_dialog
+        # SectorplotSet_dialog showing current sectorplot (list of sectors in this plot)
         self.sectorplotset_dlg = SectorPlotSectorPlotSetDialog(parent=self.sectorplotsets_dlg)
         self.sectorplotset_dlg.table_sectors.horizontalHeader().setStretchLastSection(True)
         self.sectorplotset_dlg.table_sectors.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -124,15 +127,15 @@ class SectorPlot:
         self.sectorplotset_dlg.btn_remove_selected_sector.clicked.connect(self.sectorplotsetdlg_remove_sector_from_table)
         self.sectorplotset_dlg.table_sectors.verticalHeader().sectionMoved.connect(self.sectorplotsetdlg_create_sectorset_from_sector_table)
         self.sectorplotset_dlg.table_sectors.clicked.connect(self.sectorplotsetdlg_sector_selected)
+        self.sectorplotset_dlg.table_sectors.doubleClicked.connect(self.sectorplotsetdlg_open_sector_for_edit_dialog)
         # inits
         self.sectorplotset_source_model = QStandardItemModel()
         self.sectorplotset_dlg.table_sectors.setModel(self.sectorplotset_source_model)
 
-        # Create sector_dialog
-        self.sector_dlg = SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
-        self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
-        self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
+        # Sector dialog: ONE sector, created fresh for every Sector, signals are attached there!
+        self.sector_dlg = None    # SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
         # actions
+        #  see in sectorplotsetdlg_open_new_sector_dialog
         # inits
         # the data for the combo_countermeasures
         self.counter_measures = CounterMeasures()
@@ -308,7 +311,7 @@ class SectorPlot:
         else:
             self.iface.mapCanvas().refresh()
 
-    def zoom_map_to_lonlat(self, lon, lat, scale=3000000):
+    def zoom_map_to_lonlat(self, lon, lat, scale=300000):
         crs_to = self.iface.mapCanvas().mapRenderer().destinationCrs()
         crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to)
         point = QgsPoint(float(lon), float(lat))
@@ -352,6 +355,8 @@ class SectorPlot:
         # resize columns to fit text contents
         self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
         self.sectorplotsets_dlg.show()
+        # select the first row == last edited as this is the first time you open and you are probably interested in the most recent change?
+        self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(0)
         # See if OK was pressed
         if self.sectorplotsets_dlg.exec_():
             pass
@@ -360,6 +365,7 @@ class SectorPlot:
         self.sectorplotsets = None
 
     def sectorplotsetsdlg_select_sectorplotset(self):
+        # TODO een nieuwe aanmaken op basis van een oude, wordt nog niet getoond na het opslaan in db ??
         if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
             # ONLY select the this selected one (multiple selection should not be possible)
             #self.sectorplotlist_dlg.table_sectorplot_sets.selectRow(0)
@@ -395,7 +401,7 @@ class SectorPlot:
                 sector.calcGeometry()
                 self.sectorplotsetdlg_add_sector_to_table(sector)
         self.sectorplotset_dlg.show()
-        self.sectorplotsetdlg_save_to_db()
+        self.sectorplotsetdlg_ok_and_save_to_db()
 
     def locationdlg_open_dialog(self):
         self.new_sectorplotset()
@@ -451,22 +457,22 @@ class SectorPlot:
         if self.location_dlg.exec_():
             lon = self.location_dlg.le_longitude.text()
             lat = self.location_dlg.le_latitude.text()
-            if not self.locationdlg_lon_check(lon, lat):
-                # problem validating the lat lon coordinates
-                self.msg(self.sectorplotsets_dlg, self.tr("One of the coordinates is not valid, please check and correct."))
-                self.locationdlg_set_location()
-            else:
+            if self.locationdlg_lonlat_ok(lon, lat):
                 # location coordinates OK
                 set_name = self.location_dlg.selected_npp_name
                 self.sectorplotsetsdlg_new_sectorplotset_dialog(lon, lat, set_name)
+            else:
+                # problem validating the lat lon coordinates
+                self.msg(self.sectorplotsets_dlg, self.tr("One of the coordinates is not valid, please check and correct."))
+                self.locationdlg_set_location()
 
     def locationdlg_lonlat_changed(self):
         lon = self.location_dlg.le_longitude.text()
         lat = self.location_dlg.le_latitude.text()
-        if self.locationdlg_lon_check(lon, lat):
+        if self.locationdlg_lonlat_ok(lon, lat):
             self.zoom_map_to_lonlat(lon, lat)
 
-    def locationdlg_lon_check(self, lon, lat):
+    def locationdlg_lonlat_ok(self, lon, lat):
         lat_state, ln, pos = self.lat_validator.validate(lat, 0)
         lon_state, lt, pos = self.lon_validator.validate(lon, 0)
         # only return True for full accaptence, not for intermediate ok's
@@ -494,10 +500,12 @@ class SectorPlot:
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
     def sectorplotsetdlg_open_new_sector_dialog(self, bool=False, old_sector=None):
-        # we create a shiny new dialog to be sure all is initted ok
+        # NOTE! we create a shiny new dialog to be sure all is initted ok
         self.sector_dlg = SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
         self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
         self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
+        self.sector_dlg.btn_color.clicked.connect(self.sector_dlg_btn_color_clicked)
+        self.sector_dlg.le_color.setReadOnly(True)
         # TODO: realtime view of sector? So you can see what you are doing ...
         for counter_measure in self.counter_measures.all():
             # addItem sets both the text for the dropdown AND adds a data-item to it
@@ -519,19 +527,12 @@ class SectorPlot:
                 self.sector_dlg.lbl_min_distance.setEnabled(True)
                 self.sector_dlg.cb_min_distance.setChecked(True)
         self.sector_dlg.show()
-
-        #test = QColorDialog(self.sector_dlg)
-        # test.setOption(QColorDialog.ShowAlphaChannel)
-        #test.open()
-
-        #QColorDialog.getColor()
-
-        # OK pressed
+        # OK pressed in Sector dialog(!)
         if self.sector_dlg.exec_():
             cm = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
             # countermeasureid and (default) color from dropdown
             countermeasure = cm['id']
-            color = cm['color']
+            color = self.sector_dlg.le_color.text()
             direction = self.sector_dlg.le_direction.text()
             angle = self.sector_dlg.le_angle.text()
             distance = self.sector_dlg.le_distance.text()
@@ -633,7 +634,7 @@ class SectorPlot:
         # show it!
         self.show_current_sectorplotset_on_map()
 
-    def sectorplotsetdlg_save_to_db(self):
+    def sectorplotsetdlg_ok_and_save_to_db(self):
         # OK will save to db
         if self.sectorplotset_dlg.exec_():
             self.sectorplotsetdlg_create_sectorset_from_sector_table()
@@ -642,13 +643,13 @@ class SectorPlot:
                 self.sectorplotset_dlg.show()
                 msg = self.tr("You did not provide a name for this Sectorplot. \nPlease provide one.")
                 self.msg(self.sectorplotset_dlg, msg)
-                self.sectorplotsetdlg_save_to_db()
+                self.sectorplotsetdlg_ok_and_save_to_db()
             elif len(self.current_sectorset.sectors) == 0:
                 # no name set, please provide one
                 self.sectorplotset_dlg.show()
                 msg = self.tr("You did not provide a sector for this Sectorplot. \nPlease provide at least one.")
                 self.msg(self.sectorplotset_dlg, msg)
-                self.sectorplotsetdlg_save_to_db()
+                self.sectorplotsetdlg_ok_and_save_to_db()
             else:
                 # save to DB
                 # TODO: check if this returns an id, OR -1 in case of error
@@ -670,7 +671,22 @@ class SectorPlot:
         if self.sector_dlg.cb_min_distance.isChecked() is False:
             self.sector_dlg.le_min_distance.setText("0")
 
+    def sector_dlg_btn_color_clicked(self):
+        color = QColorDialog.getColor()
+        # name() returns a html/hex color without alpha: #ff0000
+        self.sector_dlg_set_color(color.name())
+
+    def sector_dlg_set_color(self, html_color="#ff0000"):
+        color = QColor(html_color)
+        # colors in Qt styles are in 0-255 notation if you want to use opacity, we have to add it
+        color.setAlpha(self.ALPHA)
+        style = "QLineEdit { background: rgb(%s, %s, %s, %s); }" % (color.red(), color.green(), color.blue(), color.alpha())
+        self.sector_dlg.le_color.setStyleSheet(style)
+        # to have #rrggbbaa notation:  color.name()+hex(color.alpha())[2:]
+        self.sector_dlg.le_color.setText(color.name())
+
     def sector_dlg_countermeasure_selected(self):
         countermeasure = self.sector_dlg.combo_countermeasures.itemData(self.sector_dlg.combo_countermeasures.currentIndex())
         # default: put countermeasure text in sector name. Category 'overig' is to be set by the user!!
         self.sector_dlg.le_sector_name.setText(countermeasure['text'])
+        self.sector_dlg_set_color(countermeasure['color'])
