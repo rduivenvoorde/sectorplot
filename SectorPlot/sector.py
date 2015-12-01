@@ -3,7 +3,7 @@ from qgis.core import QgsFeature, QgsPoint, QgsGeometry, QgsField, QgsFields
 from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform
 from PyQt4.QtCore import QVariant
 from time import strftime, strptime, gmtime, struct_time
-import datetime
+import time
 import math
 from dbconnect import Database
 
@@ -18,11 +18,13 @@ def getTime(t):
     result = gmtime()
     if type(t) is unicode or type(t) is str:
         result = strptime(t, "%Y-%m-%d %H:%M:%S")
+    elif isinstance(t, time.struct_time):
+        result = t
     return result
 
 
-def timeToString(t):
-    return strftime("%Y-%m-%d %H:%M:%S +0000", t)
+def timeToString(t_struct):
+    return strftime("%Y-%m-%d %H:%M:%S +0000", t_struct)
 
 
 class Sector():
@@ -312,7 +314,7 @@ class SectorSet():
 
     def get_counter_measure_time_string(self):
         if len(self.sectors) == 0:
-            return ''
+            return timeToString(gmtime())
         else:
             # all sectors should have the same saveTime!
             return timeToString(self.sectors[0].counterMeasureTime)
@@ -387,4 +389,4 @@ class SectorSets(list):
             s = Sector()
             s.setByDbRecord(dbs)
             self.addToSectorSet(s)
-        return (True)
+        return (True, None)

@@ -40,7 +40,7 @@
    <item row="2" column="0">
     <widget class="QLabel" name="label_8">
      <property name="text">
-      <string>Counter Measure Time</string>
+      <string>Countermeasure Time</string>
      </property>
     </widget>
    </item>

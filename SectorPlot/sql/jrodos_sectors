@@ -1,0 +1,14 @@
+﻿-- select * from sectors
+
+select distinct on (lat, lon)
+setid, id, setname, lat, lon, countermeasuretime, savetime
+from sectors 
+order by lat, lon, countermeasuretime
+desc  -- reverse = newest first
+
+drop view sectorplot_borsele_2_14_00;
+create view sectorplot_borsele_2_14_00 as
+select * from sectors where setid = 174 order by z_order
+
+select * from sectorplot_borsele_2_14_00
+

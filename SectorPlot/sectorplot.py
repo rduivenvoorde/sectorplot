@@ -20,7 +20,7 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt
+from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt, QDateTime
 from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
     QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator, \
     QCursor, QPixmap, QWidget
@@ -39,6 +39,7 @@ from countermeasures import CounterMeasures
 
 from npp import NppSet
 from sector import Sector, SectorSet, SectorSets
+from dbconnect import Database
 
 import os.path
 
@@ -144,8 +145,8 @@ class SectorPlot:
         self.counter_measures = CounterMeasures()
         self.degree_validator = QDoubleValidator(-360, 360, 2)
         self.positive_degree_validator = QDoubleValidator(1, 360, 2)
-        self.distance_validator = QDoubleValidator(1, 999, 0)
-        self.min_distance_validator = QDoubleValidator(0, 999, 0)
+        self.distance_validator = QDoubleValidator(1, 999, 1)
+        self.min_distance_validator = QDoubleValidator(0, 999, 1)
 
         self.current_sectorset = None
 
@@ -336,6 +337,11 @@ class SectorPlot:
         # show the dialog with recent sectorplotsets
         self.sectorplotsets = SectorSets()
         self.sectorplotsets.importFromDatabase()
+        db_ok, result = self.sectorplotsets.importFromDatabase()
+        if not db_ok:
+            # if NOT OK importFromDatabase returns the database error
+            self.msg(None, self.tr("Database error:\n") + result)
+            return
         # create emtpy model for new list
         self.sectorplotsets_source_model = QStandardItemModel()
         self.sectorplotsets_dlg.table_sectorplot_sets.setModel(self.sectorplotsets_source_model)
@@ -348,17 +354,19 @@ class SectorPlot:
             lat = sectorplot_set.lat
             name = QStandardItem("%s" % sectorplot_set.name )
             set_id = QStandardItem("%s" % sectorplot_set.setId )
+            # TODO: get time right instead of get_***_time_string()
             save_time = QStandardItem(unicode(sectorplot_set.get_save_time_string()))
             countermeasure_time = QStandardItem(unicode(sectorplot_set.get_counter_measure_time_string()))
+
             # attach the sectorplot_set as data to the first row item
             set_id.setData(sectorplot_set, Qt.UserRole)
             #self.sectorplotlist_source_model.appendRow([set_id, name, save_time, countermeasure_time])
-            self.sectorplotsets_source_model.insertRow(0, [set_id, name, save_time, countermeasure_time])
+            self.sectorplotsets_source_model.insertRow(0, [set_id, name, countermeasure_time, save_time])
         # headers
         self.sectorplotsets_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Id"))
         self.sectorplotsets_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Name"))
-        self.sectorplotsets_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Save Time"))
-        self.sectorplotsets_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Countermeasure Time"))
+        self.sectorplotsets_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Countermeasure Time"))
+        self.sectorplotsets_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Save Time"))
         self.sectorplotsets_dlg.table_sectorplot_sets.selectionModel().selectionChanged.connect(self.sectorplotsetsdlg_select_sectorplotset)
         # resize columns to fit text contents
         self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
@@ -408,6 +416,23 @@ class SectorPlot:
         self.sectorplotset_dlg.lbl_location_name_lon_lat.setText(self.tr('Lon: %s') % self.current_sectorset.lon +
                                                                  self.tr(' Lat: %s') % self.current_sectorset.lat)
         self.sectorplotset_dlg.le_sectorplot_name.setText('%s' % self.current_sectorset.name)
+
+        date_format = "yyyy-MM-dd HH:mm:ss +0000"
+
+        #self.msg(None, ("%s" % self.current_sectorset.sectors[0].counterMeasureTime) + " *** " + self.current_sectorset.get_counter_measure_time_string())
+        self.msg(None, date_format + " *** " + self.current_sectorset.get_counter_measure_time_string())
+
+        datetime = QDateTime.fromString(self.current_sectorset.get_counter_measure_time_string(), date_format)
+
+        if datetime.isValid():
+            # self.msg(None, datetime)
+            self.sectorplotset_dlg.time_edit_countermeasure.setTime(datetime.time())
+            self.sectorplotset_dlg.date_edit_countermeasure.setDate(datetime.date())
+        else:
+            self.msg(self.sectorplotset_dlg, self.tr("Date Time conversion problem"))  # should not come here
+            return
+
+
         # IF SectorplotSet has sectors: show them
         if len(self.current_sectorset.sectors) > 0:
             for sector in self.current_sectorset.sectors:
@@ -569,7 +594,6 @@ class SectorPlot:
         QWidget.setTabOrder(self.sector_dlg.le_distance, self.sector_dlg.cb_min_distance)
         QWidget.setTabOrder(self.sector_dlg.cb_min_distance, self.sector_dlg.le_sector_name)
         self.sector_dlg.show()
-        self.msg(None, "finishing with %s" % edited_sector)
         self.sector_dlg_finish(edited_sector)
 
     def sectorplotsetdlg_open_sector_for_edit_dialog(self):
@@ -661,11 +685,22 @@ class SectorPlot:
                 self.msg(self.sectorplotset_dlg, msg)
                 self.sectorplotsetdlg_finish()
             else:
-                # save to DB
-                id = self.current_sectorset.exportToDatabase()
-                # TODO better check on db errors here, exportToDatabase() should return more info to us
-                # (re)open sectorplotlist_dialog on row with just saved id
-                self.sectorplotsetsdlg_open_dialog(id)
+                # NOW we cannot change modification time anymore, so let's get it from the dialog and set it
+                # format: "%Y-%m-%d %H:%M:%S"
+                time = self.sectorplotset_dlg.time_edit_countermeasure.time()  # QTime
+                date = self.sectorplotset_dlg.date_edit_countermeasure.date()  # QDate
+                datetime = QDateTime(date, time)
+                #self.msg(None, datetime.toString("yyyy-MM-dd HH:mm:00"))
+                self.current_sectorset.setCounterMeasureTime(datetime.toString("yyyy-MM-dd HH:mm:00"))
+                # save to DB and retrieve id of sectorplotset
+                db_ok, result = self.current_sectorset.exportToDatabase()
+                if db_ok:
+                    # (re)open sectorplotlist_dialog on row with just saved id
+                    # if OK exportToDatabase returns the inserted id
+                    self.sectorplotsetsdlg_open_dialog(result)
+                else:
+                    # if NOT OK exportToDatabase returns the database error
+                    self.msg(self.sectorplotset_dlg, self.tr("Database error:\n") + result)
         else:
             self.current_sectorset = None
             # go back to (old) selected one, IF there was one selected
@@ -710,22 +745,22 @@ class SectorPlot:
             # check direction
             acceptable = QDoubleValidator.Acceptable
             if self.degree_validator.validate(self.sector_dlg.le_direction.text(), 0)[0] != acceptable:
-                self.msg(self.sector_dlg,
+                self.msg(self.sectorplotset_dlg,
                          self.tr("The Direction value is not valid [%s, %s].\nPlease check and correct.") %
                          (self.degree_validator.bottom(), self.degree_validator.top()))
             # check angle
             elif self.positive_degree_validator.validate(self.sector_dlg.le_angle.text(), 0)[0] != acceptable:
-                self.msg(self.sector_dlg,
+                self.msg(self.sectorplotset_dlg,
                          self.tr("The Angle value is not valid [%s, %s].\nPlease check and correct.") %
                          (self.positive_degree_validator.bottom(), self.positive_degree_validator.top()))
             # check max distance
             elif self.distance_validator.validate(self.sector_dlg.le_distance.text(), 0)[0] != acceptable:
-                self.msg(self.sector_dlg,
+                self.msg(self.sectorplotset_dlg,
                          self.tr("The Distance value is not valid [%s, %s].\nPlease check and correct.") %
                          (self.distance_validator.bottom(), self.distance_validator.top()))
             # check min distance
             elif self.min_distance_validator.validate(self.sector_dlg.le_min_distance.text(), 0)[0] != acceptable:
-                self.msg(self.sector_dlg,
+                self.msg(self.sectorplotset_dlg,
                          self.tr("The Min Distance value is not valid [%s, %s].\nPlease check and correct.") %
                          (self.min_distance_validator.bottom(), self.min_distance_validator.top()))
             # check if min_distance < then distance
