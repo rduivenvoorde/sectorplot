@@ -340,7 +340,7 @@ class SectorPlot:
         db_ok, result = self.sectorplotsets.importFromDatabase()
         if not db_ok:
             # if NOT OK importFromDatabase returns the database error
-            self.msg(None, self.tr("Database error:\n") + result)
+            self.msg(None, self.tr("Database error:\n%s") % result)
             return
         # create emtpy model for new list
         self.sectorplotsets_source_model = QStandardItemModel()
@@ -700,7 +700,7 @@ class SectorPlot:
                     self.sectorplotsetsdlg_open_dialog(result)
                 else:
                     # if NOT OK exportToDatabase returns the database error
-                    self.msg(self.sectorplotset_dlg, self.tr("Database error:\n") + result)
+                    self.msg(self.sectorplotset_dlg, self.tr("Database error:\n %s") % result)
         else:
             self.current_sectorset = None
             # go back to (old) selected one, IF there was one selected
