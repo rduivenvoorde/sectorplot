@@ -6,7 +6,8 @@ import credentials
 class Database():
     def __init__(self, conn_code):
         self.conn_string = self.get_conn_string(conn_code)
-        self.status = 'disconnected'
+        self.db_ok = False
+        self.error = ''
 
     def __str__(self):
         return 'Database[' + self.conn_string + ']'
@@ -14,9 +15,9 @@ class Database():
     def connect(self):
         try:
             self.connection = psycopg2.connect(self.conn_string)
-            self.status = 'ok'
+            self.db_ok = True
         except psycopg2.Error as e:
-            self.status = 'error'
+            self.db_ok = False
             self.error = e
             #return self.connection
 
@@ -31,8 +32,8 @@ class Database():
 
     def execute(self, queries):
         self.connect()
-        if self.status == 'error':
-            return {'status': self.status, 'error': self.error}
+        if not self.db_ok:
+            return {'db_ok':self.db_ok , 'error': self.error}
         cursor = self.connection.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
         for query in queries:
             cursor.execute(query['text'], query['vals'])
@@ -46,21 +47,21 @@ class Database():
         cursor.close()
         self.disconnect()
         if memory is None:
-            return {'status': self.status}
+            return {'db_ok': self.db_ok}
         else:
-            return {'status': self.status, 'data': memory}
+            return {'db_ok': self.db_ok, 'data': memory}
 
 if __name__ == "__main__":
-    #db = Database('sectorplot')
-    db = Database('jrodos')
+    db = Database('sectorplot')
+    #db = Database('jrodos')
 
     q = {}
     q['text'] = 'SELECT 0 as "col1"'
     q['vals'] = ()
 
     r = db.execute([q])
-    if r['status'] == 'error':
-        print r['error']
-    else:
+    if r['db_ok']:
         print r['data'][0].col1
-    
+    else:
+        print r['error']
+

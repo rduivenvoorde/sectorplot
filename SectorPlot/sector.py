@@ -99,7 +99,7 @@ class Sector():
         self.z_order = rec.z_order
         self.saveTime = rec.savetime.timetuple()
         self.counterMeasureTime = rec.countermeasuretime.timetuple()
-        print self.counterMeasureTime
+        #print self.counterMeasureTime
         self.sectorName = rec.sectorname
         self.setId = rec.setid
         self.color = rec.color
@@ -285,18 +285,18 @@ class SectorSet():
         if newSetId:
             queries = [{'text': "SELECT nextval(pg_get_serial_sequence('sectors', 'id')) as newsetid", 'vals': ()}]
             result = db.execute(queries)
-            if result['status'] == 'error':
-                return (result['status'], result['error'])
+            if not result['db_ok']:
+                return (False, result['error'])
             setId = result['data'][0].newsetid
             self.setSetId(setId)
         queries = []
         for sector in self.sectors:
             queries.append(sector.getInsertQuery())
         result = db.execute(queries)
-        if result['status'] == 'error':
-            return (result['status'], result['error'])
+        if not result['db_ok']:
+            return (False, result['error'])
         else:
-            return (result['status'], self.setId)
+            return (True, self.setId)
 
     def setSaveTime(self, t=None):
         t = getTime(t)
@@ -380,10 +380,11 @@ class SectorSets(list):
         q = self._getImportQuery()
         db = Database('sectorplot')
         result = db.execute([q])
-        if result['status'] == 'error':
-            return (result['status'], result['error'])
+        if not result['db_ok']:
+            return (False, result['error'])
         db_sectors = result['data']
         for dbs in db_sectors:
             s = Sector()
             s.setByDbRecord(dbs)
             self.addToSectorSet(s)
+        return (True)
