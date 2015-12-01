@@ -2,10 +2,10 @@ from math import ceil, floor, cos, sin, pi
 from qgis.core import QgsFeature, QgsPoint, QgsGeometry, QgsField, QgsFields
 from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform
 from PyQt4.QtCore import QVariant
-from time import strftime, strptime, gmtime
+from time import strftime, strptime, gmtime, struct_time
 import datetime
 import math
-from dbconnect import do_queries
+from dbconnect import Database
 
 
 crs4326 = QgsCoordinateReferenceSystem(4326)
@@ -47,7 +47,7 @@ class Sector():
         self.calcGeometry()
 
     def __str__(self):
-        result = 'Sector[%s, (%d,%d), %d, %d, %d, %d, %s, %d]' % (self.setName, self.lon, self.lat, self.minDistance, self.maxDistance, self.direction, self.angle, strftime("%Y-%m-%d %H:%M:%S +0000", self.saveTime), self.setId)
+        result = 'Sector[%s, (%d,%d), %d, %d, %d, %d, %d, ,%s]' % (self.setName, self.lon, self.lat, self.minDistance, self.maxDistance, self.direction, self.angle, self.setId, self.sectorName)
         return result
 
     def display(self, doGeometry=False):
@@ -99,6 +99,7 @@ class Sector():
         self.z_order = rec.z_order
         self.saveTime = rec.savetime.timetuple()
         self.counterMeasureTime = rec.countermeasuretime.timetuple()
+        print self.counterMeasureTime
         self.sectorName = rec.sectorname
         self.setId = rec.setid
         self.color = rec.color
@@ -155,7 +156,6 @@ class Sector():
                     arc.append(self._getArcPoint(x, y, dist, d))
         arc.append(self._getArcPoint(x, y, dist, arcEnd))
         return arc
-
     def calcGeometry(self):
 
         # scale distance for Mercator
@@ -281,16 +281,22 @@ class SectorSet():
         return result
 
     def exportToDatabase(self, newSetId=True):
+        db = Database('sectorplot')
         if newSetId:
             queries = [{'text': "SELECT nextval(pg_get_serial_sequence('sectors', 'id')) as newsetid", 'vals': ()}]
-            result = do_queries(queries)
-            setId = result[0].newsetid
+            result = db.execute(queries)
+            if result['status'] == 'error':
+                return (result['status'], result['error'])
+            setId = result['data'][0].newsetid
             self.setSetId(setId)
         queries = []
         for sector in self.sectors:
             queries.append(sector.getInsertQuery())
-        result = do_queries(queries)
-        return self.setId
+        result = db.execute(queries)
+        if result['status'] == 'error':
+            return (result['status'], result['error'])
+        else:
+            return (result['status'], self.setId)
 
     def setSaveTime(self, t=None):
         t = getTime(t)
@@ -372,7 +378,11 @@ class SectorSets(list):
     def importFromDatabase(self):
         self._clear()
         q = self._getImportQuery()
-        db_sectors = do_queries([q])
+        db = Database('sectorplot')
+        result = db.execute([q])
+        if result['status'] == 'error':
+            return (result['status'], result['error'])
+        db_sectors = result['data']
         for dbs in db_sectors:
             s = Sector()
             s.setByDbRecord(dbs)
