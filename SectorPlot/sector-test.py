@@ -71,20 +71,44 @@ if doGenerateData:
 # test SectorSets
 
 sss = SectorSets()
-print sss
+#print sss
 sss.importFromDatabase()
-print sss
-for ss in sss:
-    ss.display()
+#print sss
+#for ss in sss:
+#    ss.display()
 
-ss.sectors[0].display()
+ss = sss[0]
 
-print ss.get_save_time_string()
-print ss.get_counter_measure_time_string()
+#ss.sectors[0].display()
+
+#print ss.get_save_time_string()
+#print ss.get_counter_measure_time_string()
 
 ss.display()
-ss2 = ss.clone()
-ss2.display
+#ss2 = ss.clone()
+#ss2.display
+
+#ss2.name = 'borsele'
+#print ss2.getUniqueName()
+#ss2.setSetId(1000)
+#ss2.createView()
+
+if True:
+    # fill full circle (roos 20km met gat 10km)
+    ss = SectorSet()
+    for i in range(1):
+      s = Sector('rose2', 5.3, 52.7, 5000, 15000, (30*i), 30, sectorName='q'+str(i+1), color='#ff00ff')
+      ss.sectors.append(s)
+    ss.setCounterMeasureTime("2015-12-04 18:00:00")
+    ss.name = 'test'
+    name = ss.getUniqueName()
+    print name
+    if doExport:
+        ss.exportToDatabase()
+    if True:
+        name = ss.getUniqueName()
+        print name
+        ss.publish(name)
 
 
 # generate insert query

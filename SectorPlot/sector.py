@@ -186,7 +186,6 @@ class Sector():
                 for d in range(0, 360):
                     inner.append(self._getArcPoint(x, y, minR, d))
                 #inner.reverse()
-                print len(inner)
                 geom = QgsGeometry.fromPolygon([outer, inner])
             else:
                 geom = QgsGeometry.fromPolygon([outer])
@@ -312,12 +311,18 @@ class SectorSet():
             # all sectors should have the same saveTime!
             return timeToString(self.sectors[0].saveTime)
 
-    def get_counter_measure_time_string(self):
+    def getCounterMeasureTime(self):
         if len(self.sectors) == 0:
+            return None
+        else:
+            # all sectors should have the same counterMeasureTime!
+            return self.sectors[0].counterMeasureTime
+    
+    def get_counter_measure_time_string(self):
+        if self.getCounterMeasureTime() is None:
             return timeToString(gmtime())
         else:
-            # all sectors should have the same saveTime!
-            return timeToString(self.sectors[0].counterMeasureTime)
+            return timeToString(self.getCounterMeasureTime())
 
     def setCounterMeasureTime(self, t=None):
         t = getTime(t)
@@ -339,6 +344,58 @@ class SectorSet():
         for sector in self.sectors:
             result.append(sector.getQgsFeature())
         return result
+
+    def getUniqueName(self):
+        result = ''
+        if self.name is not None:
+            result += self.name.lower().replace(' ','_')
+        if self.getCounterMeasureTime() is not None:
+            result += u'_' + strftime("%Y%m%d_%Hh%M", self.getCounterMeasureTime())
+        if self.setId > -1:
+            result += '_' + str(self.setId)
+        return result 
+
+    def createView(self, name):
+        db = Database('sectorplot')
+        q = {}
+        q['text'] = 'CREATE OR REPLACE VIEW ' + name + ' AS'
+        q['text'] +=  ' SELECT * FROM sectors WHERE setid = %s ORDER BY z_order;'
+        q['vals'] = (self.setId,)
+        #print q['text']
+        #print q['vals']
+        result = db.execute([q])
+        #print result
+        #print 'ok'
+
+    def createWms(self, name):
+        import urllib2
+        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        top_level_url = "HTTP://localhost:8080"
+        auth_handler = urllib2.HTTPBasicAuthHandler()
+        password_mgr.add_password(None, top_level_url, 'admin', 'geoserver')
+
+        handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+        #auth_handler.add_password(
+        print auth_handler
+        url = 'HTTP://localhost:8080/geoserver/rest/workspaces/rivm/datastores/sectoren/featuretypes'
+        #geoserver = 'http://geoserver.dev.cal-net.nl/geoserver/rest/workspaces/rivm/datastores/db02.dev.cal-net.nl/featuretypes'
+        data = '<featureType><name>' + name + '</name></featureType>'
+        print data
+        req = urllib2.Request(url=url, data=data, headers={'Content-Type': 'text/xml'})
+        
+        opener = urllib2.build_opener(handler)
+        print opener
+        f = opener.open(req)
+        #f = urllib2.urlopen(req)
+        print f.read()
+
+
+    def publish(self, name):
+        result = self.createView(name)
+        print result
+        result = self.createWms(name)
+        print result
+
 
 
 class SectorSets(list):
