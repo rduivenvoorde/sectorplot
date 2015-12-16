@@ -1,6 +1,7 @@
 import psycopg2
 import psycopg2.extras
 import credentials
+import urllib2
 
 
 class Database():
@@ -50,6 +51,43 @@ class Database():
             return {'db_ok': self.db_ok}
         else:
             return {'db_ok': self.db_ok, 'data': memory}
+
+
+class RestClient():
+    def __init__(self, conn_code):
+        gs_conn = self.get_conn(conn_code)
+        self.user = gs_conn['user']
+        self.password = gs_conn['password']
+        self.top_level_url = gs_conn['top_level_url']
+
+        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_mgr.add_password(None, self.top_level_url, self.user, self.password)
+        handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+        self.opener = urllib2.build_opener(handler)
+
+    def __str__(self):
+        return 'RestClient[' + self.top_level_url + ']'
+
+    def get_conn(self, code):
+        if code == 'sectorplot':
+            return credentials.gs_conn_sectorplot
+
+    def doRequest(self, url, data=None, headers=None):
+        print 'url: ', url
+        print 'data: ', data
+        print 'headers: ', headers
+        #url = 'HTTP://localhost:8080/geoserver/rest/workspaces/rivm/datastores/sectorplot/featuretypes'
+        #data = '<featureType><name>' + name + '</name></featureType>'
+        #headers={'Content-Type': 'text/xml'}
+        req = urllib2.Request(url=url, data=data, headers=headers)
+        f = self.opener.open(req)
+        print f.read()
+        return f.read()
+
+
+
+
+
 
 if __name__ == "__main__":
     db = Database('sectorplot')

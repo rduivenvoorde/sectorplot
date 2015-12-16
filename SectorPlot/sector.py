@@ -5,7 +5,7 @@ from PyQt4.QtCore import QVariant
 from time import strftime, strptime, gmtime, struct_time
 import time
 import math
-from dbconnect import Database
+from connect import Database, RestClient
 
 
 crs4326 = QgsCoordinateReferenceSystem(4326)
@@ -367,27 +367,21 @@ class SectorSet():
         #print result
         #print 'ok'
 
-    def createWms(self, name):
-        import urllib2
-        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
-        top_level_url = "HTTP://localhost:8080"
-        auth_handler = urllib2.HTTPBasicAuthHandler()
-        password_mgr.add_password(None, top_level_url, 'admin', 'geoserver')
-
-        handler = urllib2.HTTPBasicAuthHandler(password_mgr)
-        #auth_handler.add_password(
-        print auth_handler
-        url = 'HTTP://localhost:8080/geoserver/rest/workspaces/rivm/datastores/sectoren/featuretypes'
-        #geoserver = 'http://geoserver.dev.cal-net.nl/geoserver/rest/workspaces/rivm/datastores/db02.dev.cal-net.nl/featuretypes'
+    def createWms(self, name, style=None):
+        if style
+        rest = RestClient('sectorplot')
+        url = 'HTTP://localhost:8080/geoserver/rest/workspaces/rivm/datastores/sectorplot/featuretypes'
+        headers={'Content-Type': 'text/xml'}
+        # create layer
         data = '<featureType><name>' + name + '</name></featureType>'
-        print data
-        req = urllib2.Request(url=url, data=data, headers={'Content-Type': 'text/xml'})
+        result = rest.doRequest(url=url, data=data, headers=headers)
+        # set default style
+        data = '<layer><defaultStyle><name>' + style + '</name></defaultStyle></layer>'
+        result = rest.doRequest(url=url, data=data, headers=headers)
         
-        opener = urllib2.build_opener(handler)
-        print opener
-        f = opener.open(req)
-        #f = urllib2.urlopen(req)
-        print f.read()
+        
+        result = rest.doRequest(url=url, data=data, headers=headers)
+        
 
 
     def publish(self, name):

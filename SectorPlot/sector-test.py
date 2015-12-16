@@ -111,6 +111,9 @@ if True:
         ss.publish(name)
 
 
+#ss.publish(name)
+
+
 # generate insert query
 #s = Sector('Name', 5.5, 52.5, 10000, 20000, 50, 30, sectorName='SectorName', color='#ff00ff')
 #print s.getInsertQuery()
