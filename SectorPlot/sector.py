@@ -361,34 +361,39 @@ class SectorSet():
         q['text'] = 'CREATE OR REPLACE VIEW ' + name + ' AS'
         q['text'] +=  ' SELECT * FROM sectors WHERE setid = %s ORDER BY z_order;'
         q['vals'] = (self.setId,)
-        #print q['text']
-        #print q['vals']
         result = db.execute([q])
-        #print result
-        #print 'ok'
+        return result['db_ok']
 
-    def createWms(self, name, style=None):
-        if style
+    def createWms(self, name):
+        # config
+        style = 'sector'
+        workspace = 'rivm'
+        store = 'sectorplot'
+
         rest = RestClient('sectorplot')
-        url = 'HTTP://localhost:8080/geoserver/rest/workspaces/rivm/datastores/sectorplot/featuretypes'
         headers={'Content-Type': 'text/xml'}
-        # create layer
-        data = '<featureType><name>' + name + '</name></featureType>'
-        result = rest.doRequest(url=url, data=data, headers=headers)
-        # set default style
-        data = '<layer><defaultStyle><name>' + style + '</name></defaultStyle></layer>'
-        result = rest.doRequest(url=url, data=data, headers=headers)
-        
-        
-        result = rest.doRequest(url=url, data=data, headers=headers)
-        
 
+        try:
+            # create layer
+            url = rest.top_level_url + '/geoserver/rest/workspaces/' + workspace + '/datastores/' + store + '/featuretypes'
+            data = '<featureType><name>' + name + '</name></featureType>'
+            result = rest.doRequest(url=url, data=data, headers=headers)
+
+            # set default style
+            url = rest.top_level_url + '/geoserver/rest/layers/' + workspace + ':' + name
+            data = '<layer><defaultStyle><name>' + workspace + ':' + style + '</name></defaultStyle></layer>'
+            result = rest.doRequest(url=url, data=data, headers=headers, method='PUT')
+            return True
+        except:
+            return False
 
     def publish(self, name):
         result = self.createView(name)
-        print result
-        result = self.createWms(name)
-        print result
+        if result:
+            result = self.createWms(name)
+            return result
+        else:
+            return False
 
 
 

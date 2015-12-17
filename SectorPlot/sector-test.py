@@ -96,7 +96,7 @@ ss.display()
 if True:
     # fill full circle (roos 20km met gat 10km)
     ss = SectorSet()
-    for i in range(1):
+    for i in range(3):
       s = Sector('rose2', 5.3, 52.7, 5000, 15000, (30*i), 30, sectorName='q'+str(i+1), color='#ff00ff')
       ss.sectors.append(s)
     ss.setCounterMeasureTime("2015-12-04 18:00:00")

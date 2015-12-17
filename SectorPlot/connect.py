@@ -72,14 +72,12 @@ class RestClient():
         if code == 'sectorplot':
             return credentials.gs_conn_sectorplot
 
-    def doRequest(self, url, data=None, headers=None):
-        print 'url: ', url
-        print 'data: ', data
-        print 'headers: ', headers
-        #url = 'HTTP://localhost:8080/geoserver/rest/workspaces/rivm/datastores/sectorplot/featuretypes'
-        #data = '<featureType><name>' + name + '</name></featureType>'
-        #headers={'Content-Type': 'text/xml'}
+    def doRequest(self, url, data=None, headers=None, method='POST'):
+        print 'url:    ', url
+        print 'data:   ', data
+        print 'headers:', headers
         req = urllib2.Request(url=url, data=data, headers=headers)
+        req.get_method = lambda: method
         f = self.opener.open(req)
         print f.read()
         return f.read()

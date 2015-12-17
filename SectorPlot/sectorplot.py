@@ -39,7 +39,6 @@ from countermeasures import CounterMeasures
 
 from npp import NppSet
 from sector import Sector, SectorSet, SectorSets
-from dbconnect import Database
 
 import os.path
 
