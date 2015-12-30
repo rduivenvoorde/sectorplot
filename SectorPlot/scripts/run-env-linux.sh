@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#QGIS_PREFIX_PATH=/home/richard/apps/qgis/master/debug
-QGIS_PREFIX_PATH=/home/raymond/programs/qgis/master/
+QGIS_PREFIX_PATH=/home/richard/apps/qgis/master/debug
+#QGIS_PREFIX_PATH=/home/raymond/programs/qgis/master/
 if [ -n "$1" ]; then
     QGIS_PREFIX_PATH=$1
 fi

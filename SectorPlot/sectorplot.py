@@ -86,6 +86,7 @@ class SectorPlot:
         # dlg actions
         self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.clicked.connect(self.locationdlg_open_dialog)
         self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.clicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
+        self.sectorplotsets_dlg.btn_create_wms.clicked.connect(self.sectorplotsetsdlg_create_wms)
         self.sectorplotsets_dlg.table_sectorplot_sets.doubleClicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
         # inits
         self.sectorplotsets = None
@@ -419,7 +420,7 @@ class SectorPlot:
         date_format = "yyyy-MM-dd HH:mm:ss +0000"
 
         #self.msg(None, ("%s" % self.current_sectorset.sectors[0].counterMeasureTime) + " *** " + self.current_sectorset.get_counter_measure_time_string())
-        self.msg(None, date_format + " *** " + self.current_sectorset.get_counter_measure_time_string())
+        #self.msg(None, date_format + " *** " + self.current_sectorset.get_counter_measure_time_string())
 
         datetime = QDateTime.fromString(self.current_sectorset.get_counter_measure_time_string(), date_format)
 
@@ -439,6 +440,12 @@ class SectorPlot:
                 self.sectorplotsetdlg_add_sector_to_table(sector)
         self.sectorplotset_dlg.show()
         self.sectorplotsetdlg_finish()
+
+    def sectorplotsetsdlg_create_wms(self):
+        result = self.current_sectorset.publish(self.current_sectorset.getUniqueName())
+        self.msg(self.sectorplotsets_dlg, result)
+
+
 
     def locationdlg_open_dialog(self):
         self.new_sectorplotset()

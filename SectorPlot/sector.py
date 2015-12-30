@@ -345,6 +345,16 @@ class SectorSet():
             result.append(sector.getQgsFeature())
         return result
 
+    def validate_name(self, name):
+        forbidden = ' -=+\/";:' + "'"
+        result = ''
+        for c in name:
+            if c in forbidden:
+                result += '_'
+            else:
+                result += c
+        return result
+
     def getUniqueName(self):
         result = ''
         if self.name is not None:
@@ -353,6 +363,7 @@ class SectorSet():
             result += u'_' + strftime("%Y%m%d_%Hh%M", self.getCounterMeasureTime())
         if self.setId > -1:
             result += '_' + str(self.setId)
+        result = self.validate_name(result)
         return result 
 
     def createView(self, name):
