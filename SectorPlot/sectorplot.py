@@ -23,9 +23,9 @@
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt, QDateTime
 from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
     QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator, \
-    QCursor, QPixmap, QWidget
+    QCursor, QPixmap, QWidget, QFileDialog
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
-    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry
+    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsVectorFileWriter
 from qgis.gui import QgsMapTool
 # Initialize Qt resources from file resources.py
 import resources
@@ -41,6 +41,7 @@ from npp import NppSet
 from sector import Sector, SectorSet, SectorSets
 
 import os.path
+import shutil
 
 
 class SectorPlot:
@@ -76,6 +77,8 @@ class SectorPlot:
         self.ALPHA = 127
 
         # Create the dialogs (after translation!) and keep references
+        # TODO connect to new project event, sectorlayer opruimen bij uninstall plugin, evt self.sector_layer -> self.get_sector_layer (mits nog beschikbaar)
+        # create self.sector_layer when the user creates a new project (and removes this memory layer)
 
         # The SectorplotSetS dialog, showing recent Sectorplots
         self.sectorplotsets_dlg = SectorPlotSetsDialog()
@@ -87,6 +90,7 @@ class SectorPlot:
         self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.clicked.connect(self.locationdlg_open_dialog)
         self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.clicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
         self.sectorplotsets_dlg.btn_create_wms.clicked.connect(self.sectorplotsetsdlg_create_wms)
+        self.sectorplotsets_dlg.btn_create_shapefile.clicked.connect(self.sectorplotsetsdlg_create_shapefile)
         self.sectorplotsets_dlg.table_sectorplot_sets.doubleClicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
         # inits
         self.sectorplotsets = None
@@ -443,7 +447,29 @@ class SectorPlot:
 
     def sectorplotsetsdlg_create_wms(self):
         result = self.current_sectorset.publish(self.current_sectorset.getUniqueName())
+        # TODO: show more verbose messages
         self.msg(self.sectorplotsets_dlg, result)
+
+    def sectorplotsetsdlg_create_shapefile(self):
+        # open file dialog with unique name preselected
+        # TODO: onthoud de laatste directory
+        default_name = str('/tmp/' + self.current_sectorset.getUniqueName())
+        filename = QFileDialog.getSaveFileName(self.sectorplotsets_dlg, self.tr("Save shapefile as"), default_name, filter="*.shp")
+        self.msg(self.sectorplotsets_dlg, filename)
+        if self.sector_layer is not None:
+            # save shapefile
+            # check if it is already there??
+            QgsVectorFileWriter.writeAsVectorFormat(self.sector_layer, filename, "utf-8", None, "ESRI Shapefile")
+            # AND corresponding sld with same name
+            sld_name = os.path.join(self.plugin_dir, 'sectors.sld')
+            new_sld_name = filename + '.sld'
+            shutil.copy2(sld_name, new_sld_name)
+            qml_name = os.path.join(self.plugin_dir, 'sectors.qml')
+            new_qml_name = filename + '.qml'
+            shutil.copy2(qml_name, new_qml_name)
+        else:
+            # should not come here!!
+            self.msg(self.sectorplotsets_dlg, self.tr("Problem saving shapefile"))
 
 
 
