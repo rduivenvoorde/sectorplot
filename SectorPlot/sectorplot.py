@@ -75,10 +75,15 @@ class SectorPlot:
         self.MSG_BOX_TITLE = self.tr("SectorPlot Plugin")
         # ALPHA is a fixed number for opacity, used in other sld's (Geoserver etc)
         self.ALPHA = 127
+        # name of sector layer (memory layer) to be used to draw sectors in
+        self.SECTOR_LAYER_NAME = self.tr("Sector Plugin Layer")
 
         # Create the dialogs (after translation!) and keep references
         # TODO connect to new project event, sectorlayer opruimen bij uninstall plugin, evt self.sector_layer -> self.get_sector_layer (mits nog beschikbaar)
         # create self.sector_layer when the user creates a new project (and removes this memory layer)
+
+        # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
+        self.iface.newProjectCreated.connect(self.remove_sector_layer)
 
         # The SectorplotSetS dialog, showing recent Sectorplots
         self.sectorplotsets_dlg = SectorPlotSetsDialog()
@@ -272,8 +277,9 @@ class SectorPlot:
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
+        self.remove_sector_layer()
 
-    def msg(self, parent, msg=""):
+    def msg(self, parent=None, msg=""):
         if parent is None:
             parent = self.iface.mainWindow()
         QMessageBox.warning(parent, self.MSG_BOX_TITLE, "%s" % msg, QMessageBox.Ok, QMessageBox.Ok)
@@ -288,22 +294,43 @@ class SectorPlot:
                                 QMessageBox.Ok, QMessageBox.Ok)
             return
         # add a memory layer to show sectors if not yet available
-        if self.sector_layer is None:
-            # give the memory layer the same CRS as the source layer
-            self.sector_layer = QgsVectorLayer(
-                "Polygon?crs=epsg:4326&field=setname:string(50)&field=countermeasureid:integer&field=z_order:integer" +
-                "&field=saveTime:string(50)&field=color:counterMeasureTime(9)&field=sectorname:string(50)" +
-                "&field=setid:integer&field=color:string(9)" +
-                #"&field=setid:integer&field=direction:double&field=angle:double&field=mindistance:double&field=maxdistance:double" +
-                "&index=yes",
-                self.tr("Sector Layer"), "memory")
-            # use a saved style as style
-            self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectors.qml'))
-            # add empty layer to the map
-            QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
+        self.get_sector_layer()
         # open a the dialog with the sectorplotsets from the database
         self.new_sectorplotset()
         self.sectorplotsetsdlg_open_dialog()
+
+    def get_sector_layer(self):
+        if self.sector_layer is None:
+            # check IF there is already a SECTOR_LAYER_NAME in the project with the right fields
+            if len(QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) > 0:
+                # not 100% sure if this layers IS the real SECTOR_LAYER_NAME but no further checks for now
+                self.sector_layer = QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)[0]
+                #self.msg(None, 1)
+            else:
+                # give the memory layer the same CRS as the source layer
+                self.sector_layer = QgsVectorLayer(
+                    "Polygon?crs=epsg:4326&field=setname:string(50)&field=countermeasureid:integer&field=z_order:integer" +
+                    "&field=saveTime:string(50)&field=color:counterMeasureTime(9)&field=sectorname:string(50)" +
+                    "&field=setid:integer&field=color:string(9)" +
+                    "&index=yes",
+                    self.SECTOR_LAYER_NAME,
+                    "memory")
+                # use a saved style as style
+                self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectors.qml'))
+                # add empty layer to the map
+                QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
+            # WHEN this layer is deleted from the layer tree, also remove it from the plugin
+            # actually set self.sector_layer to None
+            self.sector_layer.layerDeleted.connect(self.remove_sector_layer)
+        return self.sector_layer
+
+    def remove_sector_layer(self):
+        #  set self.sector_layer to None
+        self.sector_layer = None
+        self.current_sectorset = None
+        # also remove the Sector Layer (part of plugin) IF still available
+        #lr = QgsMapLayerRegistry.instance()
+        #lr.removeMapLayers(lr.mapLayersByName(self.SECTOR_LAYER_NAME))
 
     def new_sectorplotset(self):
         self.current_sectorset = None
@@ -312,20 +339,22 @@ class SectorPlot:
         self.show_current_sectorplotset_on_map()
 
     def show_current_sectorplotset_on_map(self):
-        self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
-        if self.current_sectorset is not None:
+        if self.sector_layer is not None:
+            self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
+        if self.current_sectorset is not None and self.sector_layer is not None:
             self.sector_layer.dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
             self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat)
         #self.sector_layer.updateFields()
         #self.sector_layer.updateExtents()
-        if self.iface.mapCanvas().isCachingEnabled():
-            self.sector_layer.setCacheImage(None)
-        else:
-            self.iface.mapCanvas().refresh()
+        if self.sector_layer is not None:
+            if self.iface.mapCanvas().isCachingEnabled():
+                self.sector_layer.setCacheImage(None)
+            else:
+                self.iface.mapCanvas().refresh()
 
     # TODO: remove the scale part?
     def zoom_map_to_lonlat(self, lon, lat, scale=300000):
-        crs_to = self.iface.mapCanvas().mapRenderer().destinationCrs()
+        crs_to = self.iface.mapCanvas().mapSettings().destinationCrs()
         crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to)
         point = QgsPoint(float(lon), float(lat))
         geom = QgsGeometry.fromPoint(point)
@@ -560,7 +589,7 @@ class SectorPlot:
     def locationdlg_xy_clicked(self, xy):
         # we retrieve an x,y from the mapcanvas in the project crs
         # set it to epsg:4326 if different
-        crs_from = self.iface.mapCanvas().mapRenderer().destinationCrs()
+        crs_from = self.iface.mapCanvas().mapSettings().destinationCrs()
         crs_transform = QgsCoordinateTransform(crs_from, self.crs_4326)
         xy4326 = crs_transform.transform(xy)
         self.location_dlg.le_longitude.setText(unicode(xy4326.x()))
