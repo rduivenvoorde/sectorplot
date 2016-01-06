@@ -771,7 +771,6 @@ class SectorPlot:
 
     def sector_dlg_enable_min_distance(self):
         self.sector_dlg.le_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
-        self.sector_dlg.lbl_min_distance.setEnabled(self.sector_dlg.cb_min_distance.isChecked())
         # set to zero back if set back
         if self.sector_dlg.cb_min_distance.isChecked() is False:
             self.sector_dlg.le_min_distance.setText("0")

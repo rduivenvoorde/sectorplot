@@ -20,7 +20,7 @@
    <item row="3" column="0">
     <widget class="QLabel" name="lbl_angle">
      <property name="text">
-      <string>Angle (degrees)</string>
+      <string>Angle [b]</string>
      </property>
     </widget>
    </item>
@@ -40,16 +40,6 @@
    <item row="7" column="2" colspan="2">
     <widget class="QLineEdit" name="le_sector_name"/>
    </item>
-   <item row="3" column="2" colspan="2">
-    <widget class="QLineEdit" name="le_angle">
-     <property name="inputMask">
-      <string/>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
    <item row="8" column="0" colspan="4">
     <widget class="QDialogButtonBox" name="buttonBox">
      <property name="orientation">
@@ -60,9 +50,6 @@
      </property>
     </widget>
    </item>
-   <item row="0" column="2" colspan="2">
-    <widget class="QComboBox" name="combo_countermeasures"/>
-   </item>
    <item row="0" column="0">
     <widget class="QLabel" name="lbl_countermeasures">
      <property name="text">
@@ -70,54 +57,20 @@
      </property>
     </widget>
    </item>
-   <item row="5" column="0">
-    <widget class="QLabel" name="lbl_min_distance">
-     <property name="enabled">
-      <bool>false</bool>
-     </property>
-     <property name="text">
-      <string>Distance (min, km)</string>
-     </property>
-    </widget>
+   <item row="0" column="2" colspan="2">
+    <widget class="QComboBox" name="combo_countermeasures"/>
    </item>
    <item row="4" column="0">
     <widget class="QLabel" name="lbl_distance">
      <property name="text">
-      <string>Distance (max, km)</string>
+      <string>Distance [c]</string>
      </property>
     </widget>
    </item>
    <item row="2" column="0">
     <widget class="QLabel" name="lbl_direction">
      <property name="text">
-      <string>Direction (start, degrees)</string>
-     </property>
-    </widget>
-   </item>
-   <item row="5" column="3">
-    <widget class="QCheckBox" name="cb_min_distance">
-     <property name="text">
-      <string>Custom Min Distance</string>
-     </property>
-    </widget>
-   </item>
-   <item row="2" column="2" colspan="2">
-    <widget class="QLineEdit" name="le_direction">
-     <property name="inputMask">
-      <string/>
-     </property>
-     <property name="text">
-      <string/>
-     </property>
-    </widget>
-   </item>
-   <item row="4" column="2" colspan="2">
-    <widget class="QLineEdit" name="le_distance">
-     <property name="inputMask">
-      <string/>
-     </property>
-     <property name="text">
-      <string/>
+      <string>Direction [a]</string>
      </property>
     </widget>
    </item>
@@ -128,17 +81,17 @@
      </property>
     </widget>
    </item>
-   <item row="1" column="0">
-    <widget class="QLabel" name="lbl_color">
-     <property name="text">
-      <string>Color</string>
-     </property>
-    </widget>
-   </item>
    <item row="1" column="3">
     <widget class="QPushButton" name="btn_color">
      <property name="text">
       <string>Change Color</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="lbl_color">
+     <property name="text">
+      <string>Color</string>
      </property>
     </widget>
    </item>
@@ -161,6 +114,71 @@
      </property>
      <property name="text">
       <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;img src=&quot;:/plugins/SectorPlot/images/example_sector.png&quot;/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="2">
+    <widget class="QLineEdit" name="le_angle">
+     <property name="inputMask">
+      <string/>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="2">
+    <widget class="QLineEdit" name="le_distance">
+     <property name="inputMask">
+      <string/>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="2">
+    <widget class="QLineEdit" name="le_direction">
+     <property name="inputMask">
+      <string/>
+     </property>
+     <property name="text">
+      <string/>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="0">
+    <widget class="QCheckBox" name="cb_min_distance">
+     <property name="text">
+      <string>Min Distance [d]</string>
+     </property>
+    </widget>
+   </item>
+   <item row="2" column="3">
+    <widget class="QLabel" name="label_a_units">
+     <property name="text">
+      <string>degrees</string>
+     </property>
+    </widget>
+   </item>
+   <item row="3" column="3">
+    <widget class="QLabel" name="label_b_units">
+     <property name="text">
+      <string>degrees</string>
+     </property>
+    </widget>
+   </item>
+   <item row="4" column="3">
+    <widget class="QLabel" name="label_c_units">
+     <property name="text">
+      <string>km</string>
+     </property>
+    </widget>
+   </item>
+   <item row="5" column="3">
+    <widget class="QLabel" name="label_d_units">
+     <property name="text">
+      <string>km</string>
      </property>
     </widget>
    </item>
