@@ -73,13 +73,13 @@ class RestClient():
             return credentials.gs_conn_sectorplot
 
     def doRequest(self, url, data=None, headers=None, method='POST'):
-        print 'url:    ', url
-        print 'data:   ', data
-        print 'headers:', headers
+        #print 'url:    ', url
+        #print 'data:   ', data
+        #print 'headers:', headers
         req = urllib2.Request(url=url, data=data, headers=headers)
         req.get_method = lambda: method
         f = self.opener.open(req)
-        print f.read()
+        #print f.read()
         return f.read()
 
 

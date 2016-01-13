@@ -377,7 +377,7 @@ class SectorSet():
 
     def createWms(self, name):
         # config
-        style = 'sector'
+        style = 'sectorplot'
         workspace = 'rivm'
         store = 'sectorplot'
 
@@ -392,8 +392,11 @@ class SectorSet():
 
             # set default style
             url = rest.top_level_url + '/geoserver/rest/layers/' + workspace + ':' + name
-            data = '<layer><defaultStyle><name>' + workspace + ':' + style + '</name></defaultStyle></layer>'
+            #data = '<layer><defaultStyle><name>' + workspace + ':' + style + '</name></defaultStyle></layer>'
+            # currently namespace:style is NOT working
+            data = '<layer><defaultStyle><name>' + style + '</name></defaultStyle></layer>'
             result = rest.doRequest(url=url, data=data, headers=headers, method='PUT')
+
             return True
         except:
             return False

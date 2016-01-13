@@ -316,7 +316,7 @@ class SectorPlot:
                     self.SECTOR_LAYER_NAME,
                     "memory")
                 # use a saved style as style
-                self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectors.qml'))
+                self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectorplot.qml'))
                 # add empty layer to the map
                 QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
             # WHEN this layer is deleted from the layer tree, also remove it from the plugin
@@ -490,10 +490,10 @@ class SectorPlot:
             # check if it is already there??
             QgsVectorFileWriter.writeAsVectorFormat(self.sector_layer, filename, "utf-8", None, "ESRI Shapefile")
             # AND corresponding sld with same name
-            sld_name = os.path.join(self.plugin_dir, 'sectors.sld')
+            sld_name = os.path.join(self.plugin_dir, 'sectorplot.sld')
             new_sld_name = filename + '.sld'
             shutil.copy2(sld_name, new_sld_name)
-            qml_name = os.path.join(self.plugin_dir, 'sectors.qml')
+            qml_name = os.path.join(self.plugin_dir, 'sectorplot.qml')
             new_qml_name = filename + '.qml'
             shutil.copy2(qml_name, new_qml_name)
         else:
