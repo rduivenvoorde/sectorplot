@@ -121,6 +121,9 @@ deploy: compile doc transcompile
 	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vfr i18n $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help
+	# tijdelijk
+	mkdir (HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/data
+	cp -vf data/tabel-npp-export.txt $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/data
 
 # The dclean target removes compiled python files from plugin directory
 # also deletes any .git entry
