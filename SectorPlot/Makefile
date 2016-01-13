@@ -37,18 +37,29 @@ LRELEASE = lrelease-qt4
 
 # translation
 SOURCES = \
-	__init__.py \
-	sectorplot.py sectorplot_dialog.py
-
+    
 PLUGINNAME = SectorPlot
 
 PY_FILES = \
-	__init__.py \
-	sectorplot.py sectorplot_dialog.py
+    __init__.py \
+    sector.py \
+    sectorplot.py \
+    sectorplot_location_dialog.py \
+    sectorplot_sector_dialog.py \
+    sectorplot_sectorplotset_dialog.py \
+    sectorplot_sectorplotsets_dialog.py \
+    connect.py \
+    countermeasures.py \
+    credentials.py npp.py
 
-UI_FILES = sectorplot_dialog_base.ui
+UI_FILES = sectorplot_location_dialog_base.ui \
+    sectorplot_sector_dialog_base.ui \
+    sectorplot_sectorplotset_dialog_base.ui \
+    sectorplot_sectorplotsets_dialog_base.ui
 
-EXTRAS = metadata.txt icon.png
+EXTRAS = metadata.txt \
+    sectorplot.qml \
+    sectorplot.sld 
 
 COMPILED_RESOURCE_FILES = resources.py
 
