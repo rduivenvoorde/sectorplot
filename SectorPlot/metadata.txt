@@ -9,7 +9,7 @@
 [general]
 name=SectorPlot
 qgisMinimumVersion=2.0
-description=Plots sector areas s on risk management map
+description=Plots sector areas on risk management map
 version=0.1
 author=RIVM
 email=marnix.de.ridder@rivm.nl
