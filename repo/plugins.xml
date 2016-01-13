@@ -1,0 +1,14 @@
+<?xml version = "1.0"?>
+<?xml-stylesheet type="text/xsl" href="plugins.xsl"?>
+ <plugins>
+
+   <pyqgis_plugin name="SectorPlot" version="0.1">
+     <description>Plots sector areas on risk management map</description>
+     <homepage>https://github.com/rduivenvoorde/sectorplot</homepage>
+     <qgis_minimum_version>2.8</qgis_minimum_version>
+     <file_name>SectorPlot.zip</file_name>
+     <author_name>RIVM, Marnix de Ridder</author_name>
+     <download_url>http://repo.svc.cal-net.nl/repo/rivm/qgis/SectorPlot.zip</download_url>
+   </pyqgis_plugin>
+
+ </plugins>
