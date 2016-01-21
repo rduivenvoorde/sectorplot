@@ -378,7 +378,8 @@ class SectorSet():
     def createWms(self, name):
         # config
         style = 'sectorplot'
-        workspace = 'rivm'
+        # 21/1/2016 move sectorplots to sectorplots workspace
+        workspace = 'sectorplots'
         store = 'sectorplot'
 
         rest = RestClient('sectorplot')
