@@ -187,22 +187,22 @@
         <translation>Richting [a]</translation>
     </message>
     <message>
-        <location filename="sectorplot_sector_dialog_base.ui" line="116"/>
+        <location filename="sectorplot_sector_dialog_base.ui" line="119"/>
         <source>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;img src=&quot;:/plugins/SectorPlot/images/example_sector.png&quot;/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="sectorplot_sector_dialog_base.ui" line="153"/>
+        <location filename="sectorplot_sector_dialog_base.ui" line="159"/>
         <source>Min Distance [d]</source>
         <translation>Min Afstand [d]</translation>
     </message>
     <message>
-        <location filename="sectorplot_sector_dialog_base.ui" line="167"/>
+        <location filename="sectorplot_sector_dialog_base.ui" line="173"/>
         <source>degrees</source>
         <translation>graden</translation>
     </message>
     <message>
-        <location filename="sectorplot_sector_dialog_base.ui" line="181"/>
+        <location filename="sectorplot_sector_dialog_base.ui" line="190"/>
         <source>km</source>
         <translation>km</translation>
     </message>
@@ -234,7 +234,8 @@
         <source>This Plugin ONLY works when you have OTF (On The Fly Reprojection) enabled for current QGIS Project.
 
 Please enable OTF for this project or open a project with OTF enabled.</source>
-        <translation type="unfinished">Deze plugin werkt ALLEEN als u OTF (On The Fly Reprojection) voor dit QGIS project aan heeft staan.
+        <translation>Deze plugin werkt ALLEEN als u OTF (On The Fly Reprojection: Gelijktijdige CRS-transfromatie)
+  voor dit QGIS project aan heeft staan.
 
 Zet OTF voor dit project alstublieft aan.</translation>
     </message>
@@ -259,22 +260,22 @@ Zet OTF voor dit project alstublieft aan.</translation>
         <translation>Tegenmaatregeltijd</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="524"/>
+        <location filename="sectorplot.py" line="527"/>
         <source>Search</source>
         <translation>Zoeken</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="545"/>
+        <location filename="sectorplot.py" line="548"/>
         <source>Countrycode</source>
         <translation>Landcode</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="546"/>
+        <location filename="sectorplot.py" line="549"/>
         <source>Site</source>
         <translation></translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="547"/>
+        <location filename="sectorplot.py" line="550"/>
         <source>Block</source>
         <translation></translation>
     </message>
@@ -289,86 +290,86 @@ Zet OTF voor dit project alstublieft aan.</translation>
         <translation></translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="673"/>
+        <location filename="sectorplot.py" line="678"/>
         <source>Sector name</source>
         <translation>Sectornaam</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="674"/>
+        <location filename="sectorplot.py" line="679"/>
         <source>Countermeasure</source>
         <translation>Tegenmaatregel</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="675"/>
+        <location filename="sectorplot.py" line="680"/>
         <source>MinDist (km)</source>
         <translation>MinDist (km)</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="676"/>
+        <location filename="sectorplot.py" line="681"/>
         <source>Distance (km)</source>
         <translation>Afstand (km)</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="677"/>
+        <location filename="sectorplot.py" line="682"/>
         <source>Direction (deg)</source>
         <translation>Richting (graden)</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="678"/>
+        <location filename="sectorplot.py" line="683"/>
         <source>Angle (deg)</source>
         <translation>Hoek (graden)</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="612"/>
+        <location filename="sectorplot.py" line="615"/>
         <source>One of the coordinates is not valid.
 Please check and correct.</source>
         <translation>Een van de coördinaten is niet geldig.
 Check en verbeter die alstublieft.</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="741"/>
+        <location filename="sectorplot.py" line="746"/>
         <source>You did not provide a name for this Sectorplot. 
 Please provide one.</source>
         <translation>U heeft geen naam gegeven voor deze Sectorplot.
 Geef een naam alstublieft.</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="747"/>
+        <location filename="sectorplot.py" line="752"/>
         <source>You did not provide a sector for this Sectorplot. 
 Please provide at least one.</source>
         <translation>Deze Sectorplot heeft niet één sector.
 Maak minstens één sector aan alstublieft.</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="810"/>
+        <location filename="sectorplot.py" line="817"/>
         <source>The Direction value is not valid [%s, %s].
 Please check and correct.</source>
         <translation>De waarde van Richting is niet geldig [%s, %s].
 Check en pas aan alstublieft.</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="815"/>
+        <location filename="sectorplot.py" line="822"/>
         <source>The Angle value is not valid [%s, %s].
 Please check and correct.</source>
         <translation>De waarde van Hoek is niet geldig [%s, %s].
 Check en pas aan alstublieft.</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="820"/>
+        <location filename="sectorplot.py" line="827"/>
         <source>The Distance value is not valid [%s, %s].
 Please check and correct.</source>
         <translation>De waarde van Afstand is niet geldig [%s, %s].
 Check en pas aan alstublieft.</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="825"/>
+        <location filename="sectorplot.py" line="832"/>
         <source>The Min Distance value is not valid [%s, %s].
 Please check and correct.</source>
         <translation>De waarde van Min Afstand is niet geldig [%s, %s].
 Check en pas aan alstublieft.</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="830"/>
+        <location filename="sectorplot.py" line="837"/>
         <source>The Min Distance value is not valid:
 Min Distance value is bigger then Distance value.
 Please check and correct.</source>
@@ -394,21 +395,40 @@ Check en pas aan alstublieft.</translation>
         <translation>Datum-Tijd conversieprobleem</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="486"/>
+        <location filename="sectorplot.py" line="489"/>
         <source>Save shapefile as</source>
         <translation>Opslaan als shapefile</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="501"/>
+        <location filename="sectorplot.py" line="506"/>
         <source>Problem saving shapefile</source>
         <translation>Fout bij het opslaan als shapefile</translation>
     </message>
     <message>
-        <location filename="sectorplot.py" line="766"/>
+        <location filename="sectorplot.py" line="771"/>
         <source>Database error:
  %s</source>
         <translation>Databasefout:
 %s</translation>
+    </message>
+    <message>
+        <location filename="sectorplot.py" line="481"/>
+        <source>WMS layer created successfully.</source>
+        <translation>WMS-laag aanmaken geslaagd.</translation>
+    </message>
+    <message>
+        <location filename="sectorplot.py" line="483"/>
+        <source>Problem creating WMS layer
+(Maybe already published? A SectorPlot cannot be republished...)</source>
+        <translation>Fout bij het aanmaken van de WMS-laag.
+(Misschien al gepubliceerd? Een SectorPlot kan maar 1 keer worden gepubliceerd...)</translation>
+    </message>
+    <message>
+        <location filename="sectorplot.py" line="503"/>
+        <source>Shapefile created successfully:
+ </source>
+        <translation>Shapefile aanmaken gelukt:
+</translation>
     </message>
 </context>
 <context>
@@ -452,24 +472,19 @@ Check en pas aan alstublieft.</translation>
 <context>
     <name>SectorPlotSetsDialog</name>
     <message>
-        <location filename="sectorplot_sectorplotsets_widget_base.ui" line="27"/>
+        <location filename="sectorplot_sectorplotsets_dialog_base.ui" line="33"/>
         <source>Recent Sectorplots</source>
         <translation>Recente Sectorplots</translation>
     </message>
     <message>
-        <location filename="sectorplot_sectorplotsets_widget_base.ui" line="40"/>
+        <location filename="sectorplot_sectorplotsets_dialog_base.ui" line="26"/>
         <source>Copy Selected Sectorplot</source>
         <translation>Kopieer Geselecteerde Sectorplot</translation>
     </message>
     <message>
-        <location filename="sectorplot_sectorplotsets_widget_base.ui" line="20"/>
+        <location filename="sectorplot_sectorplotsets_dialog_base.ui" line="64"/>
         <source>New Sectorplot</source>
         <translation>Nieuwe Sectorplot</translation>
-    </message>
-    <message>
-        <location filename="sectorplot_sectorplotsets_widget_base.ui" line="14"/>
-        <source>Form</source>
-        <translation>Formulier</translation>
     </message>
     <message>
         <location filename="sectorplot_sectorplotsets_dialog_base.ui" line="40"/>

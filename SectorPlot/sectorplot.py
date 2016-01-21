@@ -477,17 +477,16 @@ class SectorPlot:
         result = self.current_sectorset.publish(self.current_sectorset.getUniqueName())
         # TODO: show more verbose messages
         # till now only True or False is returned!
-        if result:
-            self.msg(self.tr(u"WMS layer created successfully."))
+        if result is True:
+            self.msg(self.sectorplotsets_dlg, self.tr(u"WMS layer created successfully."))
         else:
-            self.msg(self.tr(u"Problem creating WMS layer\n(Maybe already published? A SectorPlot cannot be republished...)"))
+            self.msg(self.sectorplotsets_dlg, self.tr(u"Problem creating WMS layer\n(Maybe already published? A SectorPlot cannot be republished...)"))
 
     def sectorplotsetsdlg_create_shapefile(self):
         # open file dialog with unique name preselected
         # TODO: onthoud de laatste directory
         default_name = str('/tmp/' + self.current_sectorset.getUniqueName())
         filename = QFileDialog.getSaveFileName(self.sectorplotsets_dlg, self.tr("Save shapefile as"), default_name, filter="*.shp")
-        self.msg(self.sectorplotsets_dlg, filename)
         if self.sector_layer is not None:
             # save shapefile
             # check if it is already there??
@@ -501,6 +500,7 @@ class SectorPlot:
             qml_name = os.path.join(self.plugin_dir, 'sectorplot.qml')
             new_qml_name = filename + '.qml'
             shutil.copy2(qml_name, new_qml_name)
+            self.msg(self.sectorplotsets_dlg, self.tr(u"Shapefile created successfully:\n ") + filename + ".shp")
         else:
             # should not come here!!
             self.msg(self.sectorplotsets_dlg, self.tr("Problem saving shapefile"))
@@ -647,6 +647,8 @@ class SectorPlot:
                 self.sector_dlg.le_min_distance.setEnabled(True)
                 self.sector_dlg.lbl_min_distance.setEnabled(True)
                 self.sector_dlg.cb_min_distance.setChecked(True)
+            else:
+                self.sector_dlg.lbl_min_distance.setEnabled(False)
         else:
             # ok creating a fresh new sector from scratch, be sure to deselect sectors in the sector table!
             self.sectorplotset_dlg.table_sectors.clearSelection()
@@ -778,7 +780,9 @@ class SectorPlot:
         if self.sector_dlg.cb_min_distance.isChecked() is False:
             self.sector_dlg.le_min_distance.setText("0")
             self.sector_dlg.le_sector_name.setFocus()
+            self.sector_dlg.lbl_min_distance.setEnabled(False)
         else:
+            self.sector_dlg.lbl_min_distance.setEnabled(True)
             self.sector_dlg.le_min_distance.setFocus()
 
     def sector_dlg_btn_color_clicked(self):

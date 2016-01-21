@@ -100,6 +100,9 @@
    </item>
    <item row="0" column="4" rowspan="9">
     <widget class="QLabel" name="lbl_help_image">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="minimumSize">
       <size>
        <width>200</width>
@@ -149,6 +152,9 @@
    </item>
    <item row="5" column="0">
     <widget class="QCheckBox" name="cb_min_distance">
+     <property name="enabled">
+      <bool>true</bool>
+     </property>
      <property name="text">
       <string>Min Distance [d]</string>
      </property>
@@ -176,7 +182,10 @@
     </widget>
    </item>
    <item row="5" column="3">
-    <widget class="QLabel" name="label_d_units">
+    <widget class="QLabel" name="lbl_min_distance">
+     <property name="enabled">
+      <bool>false</bool>
+     </property>
      <property name="text">
       <string>km</string>
      </property>
