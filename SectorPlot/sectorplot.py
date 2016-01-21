@@ -465,7 +465,6 @@ class SectorPlot:
             self.msg(self.sectorplotset_dlg, self.tr("Date Time conversion problem"))  # should not come here
             return
 
-
         # IF SectorplotSet has sectors: show them
         if len(self.current_sectorset.sectors) > 0:
             for sector in self.current_sectorset.sectors:
@@ -477,7 +476,11 @@ class SectorPlot:
     def sectorplotsetsdlg_create_wms(self):
         result = self.current_sectorset.publish(self.current_sectorset.getUniqueName())
         # TODO: show more verbose messages
-        self.msg(self.sectorplotsets_dlg, result)
+        # till now only True or False is returned!
+        if result:
+            self.msg(self.tr(u"WMS layer created successfully."))
+        else:
+            self.msg(self.tr(u"Problem creating WMS layer\n(Maybe already published? A SectorPlot cannot be republished...)"))
 
     def sectorplotsetsdlg_create_shapefile(self):
         # open file dialog with unique name preselected
@@ -501,8 +504,6 @@ class SectorPlot:
         else:
             # should not come here!!
             self.msg(self.sectorplotsets_dlg, self.tr("Problem saving shapefile"))
-
-
 
     def locationdlg_open_dialog(self):
         self.new_sectorplotset()
