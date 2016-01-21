@@ -22,6 +22,10 @@
  This script initializes the plugin, making it known to QGIS.
 """
 
+# Note Richard: without this part you will end up in resources vs resources_rc troubles...
+import os
+import site
+site.addsitedir(os.path.abspath('%s' % os.path.dirname(__file__)))
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name

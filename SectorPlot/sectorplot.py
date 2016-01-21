@@ -27,8 +27,8 @@ from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemMode
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
     QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsVectorFileWriter
 from qgis.gui import QgsMapTool
-# Initialize Qt resources from file resources.py
-import resources
+# Initialize Qt resources from file resources_rc.py
+import resources_rc
 # Import the code for the dialogs
 from sectorplot_sectorplotsets_dialog import SectorPlotSetsDialog
 from sectorplot_location_dialog import SectorPlotLocationDialog
@@ -491,6 +491,8 @@ class SectorPlot:
             QgsVectorFileWriter.writeAsVectorFormat(self.sector_layer, filename, "utf-8", None, "ESRI Shapefile")
             # AND corresponding sld with same name
             sld_name = os.path.join(self.plugin_dir, 'sectorplot.sld')
+            # on windows .shp is added to filename already, so remove it here IF it is there
+            filename = filename.replace('.shp', '')
             new_sld_name = filename + '.sld'
             shutil.copy2(sld_name, new_sld_name)
             qml_name = os.path.join(self.plugin_dir, 'sectorplot.qml')

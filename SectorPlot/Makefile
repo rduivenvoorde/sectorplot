@@ -61,7 +61,7 @@ EXTRAS = metadata.txt \
     sectorplot.qml \
     sectorplot.sld 
 
-COMPILED_RESOURCE_FILES = resources.py
+COMPILED_RESOURCE_FILES = resources_rc.py
 
 PEP8EXCLUDE=pydev,resources.py,conf.py,third_party,ui
 
@@ -83,7 +83,8 @@ default: compile
 compile: $(COMPILED_RESOURCE_FILES)
 
 %.py : %.qrc $(RESOURCES_SRC)
-	pyrcc4 -o $*.py  $<
+	#pyrcc4 -o $*.py  $<
+	pyrcc4 -o resources_rc.py  $<
 
 %.qm : %.ts
 	$(LRELEASE) $<
