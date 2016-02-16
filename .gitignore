@@ -6,3 +6,4 @@ credentials.py
 .noseids
 repo/SectorPlot.zip
 *.pdf
+.~lock.*r
