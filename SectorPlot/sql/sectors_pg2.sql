@@ -28,8 +28,8 @@ WITH (
 -- ALTER TABLE sectors
 --   OWNER TO postgres;
 
-create extension postgis;
-select version()
+-- create extension postgis;
+-- select version()
 
 
 
