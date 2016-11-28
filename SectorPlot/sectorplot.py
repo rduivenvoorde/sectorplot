@@ -78,6 +78,8 @@ class SectorPlot:
         # name of sector layer (memory layer) to be used to draw sectors in
         self.SECTOR_LAYER_NAME = self.tr("Sector Plugin Layer")
 
+        self.DEMO = False
+
         # Create the dialogs (after translation!) and keep references
         # TODO connect to new project event, sectorlayer opruimen bij uninstall plugin, evt self.sector_layer -> self.get_sector_layer (mits nog beschikbaar)
         # create self.sector_layer when the user creates a new project (and removes this memory layer)
@@ -371,10 +373,12 @@ class SectorPlot:
         self.sectorplotsets = SectorSets()
         self.sectorplotsets.importFromDatabase()
         db_ok, result = self.sectorplotsets.importFromDatabase()
-        if not db_ok:
+        if self.DEMO:
+            self.msg(None, "DEMO MODE: no wms and saving / retrieving of old sectors / listing of recent plots\nPlease create a new Sectorplot via 'New Sectorplot' button in next dialog.")
+        elif not db_ok:
             # if NOT OK importFromDatabase returns the database error
-            self.msg(None, self.tr("Database error:\n%s") % result)
-            return
+           self.msg(None, self.tr("Database error:\n%s") % result)
+           return
         # create emtpy model for new list
         self.sectorplotsets_source_model = QStandardItemModel()
         self.sectorplotsets_dlg.table_sectorplot_sets.setModel(self.sectorplotsets_source_model)
@@ -764,8 +768,11 @@ class SectorPlot:
                     # (re)open sectorplotlist_dialog on row with just saved id
                     # if OK exportToDatabase returns the inserted id
                     self.sectorplotsetsdlg_open_dialog(result)
+                elif self.DEMO:
+                    self.msg(self.sectorplotset_dlg, self.tr("Demo mode\nSectorplot is not saved to WMS or Database"))
                 else:
                     # if NOT OK exportToDatabase returns the database error
+                    # self.msg(self.sectorplotset_dlg, self.tr("Database error:\n %s") % result)
                     self.msg(self.sectorplotset_dlg, self.tr("Database error:\n %s") % result)
         else:
             self.current_sectorset = None
