@@ -6,3 +6,4 @@
 repo/SectorPlot.zip
 *.pdf
 .~lock.*r
+.buildinfo

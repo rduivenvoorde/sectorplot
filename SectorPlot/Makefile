@@ -41,21 +41,14 @@ SOURCES = \
 PLUGINNAME = SectorPlot
 
 PY_FILES = \
-    __init__.py \
-    sector.py \
-    sectorplot.py \
-    sectorplot_location_dialog.py \
-    sectorplot_sector_dialog.py \
-    sectorplot_sectorplotset_dialog.py \
-    sectorplot_sectorplotsets_dialog.py \
-    connect.py \
-    countermeasures.py \
-    npp.py
+    *.py \
+    qgissettingmanager
 
 UI_FILES = sectorplot_location_dialog_base.ui \
     sectorplot_sector_dialog_base.ui \
     sectorplot_sectorplotset_dialog_base.ui \
-    sectorplot_sectorplotsets_dialog_base.ui
+    sectorplot_sectorplotsets_dialog_base.ui \
+    sectorplot_settings_dialog_base.ui
 
 EXTRAS = metadata.txt \
     sectorplot.qml \
@@ -116,7 +109,7 @@ deploy: compile doc transcompile
 	# the Python plugin directory is located at:
 	# $HOME/$(QGISDIR)/python/plugins
 	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vf $(PY_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	cp -vfR $(PY_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(UI_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(COMPILED_RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
