@@ -50,7 +50,7 @@ PY_FILES = \
     sectorplot_sectorplotsets_dialog.py \
     connect.py \
     countermeasures.py \
-    credentials.py npp.py
+    npp.py
 
 UI_FILES = sectorplot_location_dialog_base.ui \
     sectorplot_sector_dialog_base.ui \

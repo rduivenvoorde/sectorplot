@@ -1,7 +1,6 @@
 *.pyc
 *~
 .idea
-credentials.py
 .coverage
 .noseids
 repo/SectorPlot.zip

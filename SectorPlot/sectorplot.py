@@ -34,11 +34,14 @@ from sectorplot_sectorplotsets_dialog import SectorPlotSetsDialog
 from sectorplot_location_dialog import SectorPlotLocationDialog
 from sectorplot_sector_dialog import SectorPlotSectorDialog
 from sectorplot_sectorplotset_dialog import SectorPlotSectorPlotSetDialog
+from sectorplot_settings_dialog import SectorPlotSettingsDialog
+from sectorplot_settings import SectorPlotSettings
 
 from countermeasures import CounterMeasures
 
 from npp import NppSet
 from sector import Sector, SectorSet, SectorSets
+from connect import Database, RestClient
 
 import os.path
 import shutil
@@ -159,6 +162,12 @@ class SectorPlot:
         self.distance_validator = QDoubleValidator(1, 999, 1)
         self.min_distance_validator = QDoubleValidator(0, 999, 1)
 
+
+        # Settings dialog
+        self.settings_dlg = SectorPlotSettingsDialog()
+        self.settings_dlg.btn_test_postgis.clicked.connect(self.settingsdlg_test_postgis_clicked)
+        self.settings_dlg.btn_test_geoserver.clicked.connect(self.settingsdlg_test_geoserver_clicked)
+
         self.current_sectorset = None
 
         # memory Layer
@@ -263,12 +272,25 @@ class SectorPlot:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
+        # main dialog
         icon_path = ':/plugins/SectorPlot/images/icon.png'
         self.add_action(
             icon_path,
             text=self.tr(u'Sector plot'),
             callback=self.run,
             parent=self.iface.mainWindow())
+
+        # settings dialog
+        icon_path = ':/plugins/SectorPlot/images/icon.png'
+        self.add_action(
+            icon_path,
+            text=self.tr(u'Show Settings'),
+            callback=self.show_settings,
+            add_to_toolbar=False,
+            parent=self.iface.mainWindow())
+
+    def show_settings(self):
+        self.settings_dlg.show()
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -881,6 +903,28 @@ class SectorPlot:
                 self.sectorplotset_source_model.item(
                     self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
             self.sectorplotset_dlg.old_sector = None
+
+    def settingsdlg_test_postgis_clicked(self):
+        db = Database('sectorplot')
+        test_ok = db.test_connection(self.settings_dlg.postgis_host.text(),
+                                     self.settings_dlg.postgis_database.text(),
+                                     self.settings_dlg.postgis_user.text(),
+                                     self.settings_dlg.postgis_password.text())
+        if test_ok:
+            self.msg(self.settings_dlg, self.tr('Connection successful'))
+        else:
+            self.msg(self.settings_dlg, self.tr('Connection problem, please check inputs'))
+
+
+    def settingsdlg_test_geoserver_clicked(self):
+        rc = RestClient('sectorplot')
+        test_ok = rc.test_connection(self.settings_dlg.geoserver_url.text(),
+                                     self.settings_dlg.geoserver_user.text(),
+                                     self.settings_dlg.geoserver_password.text())
+        if test_ok:
+            self.msg(self.settings_dlg, self.tr('Connection successful'))
+        else:
+            self.msg(self.settings_dlg, self.tr('Connection problem, please check inputs'))
 
 class GetPointTool(QgsMapTool):
 
