@@ -83,75 +83,22 @@ class SectorPlot:
 
         self.DEMO = False
 
-        # Create the dialogs (after translation!) and keep references
         # TODO connect to new project event, sectorlayer opruimen bij uninstall plugin, evt self.sector_layer -> self.get_sector_layer (mits nog beschikbaar)
         # create self.sector_layer when the user creates a new project (and removes this memory layer)
 
         # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
         self.iface.newProjectCreated.connect(self.remove_sector_layer)
 
-        # The SectorplotSetS dialog, showing recent Sectorplots
-        self.sectorplotsets_dlg = SectorPlotSetsDialog()
-        self.sectorplotsets_dlg.table_sectorplot_sets.horizontalHeader().setStretchLastSection(True)
-        self.sectorplotsets_dlg.table_sectorplot_sets.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.sectorplotsets_dlg.table_sectorplot_sets.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.sectorplotsets_dlg.table_sectorplot_sets.setSelectionMode(QAbstractItemView.SingleSelection)
-        # dlg actions
-        self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.clicked.connect(self.locationdlg_open_dialog)
-        self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.clicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
-        self.sectorplotsets_dlg.btn_create_wms.clicked.connect(self.sectorplotsetsdlg_create_wms)
-        self.sectorplotsets_dlg.btn_create_shapefile.clicked.connect(self.sectorplotsetsdlg_create_shapefile)
-        self.sectorplotsets_dlg.table_sectorplot_sets.doubleClicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
         # inits
         self.sectorplotsets = None
         self.sectorplotsets_source_model = None
 
-        # The Location_dialog for setting x/y lat/lon
-        self.location_dlg = SectorPlotLocationDialog(parent=self.sectorplotsets_dlg)
-        self.location_dlg.table_npps.horizontalHeader().setStretchLastSection(True)
-        self.location_dlg.table_npps.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.location_dlg.table_npps.setSelectionMode(QAbstractItemView.SingleSelection)
-        # actions
-        self.location_dlg.le_longitude.textChanged.connect(self.locationdlg_lonlat_changed)
-        self.location_dlg.le_latitude.textChanged.connect(self.locationdlg_lonlat_changed)
-        self.location_dlg.btn_location_from_map.clicked.connect(self.locationdlg_btn_location_clicked)
         # inits
         self.npp_source_model = None
         self.npp_proxy_model = None
+
         self.xy_tool = GetPointTool(self.iface.mapCanvas(), self.locationdlg_xy_clicked)
-        self.lon_validator = QDoubleValidator(-180, 180, 12, self.location_dlg.le_longitude)
-        self.location_dlg.le_longitude.setValidator(self.lon_validator)
-        # epsg:3857 valid untill about -85/85 ! Not sure if this is ok?
-        self.lat_validator = QDoubleValidator(-85, 85, 12, self.location_dlg.le_latitude)
-        self.location_dlg.le_latitude.setValidator(self.lat_validator)
 
-        # SectorplotSet_dialog showing current sectorplot (list of sectors in this plot)
-        self.sectorplotset_dlg = SectorPlotSectorPlotSetDialog(parent=self.sectorplotsets_dlg)
-        self.sectorplotset_dlg.table_sectors.horizontalHeader().setStretchLastSection(True)
-        self.sectorplotset_dlg.table_sectors.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.sectorplotset_dlg.table_sectors.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.sectorplotset_dlg.table_sectors.setSelectionMode(QAbstractItemView.SingleSelection)
-        # user is able to drag/drop both columns and rows
-        self.sectorplotset_dlg.table_sectors.horizontalHeader().setMovable(True)
-        self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragEnabled(True)
-        self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragDropMode(QAbstractItemView.InternalMove)
-        self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
-        self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
-        self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)
-        # actions
-        self.sectorplotset_dlg.btn_new_sector.clicked.connect(self.sectorplotsetdlg_open_new_sector_dialog)
-        self.sectorplotset_dlg.btn_open_selected_sector.clicked.connect(self.sectorplotsetdlg_open_sector_for_edit_dialog)
-        self.sectorplotset_dlg.btn_remove_selected_sector.clicked.connect(self.sectorplotsetdlg_remove_sector_from_table)
-        self.sectorplotset_dlg.table_sectors.verticalHeader().sectionMoved.connect(self.sectorplotsetdlg_create_sectorset_from_sector_table)
-        self.sectorplotset_dlg.table_sectors.clicked.connect(self.sectorplotsetdlg_sector_selected)
-        self.sectorplotset_dlg.table_sectors.doubleClicked.connect(self.sectorplotsetdlg_open_sector_for_edit_dialog)
-        # inits
-        self.sectorplotset_source_model = QStandardItemModel()
-        self.sectorplotset_dlg.table_sectors.setModel(self.sectorplotset_source_model)
-
-        # Sector dialog: ONE sector, created fresh for every Sector, signals are attached there!
-        self.sector_dlg = None    # SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
         # actions
         #  see in sectorplotsetdlg_open_new_sector_dialog
         # inits
@@ -161,12 +108,6 @@ class SectorPlot:
         self.positive_degree_validator = QDoubleValidator(1, 360, 2)
         self.distance_validator = QDoubleValidator(1, 999, 1)
         self.min_distance_validator = QDoubleValidator(0, 999, 1)
-
-
-        # Settings dialog
-        self.settings_dlg = SectorPlotSettingsDialog()
-        self.settings_dlg.btn_test_postgis.clicked.connect(self.settingsdlg_test_postgis_clicked)
-        self.settings_dlg.btn_test_geoserver.clicked.connect(self.settingsdlg_test_geoserver_clicked)
 
         self.current_sectorset = None
 
@@ -289,8 +230,73 @@ class SectorPlot:
             add_to_toolbar=False,
             parent=self.iface.mainWindow())
 
+        # The SectorplotSetS dialog, showing recent Sectorplots
+        self.sectorplotsets_dlg = SectorPlotSetsDialog()
+        self.sectorplotsets_dlg.table_sectorplot_sets.horizontalHeader().setStretchLastSection(True)
+        self.sectorplotsets_dlg.table_sectorplot_sets.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.sectorplotsets_dlg.table_sectorplot_sets.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.sectorplotsets_dlg.table_sectorplot_sets.setSelectionMode(QAbstractItemView.SingleSelection)
+        # dlg actions
+        self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.clicked.connect(self.locationdlg_open_dialog)
+        self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.clicked.connect(
+            self.sectorplotsetsdlg_new_sectorplotset_dialog)
+        self.sectorplotsets_dlg.btn_create_wms.clicked.connect(self.sectorplotsetsdlg_create_wms)
+        self.sectorplotsets_dlg.btn_create_shapefile.clicked.connect(self.sectorplotsetsdlg_create_shapefile)
+        self.sectorplotsets_dlg.table_sectorplot_sets.doubleClicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
+
+        # The Location_dialog for setting x/y lat/lon
+        self.location_dlg = SectorPlotLocationDialog(parent=self.sectorplotsets_dlg)
+        self.location_dlg.table_npps.horizontalHeader().setStretchLastSection(True)
+        self.location_dlg.table_npps.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.location_dlg.table_npps.setSelectionMode(QAbstractItemView.SingleSelection)
+        # actions
+        self.location_dlg.le_longitude.textChanged.connect(self.locationdlg_lonlat_changed)
+        self.location_dlg.le_latitude.textChanged.connect(self.locationdlg_lonlat_changed)
+        self.location_dlg.btn_location_from_map.clicked.connect(self.locationdlg_btn_location_clicked)
+        self.lon_validator = QDoubleValidator(-180, 180, 12, self.location_dlg.le_longitude)
+        self.location_dlg.le_longitude.setValidator(self.lon_validator)
+        # epsg:3857 valid untill about -85/85 ! Not sure if this is ok?
+        self.lat_validator = QDoubleValidator(-85, 85, 12, self.location_dlg.le_latitude)
+        self.location_dlg.le_latitude.setValidator(self.lat_validator)
+
+        # SectorplotSet_dialog showing current sectorplot (list of sectors in this plot)
+        self.sectorplotset_dlg = SectorPlotSectorPlotSetDialog(parent=self.sectorplotsets_dlg)
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setStretchLastSection(True)
+        self.sectorplotset_dlg.table_sectors.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.sectorplotset_dlg.table_sectors.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.sectorplotset_dlg.table_sectors.setSelectionMode(QAbstractItemView.SingleSelection)
+        # user is able to drag/drop both columns and rows
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setMovable(True)
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragEnabled(True)
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragDropMode(QAbstractItemView.InternalMove)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)
+        # actions
+        self.sectorplotset_dlg.btn_new_sector.clicked.connect(self.sectorplotsetdlg_open_new_sector_dialog)
+        self.sectorplotset_dlg.btn_open_selected_sector.clicked.connect(self.sectorplotsetdlg_open_sector_for_edit_dialog)
+        self.sectorplotset_dlg.btn_remove_selected_sector.clicked.connect(self.sectorplotsetdlg_remove_sector_from_table)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().sectionMoved.connect(
+            self.sectorplotsetdlg_create_sectorset_from_sector_table)
+        self.sectorplotset_dlg.table_sectors.clicked.connect(self.sectorplotsetdlg_sector_selected)
+        self.sectorplotset_dlg.table_sectors.doubleClicked.connect(self.sectorplotsetdlg_open_sector_for_edit_dialog)
+        # inits
+        self.sectorplotset_source_model = QStandardItemModel()
+        self.sectorplotset_dlg.table_sectors.setModel(self.sectorplotset_source_model)
+
+        # Sector dialog: ONE sector, created fresh for every Sector, signals are attached there!
+        self.sector_dlg = None  # SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
+
+        # Settings dialog
+        self.settings_dlg = SectorPlotSettingsDialog(parent=self.iface.mainWindow())
+        self.settings_dlg.btn_test_postgis.clicked.connect(self.settingsdlg_test_postgis_clicked)
+        self.settings_dlg.btn_test_geoserver.clicked.connect(self.settingsdlg_test_geoserver_clicked)
+
     def show_settings(self):
         self.settings_dlg.show()
+        if self.settings_dlg.exec_():
+            pass
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -317,6 +323,14 @@ class SectorPlot:
                 "Please enable OTF for this project or open a project with OTF enabled."),
                                 QMessageBox.Ok, QMessageBox.Ok)
             return
+
+
+        # fresh installs do not have passwords, present the settings dialog upon first use
+        settings = SectorPlotSettings()
+        no_postgis_password = settings.value('postgis_password') == '' or settings.value('postgis_password') == None
+        if no_postgis_password:
+            self.show_settings()
+
         # add a memory layer to show sectors if not yet available
         self.get_sector_layer()
         # open a the dialog with the sectorplotsets from the database

@@ -10,7 +10,7 @@
 name=SectorPlot
 qgisMinimumVersion=2.12
 description=Plots sector areas on risk management map
-version=0.5
+version=0.5.1
 author=RIVM
 email=marnix.de.ridder@rivm.nl
 
@@ -23,7 +23,10 @@ repository=http://github.com/rduivenvoorde/sectorplot
 # Recommended items:
 
 # Uncomment the following line and add your changelog:
-# changelog=
+changelog=
+    0.5.1   setting check upon startup, modal dialogs
+    0.5     settings via settingmanager
+    0.4     first public version
 
 # Tags are comma separated with spaces allowed
 tags=sector plot rivm
