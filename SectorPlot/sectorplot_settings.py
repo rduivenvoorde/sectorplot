@@ -33,3 +33,15 @@ class SectorPlotSettings(SettingManager):
         self.add_setting(String('geoserver_url', Scope.Global, 'http://geoserver.dev.cal-net.nl'))
         self.add_setting(String('geoserver_user', Scope.Global, 'admin'))
         self.add_setting(String('geoserver_password', Scope.Global, ''))
+
+        # JRodos REST server connection details (NPP's)
+        #
+        # to test: http://jrodos.dev.cal-net.nl:8080/jrodos-rest-service/jrodos
+        #
+        self.add_setting(
+            #String('jrodos_rest_url', Scope.Global,
+            #        'http://jrodos.dev.cal-net.nl:8080/jrodos-rest-service/jrodos'))
+            # TODO: set this to service url
+            String('jrodos_rest_url', Scope.Global,
+                   'file:///home/richard/dev/qgis/git/sectorplot/SectorPlot/data/npp-rest.json'))
+

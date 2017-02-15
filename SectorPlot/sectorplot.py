@@ -40,7 +40,7 @@ from sectorplot_settings import SectorPlotSettings
 from countermeasures import CounterMeasures
 
 from npp import NppSet
-from sector import Sector, SectorSet, SectorSets
+from sector import Sector, SectorSet, SectorSets, Pie
 from connect import Database, RestClient
 
 import os.path
@@ -90,10 +90,12 @@ class SectorPlot:
         self.iface.newProjectCreated.connect(self.remove_sector_layer)
 
         # inits
+        self.settings = SectorPlotSettings()
+
         self.sectorplotsets = None
         self.sectorplotsets_source_model = None
 
-        # inits
+        self.npps = None
         self.npp_source_model = None
         self.npp_proxy_model = None
 
@@ -384,6 +386,9 @@ class SectorPlot:
             self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat)
         #self.sector_layer.updateFields()
         #self.sector_layer.updateExtents()
+        self.repaint_sector_layer()
+
+    def repaint_sector_layer(self):
         if self.sector_layer is not None:
             if self.iface.mapCanvas().isCachingEnabled():
                 self.sector_layer.setCacheImage(None)
@@ -401,7 +406,7 @@ class SectorPlot:
         center = geom.asPoint()
         rect = QgsRectangle(center, center)
         self.iface.mapCanvas().setExtent(rect)
-        #self.iface.mapCanvas().zoomScale(scale)
+        # self.iface.mapCanvas().zoomScale(scale)
         self.iface.mapCanvas().refresh()
 
     def sectorplotsetsdlg_open_dialog(self, selected_id=-1):
@@ -458,8 +463,8 @@ class SectorPlot:
             pass
             # whatever the uses pushes:
         # TODO still working here without cleaning?
-        #self.new_sectorplotset()
-        #self.sectorplotsets = None
+        # self.new_sectorplotset()
+        # self.sectorplotsets = None
 
     def sectorplotsetsdlg_select_sectorplotset(self):
         if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
@@ -553,8 +558,15 @@ class SectorPlot:
         self.location_dlg.selected_npp_name = ''
 
         # fill the nuclear power plant list
-        npp_source = os.path.join(os.path.dirname(__file__), r'data/tabel-npp-export.txt')
-        npps = NppSet(npp_source)
+        if self.npps is None:
+            try:
+                url = self.settings.value('jrodos_rest_url')
+                self.npps = NppSet(url)
+            except:
+                self.msg(self.location_dlg, self.tr("Problem retrieving the NPP (Nuclear Power Plant) list.\nPlease check if the the url used in the settings is valid."))
+                self.locationdlg_finish()
+                return
+
         self.npp_proxy_model = QSortFilterProxyModel()
         self.npp_source_model = QStandardItemModel()
         self.npp_proxy_model.setSourceModel(self.npp_source_model)
@@ -564,24 +576,24 @@ class SectorPlot:
         self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.location_dlg.le_search_npp.textChanged.connect(self.locationdlg_filter_npps)
         self.location_dlg.le_search_npp.setPlaceholderText(self.tr("Search"))
-        if len(npps):
+        if len(self.npps):
             # load the npps in the table in dialog
-            for npp in npps:
+            for npp in self.npps:
                 # prepare a commaseparated string to search in from the values of the npp dict
                 vals = ""
                 for val in npp.values():
                     vals += ", %s" % unicode(val)
                 # you can attache different "data's" to to an QStandarditem
                 # default one is the visible one:
-                data = QStandardItem(vals)
+                country_code = QStandardItem("%s" % (npp["countrycode"].upper()))
                 # userrole is a free form one:
                 # attach the data/npp to the first visible(!) column
                 # when clicked you can get the npp from the data of that column
-                country_code = QStandardItem("%s" % (npp["countrycode"].upper()) )
+                data = QStandardItem(vals)
                 country_code.setData(npp, Qt.UserRole)
-                site = QStandardItem("%s" % (npp["site"].upper()) )
-                block = QStandardItem("%s" % (npp["block"].upper()) )
-                self.npp_source_model.appendRow ( [data, country_code, site, block] )
+                site = QStandardItem("%s" % (npp["site"].upper()))
+                block = QStandardItem("%s" % (npp["block"].upper()))
+                self.npp_source_model.appendRow([data, country_code, site, block])
         # headers
         self.npp_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Countrycode"))
         self.npp_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Site"))
@@ -592,6 +604,7 @@ class SectorPlot:
         self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.locationdlg_select_npp)
         # show the location dialog
         self.location_dlg.show()
+
         self.locationdlg_finish()
 
     def locationdlg_lonlat_changed(self):
@@ -607,7 +620,6 @@ class SectorPlot:
         return lat_state == QDoubleValidator.Acceptable and lon_state == QDoubleValidator.Acceptable
 
     def locationdlg_filter_npps(self, string):
-        # remove selection if we start filtering AND empty lon lat fields
         self.location_dlg.table_npps.clearSelection()
         self.location_dlg.le_longitude.setText('')
         self.location_dlg.le_latitude.setText('')
@@ -616,17 +628,23 @@ class SectorPlot:
 
     def locationdlg_select_npp(self):
         # needed to scroll To the selected row incase of using the keyboard / arrows
-        #self.location_dlg.table_npps.scrollTo(self.location_dlg.table_npps.selectedIndexes()[0])
+        # self.location_dlg.table_npps.scrollTo(self.location_dlg.table_npps.selectedIndexes()[0])
         # itemType holds the data (== column 1)
-        if len(self.location_dlg.table_npps.selectedIndexes())>0:
+        if len(self.location_dlg.table_npps.selectedIndexes()) > 0:
             npp = self.location_dlg.table_npps.selectedIndexes()[0].data(Qt.UserRole)
             self.location_dlg.le_longitude.setText(unicode(npp['longitude']))
             self.location_dlg.le_latitude.setText(unicode(npp['latitude']))
             self.location_dlg.selected_npp_name = npp['block']
             self.zoom_map_to_lonlat(npp['longitude'], npp['latitude'])
+            if self.sector_layer is not None:
+                self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
+            # lon=0, lat=0, start_angle=0.0, sector_count=8, zone_radii=[5]
+            rose = Pie(npp['longitude'], npp['latitude'], npp['angle'], npp['numberofsectors'], npp['zoneradii'])
+            self.sector_layer.dataProvider().addFeatures(rose.get_features())
+            self.repaint_sector_layer()
 
     def locationdlg_btn_location_clicked(self):
-        #self.xy_tool.activate()
+        # self.xy_tool.activate()
         self.iface.mapCanvas().setMapTool(self.xy_tool)
 
     def locationdlg_xy_clicked(self, xy):
@@ -652,6 +670,10 @@ class SectorPlot:
                 # problem validating the lat lon coordinates
                 self.msg(self.sectorplotsets_dlg, self.tr("One of the coordinates is not valid.\nPlease check and correct."))
                 self.locationdlg_finish()
+        else:
+            if self.sector_layer is not None:
+                self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
+                self.repaint_sector_layer()
 
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector

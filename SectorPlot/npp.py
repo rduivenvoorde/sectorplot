@@ -1,4 +1,11 @@
-import csv
+from PyQt4.QtCore import QCoreApplication
+
+import os
+
+from providers.npp_provider import NPPConfig, NPPProvider
+
+import logging
+
 
 class Npp(dict):
     def __init__(self, rec=None):
@@ -38,30 +45,62 @@ class Npp(dict):
 
 
 class NppSet(list):
-    def __init__(self, fn=None):
-        if fn is not None:
-            self.setByFile(fn)
+    def __init__(self, url):
 
-    def setByFile(self, fn):
-        try:
-            infile = open(fn, 'r')
-            records = list(csv.reader(infile, delimiter='|'))
-            infile.close()
-            print len(records)
-        except:
-            print('cannot read file')
+        # fill the nuclear power plant list
+        conf = NPPConfig()
+
+        # try remote version first
+        conf.url = url
+        prov = NPPProvider(conf)
+        prov.finished.connect(self.prov_finished)
+        prov.get_data()
+        while not prov.is_finished():
+            QCoreApplication.processEvents()
+
+        if len(self) == 0:
+            # fetch the local copy if available
+            conf.url = 'file://' + os.path.dirname(__file__) + os.path.sep + os.path.join('providers', 'npp-rest.json')
+            prov = NPPProvider(conf)
+            prov.finished.connect(self.prov_finished)
+            prov.get_data()
+            while not prov.is_finished():
+                QCoreApplication.processEvents()
+
+        if len(self) == 0:
+            raise Exception('Error retrieving NPP\'s, see log for more info...')
+
+
+    def prov_finished(self, result):
+        if result.error():
+            # TODO ? log the error message?
+
             return
-        self.clear()
-        for rec in records:
-            npp = Npp(rec)
-            if True:
-                self.append(npp)
-
-    def clear(self):
-        while len(self) > 0:
-            self.pop()
+        for npp_data in result.data['content']:
+            npp = Npp()
+            npp['block'] = npp_data['block']
+            npp['site'] = npp_data['site']
+            npp['longitude'] = float(npp_data['longitude'])
+            npp['latitude'] = float(npp_data['latitude'])
+            npp['inventory'] = npp_data['inventory']
+            npp['stackheight'] = float(npp_data['stackheight'])
+            npp['thermalpower'] = float(npp_data['thermalpower'])
+            npp['operationtime'] = int(npp_data['operationtime'])
+            npp['blocktype'] = npp_data['blocktype']
+            npp['buildingwidth'] = float(npp_data['buildingwidth'])
+            npp['buildingheight'] = float(npp_data['buildingheight'])
+            npp['volumeflux'] = float(npp_data['volumeflux'])
+            npp['ventopening'] = float(npp_data['ventopening'])
+            npp['countrycode'] = npp_data['countrycode']
+            npp['numberofzones'] = int(npp_data['numberofzones'])
+            npp['zoneradii'] = npp_data['zoneradii']
+            npp['numberofsectors'] = int(npp_data['numberofsectors'])
+            npp['angle'] = float(npp_data['angle'])
+            npp['closetoborder'] = npp_data['closetoborder']
+            #print npp
+            self.append(npp)
 
     def __str__(self):
-        # TODO: should this not return a full string representation of the set?
-        result = 'Npps[%s]' % (str(len(self)))
+        result = '[%s] NPPs' % (str(len(self)))
         return result
+

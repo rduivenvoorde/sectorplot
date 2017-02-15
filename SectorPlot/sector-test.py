@@ -3,7 +3,7 @@ from qgis.core import QgsApplication
 QgsApplication.setPrefixPath("/usr", True)
 
 
-from sector import Sector, Roos, SectorSet, SectorSets
+from sector import Sector, Pie, SectorSet, SectorSets
 import time
 
 
@@ -20,16 +20,16 @@ print(sec.getQgsFeature())
 
 
 '''
-roos = Roos()
-print(roos)
-for geom in roos.sectors:
-    print(geom)
+pie = Pie()
+print(pie)
+for geom in pie.sectors:
+    print(pie)
 '''
 
 
 
 if doGenerateData:
-    # fill full circle (roos 15km)
+    # fill full circle (SectorSet 15km)
     ss = SectorSet()
     for i in range(16):
       s = Sector('rose', 5, 53, 0, 15000, (22.5*i), 22.5, sectorName='q'+str(i+1), color='#ff0000')
@@ -38,7 +38,7 @@ if doGenerateData:
     if doExport:
         ss.exportToDatabase()
 
-    # fill full circle (roos 20km met gat 10km)
+    # fill full circle (SectorSet 20km met gat 10km)
     ss = SectorSet()
     for i in range(12):
       s = Sector('rose', 5, 52.7, 10000, 20000, (30*i), 30, sectorName='q'+str(i+1), color='#ff00ff')
@@ -94,7 +94,7 @@ ss.display()
 #ss2.createView()
 
 if True:
-    # fill full circle (roos 20km met gat 10km)
+    # fill full circle (SectorSet 20km met gat 10km)
     ss = SectorSet()
     for i in range(3):
       s = Sector('rose2', 5.3, 52.7, 5000, 15000, (30*i), 30, sectorName='q'+str(i+1), color='#ff00ff')

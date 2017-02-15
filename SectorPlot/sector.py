@@ -27,7 +27,7 @@ def timeToString(t_struct):
     return strftime("%Y-%m-%d %H:%M:%S +0000", t_struct)
 
 
-class Sector():
+class Sector:
     def __init__(self, setName=None, lon=0, lat=0, minDistance=0,
                  maxDistance=1, direction=0, angle=45, counterMeasureId=-1,
                  z_order=-1, saveTime=None, counterMeasureTime=None,
@@ -227,32 +227,63 @@ class Sector():
         return query
 
 
-class Roos():
-    def __init__(self, lon=0, lat=0, distances=[1], count=8):
-        self.distances = distances
-        self.count = count
+class Pie:
+
+        # "longitude":3.7174,
+        # "latitude":51.4312,
+        # "numberofzones":3,
+        # "zoneradii":[5.0, 10.0, 20.0],
+        # "numberofsectors":16,
+        # "angle":0.0,
+
+    def __init__(self, lon=0, lat=0, start_angle=0.0, sector_count=8, zone_radii=[5]):
+
+        self.lat = lat
+        self.lon = lon
+        self.start_angle = start_angle
+        self.sector_count = sector_count
+        self.zone_radii = zone_radii
+
         self.sectors = []
-        if count > 0:
-            angle = 360 / count
-            for dist in distances:
-                direction = 0
-                for i in range(self.count):
-                    sec = Sector('q'+str(i+1), lon, lat, 0, dist, direction, angle)
+
+        if self.sector_count > 0:
+            angle = 360.0 / self.sector_count
+            min_distance = 0
+            max_distance = 0
+            for radius in self.zone_radii:
+                direction = self.start_angle
+                min_distance = max_distance
+                max_distance = radius * 1000
+                for x in range(0, self.sector_count):
+                    # Sector(setName=None, lon=0, lat=0, minDistance=0,
+                    #          maxDistance=1, direction=0, angle=45, counterMeasureId=-1,
+                    #          z_order=-1, saveTime=None, counterMeasureTime=None,
+                    #          sectorName=None, setId=-1, color='#ffffff'):
+                    sec = Sector(setName='rose', lon=lon, lat=lat, minDistance=min_distance, maxDistance=max_distance,
+                                 direction=direction, angle=angle, counterMeasureId=-1, z_order=-1, saveTime=None,
+                                 counterMeasureTime=None, sectorName=None, setId=-1, color='#000000')
+
                     self.sectors.append(sec)
                     direction += angle
 
     def __str__(self):
-        result = 'Roos[%s, %d, %d]' % (str(self.distances), self.count, len(self.sectors))
+        result = 'Pie[%s, %s, %s] ' % (self.lon, self.lat, len(self.sectors))
         return result
 
+    def get_features(self):
+        features = []
+        for sector in self.sectors:
+            features.append(sector.getQgsFeature())
+        return features
 
-class SectorSet():
+
+
+class SectorSet:
     def __init__(self, lon=0, lat=0, name=None, setId=-1):
         self.lon = lon
         self.lat = lat
         self.name = name
         self.setId = setId
-        #self.roos = Roos()
         self.sectors = []
 
     def __str__(self):

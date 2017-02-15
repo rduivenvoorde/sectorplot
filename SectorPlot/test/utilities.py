@@ -27,6 +27,7 @@ def get_qgis_app():
         from qgis.core import QgsApplication
         from qgis.gui import QgsMapCanvas
         from qgis_interface import QgisInterface
+        import os
     except ImportError:
         return None, None, None, None
 
@@ -37,6 +38,7 @@ def get_qgis_app():
         #noinspection PyPep8Naming
         QGIS_APP = QgsApplication(sys.argv, gui_flag)
         # Make sure QGIS_PREFIX_PATH is set in your env if needed!
+        QGIS_APP.setPrefixPath(os.getenv("QGIS_PREFIX_PATH", None), True)
         QGIS_APP.initQgis()
         s = QGIS_APP.showSettings()
         LOGGER.debug(s)
