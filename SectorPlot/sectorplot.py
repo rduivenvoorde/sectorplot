@@ -650,6 +650,7 @@ class SectorPlot:
         self.iface.mapCanvas().unsetMapTool(self.xy_tool)
 
     def locationdlg_show(self):
+        self.location_dlg.le_search_npp.setText('')  # use '' here first, to be able to trigger filter in next line
         self.location_dlg.le_search_npp.setText('borssele')
         # See if OK was pressed
         if self.location_dlg.exec_():
@@ -671,7 +672,7 @@ class SectorPlot:
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
     def sectorplotsetdlg_open_new_sector_dialog(self, bool=False, edited_sector=None):
-        # NOTE! we create a shiny new dialog to be sure all is initted ok
+        # NOTE! we create a shiny new dialog here to be sure all is initted ok
         self.sector_dlg = SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
         self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
         self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
@@ -714,7 +715,7 @@ class SectorPlot:
         QWidget.setTabOrder(self.sector_dlg.le_angle, self.sector_dlg.le_distance)
         QWidget.setTabOrder(self.sector_dlg.le_distance, self.sector_dlg.cb_min_distance)
         QWidget.setTabOrder(self.sector_dlg.cb_min_distance, self.sector_dlg.le_sector_name)
-        self.sector_dlg_finish(edited_sector)
+        self.sector_dlg_show(edited_sector)
 
     def sectorplotsetdlg_open_sector_for_edit_dialog(self):
         if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
@@ -860,7 +861,7 @@ class SectorPlot:
         self.sector_dlg.le_sector_name.setText(countermeasure['text'])
         self.sector_dlg_set_color(countermeasure['color'])
 
-    def sector_dlg_finish(self, old_sector):
+    def sector_dlg_show(self, old_sector):
         # OK pressed in Sector dialog(!)
         if self.sector_dlg.exec_():
             # do some checking...
@@ -921,7 +922,7 @@ class SectorPlot:
                 #self.sectorplotset_dlg.old_sector = new_sector
                 return
             # mmm, one of the validators failed: reopen it after the msg was OK'ed with an
-            self.sector_dlg_finish(old_sector)
+            self.sector_dlg_show(old_sector)
         else:
             # user canceled
             # set the data of the selected row BACK to the old_sector (original sector)
@@ -929,7 +930,6 @@ class SectorPlot:
                 self.sectorplotset_source_model.item(
                     self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
             self.sectorplotset_dlg.old_sector = None
-
 
     def settingsdlg_show(self):
         self.settings_dlg.exec_()
@@ -944,7 +944,6 @@ class SectorPlot:
             self.msg(self.settings_dlg, self.tr('Connection successful'))
         else:
             self.msg(self.settings_dlg, self.tr('Connection problem, please check inputs'))
-
 
     def settingsdlg_test_geoserver_clicked(self):
         rc = RestClient('sectorplot')
