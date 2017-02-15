@@ -452,7 +452,6 @@ class SectorPlot:
                     selected_row = row
                     break;
         self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(selected_row)
-        self.sectorplotsets_dlg.show()
         # See if OK was pressed
         if self.sectorplotsets_dlg.exec_():
             pass
@@ -510,8 +509,7 @@ class SectorPlot:
             for sector in self.current_sectorset.sectors:
                 sector.calcGeometry()
                 self.sectorplotsetdlg_add_sector_to_table(sector)
-        self.sectorplotset_dlg.show()
-        self.sectorplotsetdlg_finish()
+        self.sectorplotsetdlg_show()
 
     def sectorplotsetsdlg_create_wms(self):
         result = self.current_sectorset.publish(self.current_sectorset.getUniqueName())
@@ -559,7 +557,7 @@ class SectorPlot:
                 self.npps = NppSet(url)
             except:
                 self.msg(self.location_dlg, self.tr("Problem retrieving the NPP (Nuclear Power Plant) list.\nPlease check if the the url used in the settings is valid."))
-                self.locationdlg_finish()
+                self.locationdlg_show()
                 return
 
         self.npp_proxy_model = QSortFilterProxyModel()
@@ -598,8 +596,7 @@ class SectorPlot:
         # handle the selection of a NPP
         self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.locationdlg_select_npp)
         # show the location dialog
-        self.location_dlg.show()
-        self.locationdlg_finish()
+        self.locationdlg_show()
 
     def locationdlg_lonlat_changed(self):
         lon = self.location_dlg.le_longitude.text()
@@ -652,7 +649,7 @@ class SectorPlot:
         self.location_dlg.le_latitude.setText(unicode(xy4326.y()))
         self.iface.mapCanvas().unsetMapTool(self.xy_tool)
 
-    def locationdlg_finish(self):
+    def locationdlg_show(self):
         self.location_dlg.le_search_npp.setText('borssele')
         # See if OK was pressed
         if self.location_dlg.exec_():
@@ -665,7 +662,7 @@ class SectorPlot:
             else:
                 # problem validating the lat lon coordinates
                 self.msg(self.sectorplotsets_dlg, self.tr("One of the coordinates is not valid.\nPlease check and correct."))
-                self.locationdlg_finish()
+                self.locationdlg_show()
         else:
             if self.sector_layer is not None:
                 self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
@@ -788,25 +785,23 @@ class SectorPlot:
         self.current_sectorset.setSetName(self.sectorplotset_dlg.le_sectorplot_name.text())
         # set save time (for the SectorplotSet == for all sectors in it)
         self.current_sectorset.setSaveTime()
-        # show it!
+        # show the sectorset!
         self.show_current_sectorplotset_on_map()
 
-    def sectorplotsetdlg_finish(self):
+    def sectorplotsetdlg_show(self):
         # OK will save to db
         if self.sectorplotset_dlg.exec_():
             self.sectorplotsetdlg_create_sectorset_from_sector_table()
             if self.current_sectorset.name is None or len(self.current_sectorset.name) == 0:
                 # no name set, please provide one
-                self.sectorplotset_dlg.show()
                 msg = self.tr("You did not provide a name for this Sectorplot. \nPlease provide one.")
                 self.msg(self.sectorplotset_dlg, msg)
-                self.sectorplotsetdlg_finish()
+                self.sectorplotsetdlg_show()
             elif len(self.current_sectorset.sectors) == 0:
                 # no name set, please provide one
-                self.sectorplotset_dlg.show()
                 msg = self.tr("You did not provide a sector for this Sectorplot. \nPlease provide at least one.")
                 self.msg(self.sectorplotset_dlg, msg)
-                self.sectorplotsetdlg_finish()
+                self.sectorplotsetdlg_show()
             else:
                 # NOW we cannot change modification time anymore, so let's get it from the dialog and set it
                 # format: "%Y-%m-%d %H:%M:%S"
