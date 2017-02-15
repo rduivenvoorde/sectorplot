@@ -25,7 +25,7 @@ from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemMode
     QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator, \
     QCursor, QPixmap, QWidget, QFileDialog
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
-    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsVectorFileWriter
+    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsVectorFileWriter, QgsMessageLog
 from qgis.gui import QgsMapTool
 # Initialize Qt resources from file resources_rc.py
 import resources_rc
@@ -604,7 +604,6 @@ class SectorPlot:
         self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.locationdlg_select_npp)
         # show the location dialog
         self.location_dlg.show()
-
         self.locationdlg_finish()
 
     def locationdlg_lonlat_changed(self):
@@ -625,6 +624,7 @@ class SectorPlot:
         self.location_dlg.le_latitude.setText('')
         self.npp_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.npp_proxy_model.setFilterFixedString(string)
+        self.location_dlg.table_npps.selectRow(0)
 
     def locationdlg_select_npp(self):
         # needed to scroll To the selected row incase of using the keyboard / arrows
@@ -961,6 +961,10 @@ class SectorPlot:
             self.msg(self.settings_dlg, self.tr('Connection successful'))
         else:
             self.msg(self.settings_dlg, self.tr('Connection problem, please check inputs'))
+
+    def debug(self, s):
+        QgsMessageLog.logMessage(s, tag="SectorPlot Debug", level=QgsMessageLog.INFO)
+
 
 class GetPointTool(QgsMapTool):
 
