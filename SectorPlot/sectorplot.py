@@ -720,7 +720,6 @@ class SectorPlot:
     def sectorplotsetdlg_open_sector_for_edit_dialog(self):
         if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
             sector = self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].data(Qt.UserRole)
-            self.sectorplotset_dlg.old_sector = sector
             self.sectorplotsetdlg_open_new_sector_dialog(True, sector.clone())
 
     def sectorplotsetdlg_sector_selected(self):
@@ -918,8 +917,6 @@ class SectorPlot:
                 if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
                     row = self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row()
                 self.sectorplotsetdlg_add_sector_to_table(new_sector, row)
-                # ok, this is the old one to keep in case the user cancels or reopens for edit again
-                #self.sectorplotset_dlg.old_sector = new_sector
                 return
             # mmm, one of the validators failed: reopen it after the msg was OK'ed with an
             self.sector_dlg_show(old_sector)
@@ -929,7 +926,6 @@ class SectorPlot:
             if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
                 self.sectorplotset_source_model.item(
                     self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
-            self.sectorplotset_dlg.old_sector = None
 
     def settingsdlg_show(self):
         self.settings_dlg.exec_()
