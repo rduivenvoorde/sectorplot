@@ -204,7 +204,7 @@ class SectorPlot:
             self.toolbar.addAction(action)
 
         if add_to_menu:
-            self.iface.addPluginToMenu(
+            self.iface.addPluginToWebMenu(
                 self.menu,
                 action)
 
@@ -228,7 +228,7 @@ class SectorPlot:
         self.add_action(
             icon_path,
             text=self.tr(u'Show Settings'),
-            callback=self.show_settings,
+            callback=self.settingsdlg_show,
             add_to_toolbar=False,
             parent=self.iface.mainWindow())
 
@@ -295,15 +295,10 @@ class SectorPlot:
         self.settings_dlg.btn_test_postgis.clicked.connect(self.settingsdlg_test_postgis_clicked)
         self.settings_dlg.btn_test_geoserver.clicked.connect(self.settingsdlg_test_geoserver_clicked)
 
-    def show_settings(self):
-        self.settings_dlg.show()
-        if self.settings_dlg.exec_():
-            pass
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
-            self.iface.removePluginMenu(
+            self.iface.removePluginWebMenu(
                 self.tr(u'&SectorPlot'),
                 action)
             self.iface.removeToolBarIcon(action)
@@ -331,7 +326,7 @@ class SectorPlot:
         settings = SectorPlotSettings()
         no_postgis_password = settings.value('postgis_password') == '' or settings.value('postgis_password') == None
         if no_postgis_password:
-            self.show_settings()
+            self.settingsdlg_show()
 
         # add a memory layer to show sectors if not yet available
         self.get_sector_layer()
@@ -658,6 +653,7 @@ class SectorPlot:
         self.iface.mapCanvas().unsetMapTool(self.xy_tool)
 
     def locationdlg_finish(self):
+        self.location_dlg.le_search_npp.setText('borssele')
         # See if OK was pressed
         if self.location_dlg.exec_():
             lon = self.location_dlg.le_longitude.text()
@@ -721,7 +717,6 @@ class SectorPlot:
         QWidget.setTabOrder(self.sector_dlg.le_angle, self.sector_dlg.le_distance)
         QWidget.setTabOrder(self.sector_dlg.le_distance, self.sector_dlg.cb_min_distance)
         QWidget.setTabOrder(self.sector_dlg.cb_min_distance, self.sector_dlg.le_sector_name)
-        self.sector_dlg.show()
         self.sector_dlg_finish(edited_sector)
 
     def sectorplotsetdlg_open_sector_for_edit_dialog(self):
@@ -939,6 +934,10 @@ class SectorPlot:
                 self.sectorplotset_source_model.item(
                     self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
             self.sectorplotset_dlg.old_sector = None
+
+
+    def settingsdlg_show(self):
+        self.settings_dlg.exec_()
 
     def settingsdlg_test_postgis_clicked(self):
         db = Database('sectorplot')
