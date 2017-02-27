@@ -262,7 +262,6 @@ class Pie:
                     sec = Sector(setName='rose', lon=lon, lat=lat, minDistance=min_distance, maxDistance=max_distance,
                                  direction=direction, angle=angle, counterMeasureId=-1, z_order=-1, saveTime=None,
                                  counterMeasureTime=None, sectorName=None, setId=-1, color='#000000')
-
                     self.sectors.append(sec)
                     direction += angle
 

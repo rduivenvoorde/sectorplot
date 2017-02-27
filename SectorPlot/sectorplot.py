@@ -25,7 +25,8 @@ from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemMode
     QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator, \
     QCursor, QPixmap, QWidget, QFileDialog
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
-    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsVectorFileWriter, QgsMessageLog
+    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsVectorFileWriter, \
+    QgsMessageLog, QgsExpression, QgsFeatureRequest
 from qgis.gui import QgsMapTool
 # Initialize Qt resources from file resources_rc.py
 import resources_rc
@@ -80,6 +81,7 @@ class SectorPlot:
         self.ALPHA = 127
         # name of sector layer (memory layer) to be used to draw sectors in
         self.SECTOR_LAYER_NAME = self.tr("Sector Plugin Layer")
+        self.PIE_LAYER_NAME = self.tr("Sector Plugin Layer (Pie)")
 
         self.DEMO = False
 
@@ -112,9 +114,11 @@ class SectorPlot:
         self.min_distance_validator = QDoubleValidator(0, 999, 1)
 
         self.current_sectorset = None
+        self.current_pie = None
 
         # memory Layer
         self.sector_layer = None
+        self.pie_layer = None
         self.crs_4326 = QgsCoordinateReferenceSystem()
         self.crs_4326.createFromId(4326)
 
@@ -255,6 +259,8 @@ class SectorPlot:
         # actions
         self.location_dlg.le_longitude.textChanged.connect(self.locationdlg_lonlat_changed)
         self.location_dlg.le_latitude.textChanged.connect(self.locationdlg_lonlat_changed)
+        self.location_dlg.le_longitude.textEdited.connect(self.locationdlg_lonlat_edited)
+        self.location_dlg.le_latitude.textEdited.connect(self.locationdlg_lonlat_edited)
         self.location_dlg.btn_location_from_map.clicked.connect(self.locationdlg_btn_location_clicked)
         self.lon_validator = QDoubleValidator(-180, 180, 12, self.location_dlg.le_longitude)
         self.location_dlg.le_longitude.setValidator(self.lon_validator)
@@ -328,7 +334,8 @@ class SectorPlot:
         if no_postgis_password:
             self.settingsdlg_show()
 
-        # add a memory layer to show sectors if not yet available
+        # add a memory layer to show sectors and the pie if not yet available
+        self.get_pie_layer()
         self.get_sector_layer()
         # open a the dialog with the sectorplotsets from the database
         self.new_sectorplotset()
@@ -340,7 +347,6 @@ class SectorPlot:
             if len(QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) > 0:
                 # not 100% sure if this layers IS the real SECTOR_LAYER_NAME but no further checks for now
                 self.sector_layer = QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)[0]
-                #self.msg(None, 1)
             else:
                 # give the memory layer the same CRS as the source layer
                 self.sector_layer = QgsVectorLayer(
@@ -359,28 +365,50 @@ class SectorPlot:
             self.sector_layer.layerDeleted.connect(self.remove_sector_layer)
         return self.sector_layer
 
+    def get_pie_layer(self):
+        if self.pie_layer is None:
+            if len(QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)) > 0:
+                self.pie_layer = QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)[0]
+            else:
+                # give the memory layer the same CRS as the source layer
+                self.pie_layer = QgsVectorLayer(
+                    "Polygon?crs=epsg:4326&field=setname:string(50)&field=countermeasureid:integer&field=z_order:integer" +
+                    "&field=saveTime:string(50)&field=color:counterMeasureTime(9)&field=sectorname:string(50)" +
+                    "&field=setid:integer&field=color:string(9)" +
+                    "&index=yes",
+                    self.PIE_LAYER_NAME,
+                    "memory")
+                # use a saved style as style
+                self.pie_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectorpie.qml'))
+                # add empty layer to the map
+                QgsMapLayerRegistry.instance().addMapLayer(self.pie_layer)
+            # WHEN this layer is deleted from the layer tree, also remove it from the plugin
+            # actually set self.sector_layer to None
+            self.pie_layer.layerDeleted.connect(self.remove_sector_layer)
+        return self.pie_layer
+
     def remove_sector_layer(self):
         #  set self.sector_layer to None
         self.sector_layer = None
+        self.pie_layer = None
         self.current_sectorset = None
-        # also remove the Sector Layer (part of plugin) IF still available
-        #lr = QgsMapLayerRegistry.instance()
-        #lr.removeMapLayers(lr.mapLayersByName(self.SECTOR_LAYER_NAME))
+        self.current_pie = None
 
     def new_sectorplotset(self):
         self.current_sectorset = None
+        self.current_pie = None
         self.sectorplotset_source_model.clear()
         # show... nothing
         self.show_current_sectorplotset_on_map()
 
     def show_current_sectorplotset_on_map(self):
-        if self.sector_layer is not None:
-            self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
+        self.clean_sector_layer(sectorset=True, pie=True)
+        if self.current_pie is not None and self.pie_layer is not None:
+            self.pie_layer.dataProvider().addFeatures(self.current_pie.get_features())
+        self.repaint_sector_layer()
         if self.current_sectorset is not None and self.sector_layer is not None:
             self.sector_layer.dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
             self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat)
-        #self.sector_layer.updateFields()
-        #self.sector_layer.updateExtents()
         self.repaint_sector_layer()
 
     def repaint_sector_layer(self):
@@ -544,6 +572,7 @@ class SectorPlot:
             self.msg(self.sectorplotsets_dlg, self.tr("Problem saving shapefile"))
 
     def locationdlg_open_dialog(self):
+
         self.new_sectorplotset()
         self.location_dlg.le_longitude.clear()
         self.location_dlg.le_latitude.clear()
@@ -604,6 +633,46 @@ class SectorPlot:
         if self.locationdlg_lonlat_checked(lon, lat):
             self.zoom_map_to_lonlat(lon, lat)
 
+    def locationdlg_lonlat_edited(self):
+        # ONLY if the user edits coords by hand, override npp selection
+        # by cleaning the npp name
+        # remembering the lat lon
+        self.location_dlg.table_npps.clearSelection()
+        lon = self.location_dlg.le_longitude.text()
+        lat = self.location_dlg.le_latitude.text()
+        if self.locationdlg_lonlat_checked(lon, lat):
+            self.zoom_map_to_lonlat(lon, lat)
+        self.unset_npp()
+        QSettings().setValue("plugins/SectorPlot/last_location", [lon, lat])
+
+    def unset_npp(self):
+        # clear npp seach input
+        #self.location_dlg.le_search_npp.setText('')
+        # deselect row in npp list
+        self.location_dlg.table_npps.clearSelection()
+        # clear selected_npp_name
+        self.location_dlg.selected_npp_name = ''
+        # remove npp pie
+        self.clean_sector_layer(sectorset=False, pie=True)
+
+    def clean_sector_layer(self, sectorset=True, pie=True):
+        # sector_layer = self.sector_layer
+        # if sectorset and pie:
+        #     #sector_layer.dataProvider().deleteFeatures(sector_layer.allFeatureIds())
+        #     expr = QgsExpression('"setname"!=\'XxXxX\'')  # hopefully all
+        # elif sectorset:
+        #     expr = QgsExpression('"setname"!=\'rose\'')
+        # elif pie:
+        #     expr = QgsExpression('"setname"=\'rose\'')
+        # ids = [f.id() for f in sector_layer.getFeatures(QgsFeatureRequest(expr))]
+        # sector_layer.dataProvider().deleteFeatures(ids)
+        # self.repaint_sector_layer()
+        if sectorset:
+            self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
+        if pie:
+            self.pie_layer.dataProvider().deleteFeatures(self.pie_layer.allFeatureIds())
+        self.repaint_sector_layer()
+
     def locationdlg_lonlat_checked(self, lon, lat):
         lat_state, ln, pos = self.lat_validator.validate(lat, 0)
         lon_state, lt, pos = self.lon_validator.validate(lon, 0)
@@ -616,7 +685,12 @@ class SectorPlot:
         self.location_dlg.le_latitude.setText('')
         self.npp_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.npp_proxy_model.setFilterFixedString(string)
-        self.location_dlg.table_npps.selectRow(0)
+        # ONLY if we have just one result, select it
+        # this makes it possible to remember a value...
+        if self.npp_proxy_model.rowCount() == 1:
+            self.location_dlg.table_npps.selectRow(0)
+        #else:
+        #    self.unset_npp()
 
     def locationdlg_select_npp(self):
         # needed to scroll To the selected row incase of using the keyboard / arrows
@@ -628,12 +702,18 @@ class SectorPlot:
             self.location_dlg.le_latitude.setText(unicode(npp['latitude']))
             self.location_dlg.selected_npp_name = npp['block']
             self.zoom_map_to_lonlat(npp['longitude'], npp['latitude'])
-            if self.sector_layer is not None:
-                self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
+
+            # TODO clean
+            # if self.sector_layer is not None:
+            #     self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
+            self.clean_sector_layer(True, True)
             # lon=0, lat=0, start_angle=0.0, sector_count=8, zone_radii=[5]
-            rose = Pie(npp['longitude'], npp['latitude'], npp['angle'], npp['numberofsectors'], npp['zoneradii'])
-            self.sector_layer.dataProvider().addFeatures(rose.get_features())
+            self.current_pie = Pie(npp['longitude'], npp['latitude'], npp['angle'], npp['numberofsectors'], npp['zoneradii'])
+            self.pie_layer.dataProvider().addFeatures(self.current_pie.get_features())
             self.repaint_sector_layer()
+            QSettings().setValue("plugins/SectorPlot/last_location", npp['block'])
+        else:
+            self.unset_npp()
 
     def locationdlg_btn_location_clicked(self):
         # self.xy_tool.activate()
@@ -651,7 +731,14 @@ class SectorPlot:
 
     def locationdlg_show(self):
         self.location_dlg.le_search_npp.setText('')  # use '' here first, to be able to trigger filter in next line
-        self.location_dlg.le_search_npp.setText('borssele')
+
+        # self.location_dlg.le_search_npp.setText('borssele')
+        last_location = QSettings().value("plugins/SectorPlot/last_location")
+        if isinstance(last_location, list):
+            self.location_dlg.le_longitude.setText(unicode(last_location[0]))
+            self.location_dlg.le_latitude.setText(unicode(last_location[1]))
+        elif isinstance(last_location, str) or isinstance(last_location, unicode):
+            self.location_dlg.le_search_npp.setText(last_location)
         # See if OK was pressed
         if self.location_dlg.exec_():
             lon = self.location_dlg.le_longitude.text()
@@ -665,9 +752,7 @@ class SectorPlot:
                 self.msg(self.sectorplotsets_dlg, self.tr("One of the coordinates is not valid.\nPlease check and correct."))
                 self.locationdlg_show()
         else:
-            if self.sector_layer is not None:
-                self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
-                self.repaint_sector_layer()
+            self.clean_sector_layer(True, True)
 
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
@@ -813,7 +898,8 @@ class SectorPlot:
                 # save to DB and retrieve id of sectorplotset
                 db_ok, result = self.current_sectorset.exportToDatabase()
                 if db_ok:
-                    # (re)open sectorplotlist_dialog on row with just saved id
+                    # (re)open sectorplotlist_dialog on row with just saved id BUT without pie
+                    self.current_pie = None
                     # if OK exportToDatabase returns the inserted id
                     self.sectorplotsetsdlg_open_dialog(result)
                 elif self.DEMO:
@@ -824,6 +910,7 @@ class SectorPlot:
                     self.msg(self.sectorplotset_dlg, self.tr("Database error:\n %s") % result)
         else:
             self.current_sectorset = None
+            self.current_pie = None
             # go back to (old) selected one, IF there was one selected
             if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
                 self.current_sectorset = self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()[0].data(Qt.UserRole)
@@ -927,9 +1014,6 @@ class SectorPlot:
                 self.sectorplotset_source_model.item(
                     self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
 
-    def settingsdlg_show(self):
-        self.settings_dlg.exec_()
-
     def settingsdlg_test_postgis_clicked(self):
         db = Database('sectorplot')
         test_ok = db.test_connection(self.settings_dlg.postgis_host.text(),
@@ -950,6 +1034,9 @@ class SectorPlot:
             self.msg(self.settings_dlg, self.tr('Connection successful'))
         else:
             self.msg(self.settings_dlg, self.tr('Connection problem, please check inputs'))
+
+    def settingsdlg_show(self):
+        self.settings_dlg.exec_()
 
     def debug(self, s):
         QgsMessageLog.logMessage(s, tag="SectorPlot Debug", level=QgsMessageLog.INFO)
