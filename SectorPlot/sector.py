@@ -259,9 +259,12 @@ class Pie:
                     #          maxDistance=1, direction=0, angle=45, counterMeasureId=-1,
                     #          z_order=-1, saveTime=None, counterMeasureTime=None,
                     #          sectorName=None, setId=-1, color='#ffffff'):
+
+                    # sectorName is pipe-separated string: direction, angle, mindistance, maxdistance
+                    sectorName ='%s|%s|%s|%s' % (direction, angle, min_distance, max_distance)
                     sec = Sector(setName='rose', lon=lon, lat=lat, minDistance=min_distance, maxDistance=max_distance,
                                  direction=direction, angle=angle, counterMeasureId=-1, z_order=-1, saveTime=None,
-                                 counterMeasureTime=None, sectorName=None, setId=-1, color='#000000')
+                                 counterMeasureTime=None, sectorName=sectorName, setId=-1, color='#000000')
                     self.sectors.append(sec)
                     direction += angle
 
