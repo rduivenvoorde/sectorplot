@@ -27,6 +27,7 @@ import os
 import site
 site.addsitedir(os.path.abspath('%s' % os.path.dirname(__file__)))
 
+
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name
     """Load SectorPlot class from file SectorPlot.

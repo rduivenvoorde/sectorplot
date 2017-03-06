@@ -40,7 +40,7 @@ class Database():
             database = self.settings.value('postgis_database')
             user = self.settings.value('postgis_user')
             password = self.settings.value('postgis_password')
-            return "host='{}' dbname='{}' user='{}' password='{}'".format(host, database, user, password)
+            return "host='{}' dbname='{}' user='{}' password='{}' connect_timeout=3".format(host, database, user, password)
 
     def execute(self, queries):
         self.connect()

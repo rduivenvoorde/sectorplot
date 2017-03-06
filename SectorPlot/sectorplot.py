@@ -47,7 +47,6 @@ from connect import Database, RestClient
 import os.path
 import shutil
 
-
 class SectorPlot:
     """QGIS Plugin Implementation."""
 
@@ -89,7 +88,7 @@ class SectorPlot:
         # create self.sector_layer when the user creates a new project (and removes this memory layer)
 
         # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
-        self.iface.newProjectCreated.connect(self.remove_sector_layer)
+        self.iface.newProjectCreated.connect(self.remove_sectorplot_layers)
 
         # inits
         self.settings = SectorPlotSettings()
@@ -310,7 +309,7 @@ class SectorPlot:
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
-        self.remove_sector_layer()
+        self.remove_sectorplot_layers()
 
     def msg(self, parent=None, msg=""):
         if parent is None:
@@ -327,6 +326,10 @@ class SectorPlot:
                                 QMessageBox.Ok, QMessageBox.Ok)
             return
 
+        # pycharm debugging
+        # COMMENT OUT BEFORE PACKAGING !!!
+        #import pydevd
+        #pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
 
         # fresh installs do not have passwords, present the settings dialog upon first use
         settings = SectorPlotSettings()
@@ -349,9 +352,10 @@ class SectorPlot:
                 self.sector_layer = QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)[0]
             else:
                 # give the memory layer the same CRS as the source layer
+                # NOTE!!! the order of the attributes is vital, to the order you add the fields in sector.py!!!
                 self.sector_layer = QgsVectorLayer(
                     "Polygon?crs=epsg:4326&field=setname:string(50)&field=countermeasureid:integer&field=z_order:integer" +
-                    "&field=saveTime:string(50)&field=color:counterMeasureTime(9)&field=sectorname:string(50)" +
+                    "&field=saveTime:string(50)&field=counterMeasureTime:string(50)&field=sectorname:string(50)" +
                     "&field=setid:integer&field=color:string(9)" +
                     "&index=yes",
                     self.SECTOR_LAYER_NAME,
@@ -362,7 +366,7 @@ class SectorPlot:
                 QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
             # WHEN this layer is deleted from the layer tree, also remove it from the plugin
             # actually set self.sector_layer to None
-            self.sector_layer.layerDeleted.connect(self.remove_sector_layer)
+            self.sector_layer.layerDeleted.connect(self.remove_sectorplot_layers)
         return self.sector_layer
 
     def get_pie_layer(self):
@@ -371,9 +375,10 @@ class SectorPlot:
                 self.pie_layer = QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)[0]
             else:
                 # give the memory layer the same CRS as the source layer
+                # NOTE!!! the order of the attributes is vital, to the order you add the fields in sector.py!!!
                 self.pie_layer = QgsVectorLayer(
                     "Polygon?crs=epsg:4326&field=setname:string(50)&field=countermeasureid:integer&field=z_order:integer" +
-                    "&field=saveTime:string(50)&field=color:counterMeasureTime(9)&field=sectorname:string(50)" +
+                    "&field=saveTime:string(50)&field=counterMeasureTime:string(50)&field=sectorname:string(50)" +
                     "&field=setid:integer&field=color:string(9)" +
                     "&index=yes",
                     self.PIE_LAYER_NAME,
@@ -384,10 +389,10 @@ class SectorPlot:
                 QgsMapLayerRegistry.instance().addMapLayer(self.pie_layer)
             # WHEN this layer is deleted from the layer tree, also remove it from the plugin
             # actually set self.sector_layer to None
-            self.pie_layer.layerDeleted.connect(self.remove_sector_layer)
+            self.pie_layer.layerDeleted.connect(self.remove_sectorplot_layers)
         return self.pie_layer
 
-    def remove_sector_layer(self):
+    def remove_sectorplot_layers(self):
         #  set self.sector_layer to None
         self.sector_layer = None
         self.pie_layer = None
@@ -402,13 +407,21 @@ class SectorPlot:
         self.show_current_sectorplotset_on_map()
 
     def show_current_sectorplotset_on_map(self):
+
         self.clean_sector_layer(sectorset=True, pie=True)
         if self.current_pie is not None and self.pie_layer is not None:
             self.pie_layer.dataProvider().addFeatures(self.current_pie.get_features())
         self.repaint_sector_layer()
+
         if self.current_sectorset is not None and self.sector_layer is not None:
             self.sector_layer.dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
             self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat)
+
+        # if self.current_sectorset is not None and self.current_pie is None:
+        #     # try to find a npp-pie based on the name of current_sectorset name
+        #     self.debug("trying to find NPP PIE")
+        #     self.debug(str(self.current_sectorset.name))
+
         self.repaint_sector_layer()
 
     def repaint_sector_layer(self):
@@ -441,7 +454,7 @@ class SectorPlot:
             self.msg(None, "DEMO MODE: no wms and saving / retrieving of old sectors / listing of recent plots\nPlease create a new Sectorplot via 'New Sectorplot' button in next dialog.")
         elif not db_ok:
             # if NOT OK importFromDatabase returns the database error
-           self.msg(None, self.tr("Database error:\n%s") % result)
+           self.msg(None, self.tr("There is a problem with the Database to retrieve the Sectorplots\nThe Database error is:\n%s") % result)
            return
         # create emtpy model for new list
         self.sectorplotsets_source_model = QStandardItemModel()
@@ -458,7 +471,6 @@ class SectorPlot:
             # TODO: get time right instead of get_***_time_string()
             save_time = QStandardItem(unicode(sectorplot_set.get_save_time_string()))
             countermeasure_time = QStandardItem(unicode(sectorplot_set.get_counter_measure_time_string()))
-
             # attach the sectorplot_set as data to the first row item
             set_id.setData(sectorplot_set, Qt.UserRole)
             #self.sectorplotlist_source_model.appendRow([set_id, name, save_time, countermeasure_time])
@@ -646,7 +658,7 @@ class SectorPlot:
         QSettings().setValue("plugins/SectorPlot/last_location", [lon, lat])
 
     def unset_npp(self):
-        # clear npp seach input
+        # clear npp search input
         #self.location_dlg.le_search_npp.setText('')
         # deselect row in npp list
         self.location_dlg.table_npps.clearSelection()
@@ -702,10 +714,6 @@ class SectorPlot:
             self.location_dlg.le_latitude.setText(unicode(npp['latitude']))
             self.location_dlg.selected_npp_name = npp['block']
             self.zoom_map_to_lonlat(npp['longitude'], npp['latitude'])
-
-            # TODO clean
-            # if self.sector_layer is not None:
-            #     self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
             self.clean_sector_layer(True, True)
             # lon=0, lat=0, start_angle=0.0, sector_count=8, zone_radii=[5]
             self.current_pie = Pie(npp['longitude'], npp['latitude'], npp['angle'], npp['numberofsectors'], npp['zoneradii'])
@@ -951,35 +959,30 @@ class SectorPlot:
         self.sector_dlg.le_sector_name.setText(countermeasure['text'])
         self.sector_dlg_set_color(countermeasure['color'])
 
-    # def sector_dlg_pie_sector_select(self):
-    #     self.debug('pie-sector (de)selected?')
-    #     # find all selectied PIE-sectors
-    #     selected_features = self.pie_layer.selectedFeatures()
-    #     #self.debug(selected_features)
-    #     direction = 0.00001
-    #     angle = 0
-    #     min_distance = 0
-    #     max_distance = 0
-    #     for feature in selected_features:
-    #         arr = feature['sectorName'].split('|')
-    #         if len(arr):
-    #             if arr[0] < direction or direction == 0.00001:
-    #                 direction = arr[0]
-    #             elif arr[0] < direction:
-    #                 if direction == 0:
-    #                     direction = arr[0]
-    #             if arr[1]+arr[0] > angle:
-    #                 angle = arr[1]
-    #             if arr[2] < min_distance or direction == 0:
-    #                 min_distance = float(arr[2])/1000
-    #             if arr[3] > max_distance:
-    #                 max_distance = float(arr[3])/1000
-    #     self.sector_dlg.le_direction.setText(direction)
-    #     self.sector_dlg.le_angle.setText(angle)
-    #     if min_distance>0:
-    #         self.sector_dlg.le_min_distance.setEnabled(True)
-    #         self.sector_dlg.le_min_distance.setText('%s' % min_distance)
-    #     self.sector_dlg.le_distance.setText('%s' % max_distance)
+    def sector_dlg_pie_sector_select(self):
+        # find all selectied PIE-sectors
+        selected_features = self.pie_layer.selectedFeatures()
+        direction = 0.00001
+        angle = 0
+        min_distance = 0
+        max_distance = 0
+        for feature in selected_features:
+            arr = feature['sectorname'].split('|')
+            if len(arr) == 4:
+                    direction = arr[0]
+                    angle = arr[1]
+                    #min_distance = float(arr[2])/1000
+                    max_distance = float(arr[3])/1000
+            if len(selected_features) > 1:
+                self.msg(self.sector_dlg, self.tr("Sorry, just one click per sector. \nOnly the first feature is used."))
+                break
+        self.sector_dlg.le_direction.setText(direction)
+        self.sector_dlg.le_angle.setText(angle)
+        if min_distance > 0:
+            self.sector_dlg.le_min_distance.setEnabled(True)
+            self.sector_dlg.le_min_distance.setText('%s' % min_distance)
+        self.sector_dlg.le_distance.setText('%s' % max_distance)
+        self.sector_dlg_preview()
 
     def sector_dlg_sector_is_ok(self):
         acceptable = QDoubleValidator.Acceptable
@@ -1042,27 +1045,23 @@ class SectorPlot:
         self.sectorplotsetdlg_add_sector_to_table(new_sector, row)
 
     def sector_dlg_preview(self):
-        #self.msg(None, 'preview...')
         if self.sector_dlg_sector_is_ok():
             self.sector_dlg_sector_create()
 
-    def sector_dlg_show(self, old_sector):
-        #self.debug('sector_dlg_show with old sector: %s' % old_sector)
-        # self.iface.mapCanvas().setCurrentLayer cannot be seen in legend??
-        # self.iface.mapCanvas().setCurrentLayer(self.pie_layer)
-        #self.iface.legendInterface().setCurrentLayer(self.pie_layer)
-        #self.pie_layer.selectionChanged.connect(self.sector_dlg_pie_sector_select)
+    def sector_dlg_show(self, old_sector=None):
+        #self.debug('sector_dlg_show with old sector = %s' % old_sector)
+        self.iface.legendInterface().setCurrentLayer(self.pie_layer)
+        self.pie_layer.selectionChanged.connect(self.sector_dlg_pie_sector_select)
+        self.iface.actionSelect().trigger()
         # OK pressed in Sector dialog(!)
         if self.sector_dlg.exec_():
             # do some checking...
             #self.msg(None, 'exec_?')
             if not self.sector_dlg_sector_is_ok():
-                pass
+                # mmm, one of the validators failed: reopen the sector_dlg after the msg was OK'ed
+                self.sector_dlg_show(old_sector)
             else:
                 self.sector_dlg_sector_create()
-                return
-            # mmm, one of the validators failed: reopen the sector_dlg after the msg was OK'ed
-            self.sector_dlg_show(old_sector)
         else:
             # user canceled
             # set the data of the selected row BACK to the old_sector (original sector)
@@ -1070,8 +1069,11 @@ class SectorPlot:
             #     self.sectorplotset_source_model.item(
             #         self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
             # nope too much hassle...
-            self.sectorplotset_dlg.table_sectors.clearSelection()
-            #self.pie_layer.selectionChanged.disconnect(self.sector_dlg_pie_sector_select)
+            pass # because of removal of cancel button
+        self.sectorplotset_dlg.table_sectors.clearSelection()
+        # note that we have to do this both by ok and cancel, because it will be connected by next dialog-show
+        self.pie_layer.selectionChanged.disconnect(self.sector_dlg_pie_sector_select)
+        self.iface.actionPan().trigger()
 
     def settingsdlg_test_postgis_clicked(self):
         db = Database('sectorplot')
