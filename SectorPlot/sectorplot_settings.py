@@ -45,5 +45,5 @@ class SectorPlotSettings(SettingManager):
             # TODO: set this to service url:
             # OLD: http://jrodos.dev.cal-net.nl:8080/jrodos-rest-service/jrodos
             # new: http://jrodos.dev.cal-net.nl/rest/jrodos/npps
-            String('jrodos_rest_url', Scope.Global, 'http://jrodos.dev.cal-net.nl/rest-1.0-TEST-1/jrodos/npps'))
+            String('jrodos_rest_url', Scope.Global, 'http://jrodos.dev.cal-net.nl/rest/jrodos/npps'))
 

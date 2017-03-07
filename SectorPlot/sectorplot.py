@@ -328,8 +328,8 @@ class SectorPlot:
 
         # pycharm debugging
         # COMMENT OUT BEFORE PACKAGING !!!
-        #import pydevd
-        #pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
+        # import pydevd
+        # pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
 
         # fresh installs do not have passwords, present the settings dialog upon first use
         settings = SectorPlotSettings()
