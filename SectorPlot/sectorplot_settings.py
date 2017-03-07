@@ -37,13 +37,13 @@ class SectorPlotSettings(SettingManager):
         # JRodos REST server connection details (NPP's)
         #
         # to test: http://jrodos.dev.cal-net.nl:8080/jrodos-rest-service/jrodos
+        #          http://jrodos.dev.cal-net.nl/rest-1.0-TEST-1/jrodos/npps
         #
         self.add_setting(
             #String('jrodos_rest_url', Scope.Global,
             #        'http://jrodos.dev.cal-net.nl:8080/jrodos-rest-service/jrodos'))
             # TODO: set this to service url:
             # OLD: http://jrodos.dev.cal-net.nl:8080/jrodos-rest-service/jrodos
-            # new: http://jrodos.dev.cal-net.nl/rest/jrodos/
-            String('jrodos_rest_url', Scope.Global,
-                   'file:///home/richard/dev/qgis/git/sectorplot/SectorPlot/data/npp-rest.json'))
+            # new: http://jrodos.dev.cal-net.nl/rest/jrodos/npps
+            String('jrodos_rest_url', Scope.Global, 'http://jrodos.dev.cal-net.nl/rest-1.0-TEST-1/jrodos/npps'))
 

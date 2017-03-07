@@ -37,9 +37,9 @@ class NPPProvider(ProviderBase):
         #     # return without emitting 'finished'
         #     return
         else:
-            print reply.url()
+            #print reply.url()
             content = unicode(reply.readAll())
-            print content
+            #print content
             result.set_data(json.loads(content), reply.url())
         self.finished.emit(result)
         self.ready = True

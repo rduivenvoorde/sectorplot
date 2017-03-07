@@ -42,7 +42,8 @@ PLUGINNAME = SectorPlot
 
 PY_FILES = \
     *.py \
-    qgissettingmanager
+    qgissettingmanager \
+    providers
 
 UI_FILES = sectorplot_location_dialog_base.ui \
     sectorplot_sector_dialog_base.ui \
@@ -52,7 +53,8 @@ UI_FILES = sectorplot_location_dialog_base.ui \
 
 EXTRAS = metadata.txt \
     sectorplot.qml \
-    sectorplot.sld 
+    sectorplot.sld \
+    sectorpie.qml
 
 COMPILED_RESOURCE_FILES = resources_rc.py
 
