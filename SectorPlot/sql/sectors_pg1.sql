@@ -1,5 +1,5 @@
 ﻿-- Table: sectors
-
+-- Creation script to create sectors table in a Postgresql 8.4 database
 -- DROP TABLE sectors;
 
 CREATE TABLE sectors
@@ -8,6 +8,7 @@ CREATE TABLE sectors
   setname character varying(50),
   lon double precision,
   lat double precision,
+  npp_block  character varying(50),
   mindistance double precision,
   maxdistance double precision,
   direction double precision,

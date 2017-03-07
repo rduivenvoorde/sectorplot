@@ -31,7 +31,7 @@ class Sector:
     def __init__(self, setName=None, lon=0, lat=0, minDistance=0,
                  maxDistance=1, direction=0, angle=45, counterMeasureId=-1,
                  z_order=-1, saveTime=None, counterMeasureTime=None,
-                 sectorName=None, setId=-1, color='#ffffff'):
+                 sectorName=None, setId=-1, color='#ffffff', npp_block=None):
         self.setName = setName
         self.lon = float(lon)
         self.lat = float(lat)
@@ -46,10 +46,11 @@ class Sector:
         self.sectorName = sectorName
         self.setId = int(setId)
         self.color = color
+        self.npp_block = npp_block
         self.calcGeometry()
 
     def __str__(self):
-        result = 'Sector[%s, (%d,%d), %d, %d, %d, %d, %d, ,%s]' % (self.setName, self.lon, self.lat, self.minDistance, self.maxDistance, self.direction, self.angle, self.setId, self.sectorName)
+        result = 'Sector[%s, (%d,%d), %d, %d, %d, %d, %d, ,%s, %s]' % (self.setName, self.lon, self.lat, self.minDistance, self.maxDistance, self.direction, self.angle, self.setId, self.sectorName, self.npp_block)
         return result
 
     def display(self, doGeometry=False):
@@ -68,6 +69,7 @@ class Sector:
         print('  sectorName: ' + str(self.sectorName))
         print('  setId: ' + str(self.setId))
         print('  color: ' + str(self.color))
+        print('  npp_block: ' + str(self.npp_block))
         if doGeometry:
             print('  geometry: ' + str(self.geometry))
         print('--------------')
@@ -87,7 +89,8 @@ class Sector:
             counterMeasureTime=self.counterMeasureTime,
             sectorName=self.sectorName,
             setId=self.setId,
-            color=self.color)
+            color=self.color,
+            npp_block=self.npp_block)
 
     def setByDbRecord(self, rec):
         self.setName = rec.setname
@@ -105,6 +108,7 @@ class Sector:
         self.sectorName = rec.sectorname
         self.setId = rec.setid
         self.color = rec.color
+        self.npp_block = rec.npp_block
         self.calcGeometry()
 
     def getQgsFeature(self):
@@ -118,6 +122,7 @@ class Sector:
         fields.append(QgsField('sectorName', QVariant.String))
         fields.append(QgsField('setId', QVariant.Int))
         fields.append(QgsField('color', QVariant.String))
+        fields.append(QgsField('npp_block', QVariant.String))
         feat.setFields(fields)
         feat['setName'] = self.setName
         feat['counterMeasureId'] = self.counterMeasureId
@@ -127,6 +132,7 @@ class Sector:
         feat['sectorName'] = self.sectorName
         feat['setId'] = self.setId
         feat['color'] = self.color
+        feat['npp_block'] = self.npp_block
         feat.setGeometry(self.geometry)
         return feat
 
@@ -204,8 +210,8 @@ class Sector:
     def getInsertQuery(self):
         query = {}
         query['text'] = 'INSERT INTO sectors'
-        query['text'] += ' (setname, lon, lat, minDistance, maxDistance, direction, angle, countermeasureid, z_order, savetime, countermeasuretime, sectorname, setid, color, geom)'
-        query['text'] += ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::timestamp, %s::timestamp, %s, %s, %s, ST_GeomFromText(%s, 4326))'
+        query['text'] += ' (setname, lon, lat, minDistance, maxDistance, direction, angle, countermeasureid, z_order, savetime, countermeasuretime, sectorname, setid, color, npp_block, geom)'
+        query['text'] += ' VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s::timestamp, %s::timestamp, %s, %s, %s, %s, ST_GeomFromText(%s, 4326))'
         query['text'] += ';'
         vals = []
         vals.append(self.setName)
@@ -222,6 +228,7 @@ class Sector:
         vals.append(self.sectorName)
         vals.append(self.setId)
         vals.append(self.color)
+        vals.append(self.npp_block)
         vals.append(self.geometry.exportToWkt())
         query['vals'] = tuple(vals)
         return query
@@ -281,10 +288,11 @@ class Pie:
 
 
 class SectorSet:
-    def __init__(self, lon=0, lat=0, name=None, setId=-1):
+    def __init__(self, lon=0, lat=0, name=None, npp_block=None, setId=-1):
         self.lon = lon
         self.lat = lat
         self.name = name
+        self.npp_block = npp_block
         self.setId = setId
         self.sectors = []
 
@@ -297,6 +305,7 @@ class SectorSet:
         print('  lon: ' + str(self.lon))
         print('  lat: ' + str(self.lat))
         print('  name: ' + str(self.name))
+        print('  npp_block: ' + str(self.npp_block))
         print('  setId: ' + str(self.setId))
         for s in self.sectors:
             print('    ' + str(s))
@@ -307,6 +316,7 @@ class SectorSet:
             lon=self.lon,
             lat=self.lat,
             name=self.name,
+            npp_block=self.npp_block,
             setId=self.setId)
         for s in self.sectors:
             result.sectors.append(s.clone())
@@ -366,6 +376,11 @@ class SectorSet:
         self.name = setName
         for sector in self.sectors:
             sector.setName = setName
+
+    def setNppBlock(self, npp_block):
+        self.npp_block = npp_block
+        for sector in self.sectors:
+            sector.npp_block = npp_block
 
     def setSetId(self, setId):
         self.setId = setId
@@ -468,7 +483,7 @@ class SectorSets(list):
         if sectorSet is not None:
             sectorSet.sectors.append(sector)
         else:
-            sectorSet = SectorSet(sector.lon, sector.lat, sector.setName, sector.setId)
+            sectorSet = SectorSet(sector.lon, sector.lat, sector.setName, sector.npp_block, sector.setId)
             self.append(sectorSet)
             sectorSet.sectors.append(sector)
 

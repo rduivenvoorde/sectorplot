@@ -107,10 +107,10 @@ class SectorPlot:
         # inits
         # the data for the combo_countermeasures
         self.counter_measures = CounterMeasures()
-        self.degree_validator = QDoubleValidator(-360, 360, 2)
-        self.positive_degree_validator = QDoubleValidator(1, 360, 2)
-        self.distance_validator = QDoubleValidator(1, 999, 1)
-        self.min_distance_validator = QDoubleValidator(0, 999, 1)
+        self.degree_validator = QDoubleValidator(-360, 360, 100)
+        self.positive_degree_validator = QDoubleValidator(1, 360, 100)
+        self.distance_validator = QDoubleValidator(1, 999, 100)
+        self.min_distance_validator = QDoubleValidator(0, 999, 100)
 
         self.current_sectorset = None
         self.current_pie = None
@@ -337,6 +337,15 @@ class SectorPlot:
         if no_postgis_password:
             self.settingsdlg_show()
 
+        # fill the nuclear power plant list, because we need npp info to show pie's in current sectorsets
+        if self.npps is None:
+            try:
+                url = self.settings.value('jrodos_rest_url')
+                self.npps = NppSet(url)
+            except:
+                self.msg(self.location_dlg, self.tr("Problem retrieving the NPP (Nuclear Power Plant) list.\nPlease check if the the url used in the settings is valid."))
+                return
+
         # add a memory layer to show sectors and the pie if not yet available
         self.get_pie_layer()
         self.get_sector_layer()
@@ -431,8 +440,7 @@ class SectorPlot:
             else:
                 self.iface.mapCanvas().refresh()
 
-    # TODO: remove the scale part?
-    def zoom_map_to_lonlat(self, lon, lat, scale=300000):
+    def zoom_map_to_lonlat(self, lon, lat):
         crs_to = self.iface.mapCanvas().mapSettings().destinationCrs()
         crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to)
         point = QgsPoint(float(lon), float(lat))
@@ -507,6 +515,16 @@ class SectorPlot:
                 self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()[0])
             # make this sectorplot(set) current
             self.current_sectorset = self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()[0].data(Qt.UserRole)
+            # IF this current_sectorset has a npp_block name, then create a pie for it too
+            self.current_pie = None
+            if self.current_sectorset.npp_block is not None and self.current_sectorset.npp_block != "":
+                npp_block = self.current_sectorset.npp_block
+                # find the npp-block in our list of npp's...?
+                for npp in self.npps:
+                    if npp['block'] == npp_block:
+                        self.current_pie = Pie(npp['longitude'], npp['latitude'], npp['angle'], npp['numberofsectors'],
+                                               npp['zoneradii'])
+                        break
             # zoom to and show
             self.show_current_sectorplotset_on_map()
             self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(True)
@@ -514,21 +532,25 @@ class SectorPlot:
             # disable the button
             self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(False)
 
-    def sectorplotsetsdlg_new_sectorplotset_dialog(self, lon=None, lat=None, name=''):
+    def sectorplotsetsdlg_new_sectorplotset_dialog(self, lon=None, lat=None, name='', npp_block=None):
         if self.current_sectorset is None:
             # create a SectorSet based on location dialog
             self.current_sectorset = SectorSet(lon, lat)
             self.current_sectorset.setSetName(name)
-            self.sectorplotset_source_model.clear()
+            if npp_block is not None:
+                self.current_sectorset.setNppBlock(npp_block)
         else:
             # deep clone the current one
             self.current_sectorset = self.current_sectorset.clone()
             # clean up the sectorset model
-            self.sectorplotset_source_model.clear()
+        self.sectorplotset_source_model.clear()
         self.sectorplotset_dlg.lbl_location_name_lon_lat.setText(self.tr('Lon: %s') % self.current_sectorset.lon +
                                                                  self.tr(' Lat: %s') % self.current_sectorset.lat)
         self.sectorplotset_dlg.le_sectorplot_name.setText('%s' % self.current_sectorset.name)
-
+        if self.current_sectorset.npp_block is not None:
+            self.sectorplotset_dlg.lbl_npp_block.setText('%s' % self.current_sectorset.npp_block)
+        else:
+            self.sectorplotset_dlg.lbl_npp_block.setText('')
         date_format = "yyyy-MM-dd HH:mm:ss +0000"
 
         #self.msg(None, ("%s" % self.current_sectorset.sectors[0].counterMeasureTime) + " *** " + self.current_sectorset.get_counter_measure_time_string())
@@ -590,17 +612,6 @@ class SectorPlot:
         self.location_dlg.le_latitude.clear()
         self.sectorplotsets_dlg.table_sectorplot_sets.clearSelection()
         self.location_dlg.selected_npp_name = ''
-
-        # fill the nuclear power plant list
-        if self.npps is None:
-            try:
-                url = self.settings.value('jrodos_rest_url')
-                self.npps = NppSet(url)
-            except:
-                self.msg(self.location_dlg, self.tr("Problem retrieving the NPP (Nuclear Power Plant) list.\nPlease check if the the url used in the settings is valid."))
-                self.locationdlg_show()
-                return
-
         self.npp_proxy_model = QSortFilterProxyModel()
         self.npp_source_model = QStandardItemModel()
         self.npp_proxy_model.setSourceModel(self.npp_source_model)
@@ -626,8 +637,8 @@ class SectorPlot:
                 data = QStandardItem(vals)
                 country_code.setData(npp, Qt.UserRole)
                 site = QStandardItem("%s" % (npp["site"].upper()))
-                block = QStandardItem("%s" % (npp["block"].upper()))
-                self.npp_source_model.appendRow([data, country_code, site, block])
+                npp_block = QStandardItem("%s" % (npp["block"].upper()))
+                self.npp_source_model.appendRow([data, country_code, site, npp_block])
         # headers
         self.npp_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Countrycode"))
         self.npp_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Site"))
@@ -665,6 +676,7 @@ class SectorPlot:
         # clear selected_npp_name
         self.location_dlg.selected_npp_name = ''
         # remove npp pie
+        self.current_pie = None
         self.clean_sector_layer(sectorset=False, pie=True)
 
     def clean_sector_layer(self, sectorset=True, pie=True):
@@ -753,8 +765,13 @@ class SectorPlot:
             lat = self.location_dlg.le_latitude.text()
             if self.locationdlg_lonlat_checked(lon, lat):
                 # location coordinates OK
+                # IF and only IF a NPP is selected in the table, pass it to the sectorplotset dialog
+                npp_block = None
+                if len(self.location_dlg.table_npps.selectedIndexes()) > 0:
+                    npp = self.location_dlg.table_npps.selectedIndexes()[0].data(Qt.UserRole)
+                    npp_block = npp['block']
                 set_name = self.location_dlg.selected_npp_name
-                self.sectorplotsetsdlg_new_sectorplotset_dialog(lon, lat, set_name)
+                self.sectorplotsetsdlg_new_sectorplotset_dialog(lon, lat, set_name, npp_block)
             else:
                 # problem validating the lat lon coordinates
                 self.msg(self.sectorplotsets_dlg, self.tr("One of the coordinates is not valid.\nPlease check and correct."))
@@ -771,7 +788,7 @@ class SectorPlot:
         self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
         self.sector_dlg.btn_color.clicked.connect(self.sector_dlg_btn_color_clicked)
         self.sector_dlg.btn_preview.clicked.connect(self.sector_dlg_preview)
-        self.sector_dlg.le_color.setReadOnly(True) # not editing of color in the LineEdit here
+        self.sector_dlg.le_color.setReadOnly(True)  # not editing of color in the LineEdit here
         self.sector_dlg.le_direction.setValidator(self.degree_validator)
         self.sector_dlg.le_angle.setValidator(self.positive_degree_validator)
         self.sector_dlg.le_distance.setValidator(self.distance_validator)
@@ -880,6 +897,8 @@ class SectorPlot:
             # and insert the sector in the right position of the sectorset
             self.current_sectorset.sectors[z] = sector
         self.current_sectorset.setSetName(self.sectorplotset_dlg.le_sectorplot_name.text())
+        if self.sectorplotset_dlg.lbl_npp_block.text() is not None or self.sectorplotset_dlg.lbl_npp_block.text() != "":
+            self.current_sectorset.setNppBlock(self.sectorplotset_dlg.lbl_npp_block.text())
         # set save time (for the SectorplotSet == for all sectors in it)
         self.current_sectorset.setSaveTime()
         # show the sectorset!
@@ -989,27 +1008,38 @@ class SectorPlot:
         problem = None
 
         # check if at least all fields are filled, else silently return False
-        if self.sector_dlg.le_direction.text() == '' or self.sector_dlg.le_angle.text() == '' or self.sector_dlg.le_distance.text() == '':
+        if self.sector_dlg.le_direction.text() == '' or self.sector_dlg.le_angle.text() == '' \
+                or self.sector_dlg.le_distance.text() == '':
             # ok all are at least filled...
             problem = self.tr("Empty field(s) found, please fill them all.")
         # check direction
         elif self.degree_validator.validate(self.sector_dlg.le_direction.text(), 0)[0] != acceptable:
-            problem = self.tr("The Direction value is not valid [%s, %s].\nPlease check and correct.") % (self.degree_validator.bottom(), self.degree_validator.top())
+            problem = self.tr(
+                "The Direction value is not valid: %s \nValid between: [%s, %s].\nPlease check and correct.") % (
+                  self.sector_dlg.le_direction.text(), self.degree_validator.bottom(), self.degree_validator.top())
         # check angle
         elif self.positive_degree_validator.validate(self.sector_dlg.le_angle.text(), 0)[0] != acceptable:
-            problem = self.tr("The Angle value is not valid [%s, %s].\nPlease check and correct.") % (self.positive_degree_validator.bottom(), self.positive_degree_validator.top())
+            problem = self.tr(
+                "The Angle value is not valid: %s \nValid between: [%s, %s].\nPlease check and correct.") % (
+                self.sector_dlg.le_angle.text(), self.positive_degree_validator.bottom(),
+                self.positive_degree_validator.top())
             return False
         # check max distance
         elif self.distance_validator.validate(self.sector_dlg.le_distance.text(), 0)[0] != acceptable:
-            problem = self.tr("The Distance value is not valid [%s, %s].\nPlease check and correct.") % (self.distance_validator.bottom(), self.distance_validator.top())
+            problem = self.tr(
+                "The Distance value is not valid: %s \nValid between: [%s, %s].\nPlease check and correct.") % (
+                  self.sector_dlg.le_distance.text(), self.distance_validator.bottom(), self.distance_validator.top())
         # check min distance
         elif self.min_distance_validator.validate(self.sector_dlg.le_min_distance.text(), 0)[0] != acceptable:
-            problem = self.tr("The Min Distance value is not valid [%s, %s].\nPlease check and correct.") % (self.min_distance_validator.bottom(), self.min_distance_validator.top())
+            problem = self.tr(
+                "The Min Distance value is not valid: %s \nValid between: [%s, %s].\nPlease check and correct.") % (
+                  self.sector_dlg.le_min_distance.text(), self.min_distance_validator.bottom(),
+                  self.min_distance_validator.top())
         # check if min_distance < then distance
         elif float(self.sector_dlg.le_min_distance.text()) >= float(self.sector_dlg.le_distance.text()):
-            problem = self.tr("The Min Distance value is not valid:\n"
-                                              "Min Distance value is bigger then Distance value.\n"
-                                              "Please check and correct.")
+            problem = self.tr(
+                "The Min Distance value is not valid:\n Min Distance value is bigger then Distance value.\n" +
+                " Please check and correct.")
         if problem is not None:
             self.msg(None, problem)
             return False
@@ -1056,7 +1086,6 @@ class SectorPlot:
         # OK pressed in Sector dialog(!)
         if self.sector_dlg.exec_():
             # do some checking...
-            #self.msg(None, 'exec_?')
             if not self.sector_dlg_sector_is_ok():
                 # mmm, one of the validators failed: reopen the sector_dlg after the msg was OK'ed
                 self.sector_dlg_show(old_sector)
@@ -1069,11 +1098,11 @@ class SectorPlot:
             #     self.sectorplotset_source_model.item(
             #         self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
             # nope too much hassle...
-            pass # because of removal of cancel button
+            pass  # because of removal of cancel button
         self.sectorplotset_dlg.table_sectors.clearSelection()
         # note that we have to do this both by ok and cancel, because it will be connected by next dialog-show
         self.pie_layer.selectionChanged.disconnect(self.sector_dlg_pie_sector_select)
-        self.iface.actionPan().trigger()
+        self.iface.actionPan().trigger()  # just want to disable selection tool... by activating Panning tool...
 
     def settingsdlg_test_postgis_clicked(self):
         db = Database('sectorplot')

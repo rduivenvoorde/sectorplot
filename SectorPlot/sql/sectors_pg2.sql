@@ -1,5 +1,5 @@
 ﻿-- Table: sectors
-
+-- Creation script to create sectors table in a Postgresql 9.x database
 -- DROP TABLE sectors;
 
 CREATE TABLE sectors
@@ -8,6 +8,7 @@ CREATE TABLE sectors
   setname varchar(50),
   lon float,
   lat float,
+  npp_block varchar(50),
   mindistance float,
   maxdistance float,
   direction float,

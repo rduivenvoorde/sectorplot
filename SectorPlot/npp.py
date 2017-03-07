@@ -1,4 +1,5 @@
 from PyQt4.QtCore import QCoreApplication
+from PyQt4.QtGui import QMessageBox
 
 import os
 
@@ -60,6 +61,7 @@ class NppSet(list):
 
         if len(self) == 0:
             # fetch the local copy if available
+            QMessageBox.warning(None, "", "Error retrieving NPP's, trying to find local file with NPP's", QMessageBox.Ok, QMessageBox.Ok)
             conf.url = 'file://' + os.path.dirname(__file__) + os.path.sep + os.path.join('providers', 'npp-rest.json')
             prov = NPPProvider(conf)
             prov.finished.connect(self.prov_finished)
