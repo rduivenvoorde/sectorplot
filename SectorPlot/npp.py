@@ -61,17 +61,13 @@ class NppSet(list):
 
         if len(self) == 0:
             # fetch the local copy if available
-            QMessageBox.warning(None, "", "Error retrieving NPP's, trying to find local file with NPP's", QMessageBox.Ok, QMessageBox.Ok)
+            QMessageBox.warning(None, "", "Error retrieving Remote NPP's via REST, trying to find local file with NPP's", QMessageBox.Ok, QMessageBox.Ok)
             conf.url = 'file://' + os.path.dirname(__file__) + os.path.sep + os.path.join('providers', 'npp-rest.json')
             prov = NPPProvider(conf)
             prov.finished.connect(self.prov_finished)
             prov.get_data()
             while not prov.is_finished():
                 QCoreApplication.processEvents()
-
-        if len(self) == 0:
-            raise Exception('Error retrieving NPP\'s, see log for more info...')
-
 
     def prov_finished(self, result):
         if result.error():

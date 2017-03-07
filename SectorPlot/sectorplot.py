@@ -47,6 +47,7 @@ from connect import Database, RestClient
 import os.path
 import shutil
 
+
 class SectorPlot:
     """QGIS Plugin Implementation."""
 
@@ -299,6 +300,7 @@ class SectorPlot:
         self.settings_dlg = SectorPlotSettingsDialog(parent=self.iface.mainWindow())
         self.settings_dlg.btn_test_postgis.clicked.connect(self.settingsdlg_test_postgis_clicked)
         self.settings_dlg.btn_test_geoserver.clicked.connect(self.settingsdlg_test_geoserver_clicked)
+        self.settings_dlg.btn_test_jrodos.clicked.connect(self.settingsdlg_test_jrodos_clicked)
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -1123,6 +1125,14 @@ class SectorPlot:
         if test_ok:
             self.msg(self.settings_dlg, self.tr('Connection successful'))
         else:
+            self.msg(self.settings_dlg, self.tr('Connection problem, please check inputs'))
+
+    def settingsdlg_test_jrodos_clicked(self):
+        try:
+            url = self.settings_dlg.jrodos_rest_url.text()
+            NppSet(url)
+            self.msg(self.settings_dlg, self.tr('Connection successful'))
+        except:
             self.msg(self.settings_dlg, self.tr('Connection problem, please check inputs'))
 
     def settingsdlg_show(self):
