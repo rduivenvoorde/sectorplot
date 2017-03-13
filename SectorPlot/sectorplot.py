@@ -997,8 +997,8 @@ class SectorPlot:
             if len(selected_features) > 1:
                 self.msg(self.sector_dlg, self.tr("Sorry, just one click per sector. \nOnly the first feature is used."))
                 break
-        self.sector_dlg.le_direction.setText(direction)
-        self.sector_dlg.le_angle.setText(angle)
+        self.sector_dlg.le_direction.setText('%s' % direction)
+        self.sector_dlg.le_angle.setText('%s' % angle)
         if min_distance > 0:
             self.sector_dlg.le_min_distance.setEnabled(True)
             self.sector_dlg.le_min_distance.setText('%s' % min_distance)
