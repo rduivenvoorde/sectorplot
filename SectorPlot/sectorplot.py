@@ -422,7 +422,7 @@ class SectorPlot:
         self.clean_sector_layer(sectorset=True, pie=True)
         if self.current_pie is not None and self.pie_layer is not None:
             self.pie_layer.dataProvider().addFeatures(self.current_pie.get_features())
-        self.repaint_sector_layer()
+        self.repaint_sector_layers()
 
         if self.current_sectorset is not None and self.sector_layer is not None:
             self.sector_layer.dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
@@ -433,14 +433,15 @@ class SectorPlot:
         #     self.debug("trying to find NPP PIE")
         #     self.debug(str(self.current_sectorset.name))
 
-        self.repaint_sector_layer()
+        self.repaint_sector_layers()
 
-    def repaint_sector_layer(self):
-        if self.sector_layer is not None:
-            if self.iface.mapCanvas().isCachingEnabled():
+    def repaint_sector_layers(self):
+        if self.iface.mapCanvas().isCachingEnabled():
+            if self.sector_layer is not None:
                 self.sector_layer.setCacheImage(None)
-            else:
-                self.iface.mapCanvas().refresh()
+            if self.pie_layer is not None:
+                self.pie_layer.setCacheImage(None)
+        self.iface.mapCanvas().refresh()
 
     def zoom_map_to_lonlat(self, lon, lat):
         crs_to = self.iface.mapCanvas().mapSettings().destinationCrs()
@@ -697,7 +698,7 @@ class SectorPlot:
             self.sector_layer.dataProvider().deleteFeatures(self.sector_layer.allFeatureIds())
         if pie:
             self.pie_layer.dataProvider().deleteFeatures(self.pie_layer.allFeatureIds())
-        self.repaint_sector_layer()
+        self.repaint_sector_layers()
 
     def locationdlg_lonlat_checked(self, lon, lat):
         lat_state, ln, pos = self.lat_validator.validate(lat, 0)
@@ -732,7 +733,7 @@ class SectorPlot:
             # lon=0, lat=0, start_angle=0.0, sector_count=8, zone_radii=[5]
             self.current_pie = Pie(npp['longitude'], npp['latitude'], npp['angle'], npp['numberofsectors'], npp['zoneradii'])
             self.pie_layer.dataProvider().addFeatures(self.current_pie.get_features())
-            self.repaint_sector_layer()
+            self.repaint_sector_layers()
             QSettings().setValue("plugins/SectorPlot/last_location", npp['block'])
         else:
             self.unset_npp()
