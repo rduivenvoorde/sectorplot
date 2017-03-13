@@ -989,6 +989,7 @@ class SectorPlot:
         min_distance = 0
         max_distance = 0
         for feature in selected_features:
+            self.debug("selectedfeature attributes: %s" % feature.attributes())
             arr = feature['sectorname'].split('|')
             if len(arr) == 4:
                     direction = arr[0]
