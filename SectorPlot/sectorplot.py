@@ -89,7 +89,7 @@ class SectorPlot:
         # create self.sector_layer when the user creates a new project (and removes this memory layer)
 
         # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
-        self.iface.newProjectCreated.connect(self.remove_sectorplot_layers)
+        self.iface.newProjectCreated.connect(self.stop_sectorplot_session)
 
         # inits
         self.settings = SectorPlotSettings()
@@ -292,8 +292,26 @@ class SectorPlot:
         self.sectorplotset_source_model = QStandardItemModel()
         self.sectorplotset_dlg.table_sectors.setModel(self.sectorplotset_source_model)
 
-        # Sector dialog: ONE sector, created fresh for every Sector, signals are attached there!
-        self.sector_dlg = None  # SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
+        # Sector dialog
+        self.sector_dlg = SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
+        self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
+        self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
+        self.sector_dlg.btn_color.clicked.connect(self.sector_dlg_btn_color_clicked)
+        self.sector_dlg.btn_preview.clicked.connect(self.sector_dlg_preview)
+        self.sector_dlg.le_color.setReadOnly(True)  # not editing of color in the LineEdit here
+        self.sector_dlg.le_direction.setValidator(self.degree_validator)
+        self.sector_dlg.le_angle.setValidator(self.positive_degree_validator)
+        self.sector_dlg.le_distance.setValidator(self.distance_validator)
+        self.sector_dlg.le_min_distance.setValidator(self.min_distance_validator)
+        for counter_measure in self.counter_measures.all():
+            # addItem sets both the text for the dropdown AND adds a data-item to it
+            self.sector_dlg.combo_countermeasures.addItem(counter_measure['text'], counter_measure)
+        # tab order, start with the countermeasures
+        QWidget.setTabOrder(self.sector_dlg.combo_countermeasures, self.sector_dlg.le_direction)
+        QWidget.setTabOrder(self.sector_dlg.le_direction, self.sector_dlg.le_angle)
+        QWidget.setTabOrder(self.sector_dlg.le_angle, self.sector_dlg.le_distance)
+        QWidget.setTabOrder(self.sector_dlg.le_distance, self.sector_dlg.cb_min_distance)
+        QWidget.setTabOrder(self.sector_dlg.cb_min_distance, self.sector_dlg.le_sector_name)
 
         # Settings dialog
         self.settings_dlg = SectorPlotSettingsDialog(parent=self.iface.mainWindow())
@@ -310,7 +328,7 @@ class SectorPlot:
             self.iface.removeToolBarIcon(action)
         # remove the toolbar
         del self.toolbar
-        self.remove_sectorplot_layers()
+        self.stop_sectorplot_session()
 
     def msg(self, parent=None, msg=""):
         if parent is None:
@@ -329,8 +347,8 @@ class SectorPlot:
 
         # pycharm debugging
         # COMMENT OUT BEFORE PACKAGING !!!
-        # import pydevd
-        # pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
+        #import pydevd
+        #pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
 
         # fresh installs do not have passwords, present the settings dialog upon first use
         settings = SectorPlotSettings()
@@ -375,9 +393,9 @@ class SectorPlot:
                 self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectorplot.qml'))
                 # add empty layer to the map
                 QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
-            # WHEN this layer is deleted from the layer tree, also remove it from the plugin
-            # actually set self.sector_layer to None
-            self.sector_layer.layerDeleted.connect(self.remove_sectorplot_layers)
+                # WHEN one the sectorplot layer is deleted from the layer tree, stop the session
+                self.sector_layer.destroyed.connect(self.stop_sectorplot_session)
+
         return self.sector_layer
 
     def get_pie_layer(self):
@@ -399,13 +417,28 @@ class SectorPlot:
                 self.pie_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectorpie.qml'))
                 # add empty layer to the map
                 QgsMapLayerRegistry.instance().addMapLayer(self.pie_layer)
-            # WHEN this layer is deleted from the layer tree, also remove it from the plugin
-            # actually set self.pie_layer to None
-            self.pie_layer.layerDeleted.connect(self.remove_sectorplot_layers)
+                # connect selectionChanged to sector_dlg_pie_sector_select
+                self.get_pie_layer().selectionChanged.connect(self.sector_dlg_pie_sector_select)
+                # WHEN one the sectorplot layer is deleted from the layer tree, stop the session
+                self.pie_layer.layerDeleted.connect(self.stop_sectorplot_session)
         return self.pie_layer
 
-    def remove_sectorplot_layers(self):
-        #  set self.sector_layer to None
+    def stop_sectorplot_session(self):
+        # close all dialogs
+        if self.sector_dlg is not None:
+            self.sector_dlg.reject()
+        if self.location_dlg is not None:
+            self.location_dlg.reject()
+        if self.sectorplotset_dlg is not None:
+            self.sectorplotset_dlg.reject()
+        if self.sectorplotsets_dlg is not None:
+            self.sectorplotsets_dlg.reject()
+        # remove all layers
+        if len(QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)) > 0:
+            QgsMapLayerRegistry.instance().removeMapLayer(self.pie_layer)
+        if len(QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) > 0:
+            QgsMapLayerRegistry.instance().removeMapLayer(self.sector_layer)
+        #  set instances to None
         self.sector_layer = None
         self.pie_layer = None
         self.current_sectorset = None
@@ -781,21 +814,20 @@ class SectorPlot:
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
     def sectorplotsetdlg_open_new_sector_dialog(self, bool=False, edited_sector=None):
-        # NOTE! we create a shiny new dialog here to be sure all is initted ok
-        self.sector_dlg = SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
-        self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
-        self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
-        self.sector_dlg.btn_color.clicked.connect(self.sector_dlg_btn_color_clicked)
-        self.sector_dlg.btn_preview.clicked.connect(self.sector_dlg_preview)
-        self.sector_dlg.le_color.setReadOnly(True)  # not editing of color in the LineEdit here
-        self.sector_dlg.le_direction.setValidator(self.degree_validator)
-        self.sector_dlg.le_angle.setValidator(self.positive_degree_validator)
-        self.sector_dlg.le_distance.setValidator(self.distance_validator)
-        self.sector_dlg.le_min_distance.setValidator(self.min_distance_validator)
-        for counter_measure in self.counter_measures.all():
-            # addItem sets both the text for the dropdown AND adds a data-item to it
-            self.sector_dlg.combo_countermeasures.addItem(counter_measure['text'], counter_measure)
-        if edited_sector is not None:
+        if edited_sector is None:
+            # ok creating a fresh new sector from scratch
+            # we do twe setCurrentIndex's to be sure we fire the currentIndexChanged
+            self.sector_dlg.combo_countermeasures.setCurrentIndex(1)
+            self.sector_dlg.combo_countermeasures.setCurrentIndex(0)
+            # self.sector_dlg.le_sector_name.setText('') #  already reset by countermeasure rest
+            self.sector_dlg.le_direction.setText('')
+            self.sector_dlg.le_angle.setText('')
+            self.sector_dlg.le_distance.setText('')
+            # be sure to deselect sectors in the sector table!
+            self.sectorplotset_dlg.table_sectors.clearSelection()
+            self.sector_dlg.lbl_min_distance.setEnabled(False)
+            self.sector_dlg.le_min_distance.setText('0')
+        else:
             # prefill the dialog with the values of the original sector
             # select the right countermeasure in the combo (but not that the sectorName can be changed too)
             for i in range(0, self.sector_dlg.combo_countermeasures.count()):
@@ -803,28 +835,19 @@ class SectorPlot:
                     self.sector_dlg.combo_countermeasures.setCurrentIndex(i)
                     break
             self.sector_dlg.le_sector_name.setText(edited_sector.sectorName)
-            self.sector_dlg.le_direction.setText("%s" % int(edited_sector.direction))
-            self.sector_dlg.le_angle.setText("%s" % int(edited_sector.angle))
-            self.sector_dlg.le_distance.setText("%s" % (int(edited_sector.maxDistance)/1000))
+            self.sector_dlg.le_direction.setText('%s' % int(edited_sector.direction))
+            self.sector_dlg.le_angle.setText('%s' % int(edited_sector.angle))
+            self.sector_dlg.le_distance.setText('%s' % (int(edited_sector.maxDistance)/1000))
             # use can have overridden the color
             self.sector_dlg_set_color(edited_sector.color)
             if edited_sector.minDistance != 0:
-                self.sector_dlg.le_min_distance.setText("%s" % (int(edited_sector.minDistance)/1000))
+                self.sector_dlg.le_min_distance.setText('%s' % (int(edited_sector.minDistance)/1000))
                 self.sector_dlg.le_min_distance.setEnabled(True)
                 self.sector_dlg.lbl_min_distance.setEnabled(True)
                 self.sector_dlg.cb_min_distance.setChecked(True)
             else:
                 self.sector_dlg.lbl_min_distance.setEnabled(False)
-        else:
-            # ok creating a fresh new sector from scratch, be sure to deselect sectors in the sector table!
-            self.sectorplotset_dlg.table_sectors.clearSelection()
-        # tab order, start with the countermeasures
         self.sector_dlg.combo_countermeasures.setFocus()
-        QWidget.setTabOrder(self.sector_dlg.combo_countermeasures, self.sector_dlg.le_direction)
-        QWidget.setTabOrder(self.sector_dlg.le_direction, self.sector_dlg.le_angle)
-        QWidget.setTabOrder(self.sector_dlg.le_angle, self.sector_dlg.le_distance)
-        QWidget.setTabOrder(self.sector_dlg.le_distance, self.sector_dlg.cb_min_distance)
-        QWidget.setTabOrder(self.sector_dlg.cb_min_distance, self.sector_dlg.le_sector_name)
         self.sector_dlg_show(edited_sector)
 
     def sectorplotsetdlg_open_sector_for_edit_dialog(self):
@@ -985,16 +1008,16 @@ class SectorPlot:
         min_distance = 0
         max_distance = 0
         for feature in selected_features:
-            #self.debug("selectedfeature attributes: %s" % feature.attributes())
+            # self.debug("selectedfeature attributes: %s" % feature.attributes())
             arr = feature['sectorname'].split('|')
             if len(arr) == 4:
                     direction = arr[0]
                     angle = arr[1]
                     #min_distance = float(arr[2])/1000
                     max_distance = float(arr[3])/1000
-            if len(selected_features) > 1:
-                self.msg(self.sector_dlg, self.tr("Sorry, just one click per sector. \nOnly the first feature is used."))
-                break
+            # if len(selected_features) > 1:
+            #     self.msg(self.sector_dlg, self.tr("Sorry, just one click per sector. \nOnly the first feature is used."))
+            #     break
         self.sector_dlg.le_direction.setText('%s' % direction)
         self.sector_dlg.le_angle.setText('%s' % angle)
         if min_distance > 0:
@@ -1080,27 +1103,24 @@ class SectorPlot:
 
     def sector_dlg_show(self, old_sector=None):
         #self.debug('sector_dlg_show with old sector = %s' % old_sector)
-        self.iface.legendInterface().setCurrentLayer(self.pie_layer)
-        self.iface.actionSelect().trigger()
-        self.get_pie_layer().selectionChanged.connect(self.sector_dlg_pie_sector_select)
+        self.iface.legendInterface().setCurrentLayer(self.pie_layer) # make pie_layer current for selections
+        self.iface.actionSelect().trigger() # activate the selecttool
         # OK pressed in Sector dialog(!)
         if self.sector_dlg.exec_():
             # do some checking...
             if not self.sector_dlg_sector_is_ok():
                 # mmm, one of the validators failed: reopen the sector_dlg after the msg was OK'ed
-                self.get_pie_layer().selectionChanged.disconnect(self.sector_dlg_pie_sector_select)
                 self.sector_dlg_show(old_sector)
             else:
                 self.sector_dlg_sector_create()
-                self.get_pie_layer().selectionChanged.disconnect(self.sector_dlg_pie_sector_select)
-        else:
+       # else:
             # user canceled
             # set the data of the selected row BACK to the old_sector (original sector)
             # if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
             #     self.sectorplotset_source_model.item(
             #         self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
             # nope too much hassle...
-            self.get_pie_layer().selectionChanged.disconnect(self.sector_dlg_pie_sector_select)
+
         self.sectorplotset_dlg.table_sectors.clearSelection()
         self.iface.actionPan().trigger()  # just want to disable selection tool... by activating Panning tool...
 
