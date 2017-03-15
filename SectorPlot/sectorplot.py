@@ -1103,14 +1103,18 @@ class SectorPlot:
 
     def sector_dlg_show(self, old_sector=None):
         #self.debug('sector_dlg_show with old sector = %s' % old_sector)
-        self.iface.legendInterface().setCurrentLayer(self.pie_layer) # make pie_layer current for selections
-        self.iface.actionSelect().trigger() # activate the selecttool
+        self.iface.legendInterface().setCurrentLayer(self.pie_layer)  # make pie_layer current for selections
+        self.iface.actionSelect().trigger()  # activate the selecttool
         # OK pressed in Sector dialog(!)
         if self.sector_dlg.exec_():
             # do some checking...
             if not self.sector_dlg_sector_is_ok():
                 # mmm, one of the validators failed: reopen the sector_dlg after the msg was OK'ed
-                self.sector_dlg_show(old_sector)
+                # self.sector_dlg_show(old_sector) # nope: recursive calls HELL!
+                self.iface.legendInterface().setCurrentLayer(self.pie_layer)  # make pie_layer current for selections
+                self.iface.actionSelect().trigger()  # activate the selecttool
+                self.sector_dlg.show()
+                return
             else:
                 self.sector_dlg_sector_create()
        # else:
@@ -1120,7 +1124,6 @@ class SectorPlot:
             #     self.sectorplotset_source_model.item(
             #         self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
             # nope too much hassle...
-
         self.sectorplotset_dlg.table_sectors.clearSelection()
         self.iface.actionPan().trigger()  # just want to disable selection tool... by activating Panning tool...
 
