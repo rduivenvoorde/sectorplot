@@ -638,7 +638,6 @@ class SectorPlot:
             self.msg(self.sectorplotsets_dlg, self.tr("Problem saving shapefile"))
 
     def locationdlg_open_dialog(self):
-
         self.new_sectorplotset()
         self.location_dlg.le_longitude.clear()
         self.location_dlg.le_latitude.clear()
@@ -651,7 +650,8 @@ class SectorPlot:
         self.npp_proxy_model.setFilterKeyColumn(0)
         self.location_dlg.table_npps.setModel(self.npp_proxy_model)
         self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
-        self.location_dlg.le_search_npp.textChanged.connect(self.locationdlg_filter_npps)
+        # using textEdited here to be sure, that we only filter when a user types
+        self.location_dlg.le_search_npp.textEdited.connect(self.locationdlg_filter_npps)
         self.location_dlg.le_search_npp.setPlaceholderText(self.tr("Search"))
         if len(self.npps):
             # load the npps in the table in dialog
@@ -671,14 +671,14 @@ class SectorPlot:
                 site = QStandardItem("%s" % (npp["site"].upper()))
                 npp_block = QStandardItem("%s" % (npp["block"].upper()))
                 self.npp_source_model.appendRow([data, country_code, site, npp_block])
-        # headers
-        self.npp_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Countrycode"))
-        self.npp_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Site"))
-        self.npp_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Block"))
-        # hide the data / search string column:
-        self.location_dlg.table_npps.hideColumn(0)
-        # handle the selection of a NPP
-        self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.locationdlg_select_npp)
+            # headers
+            self.npp_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Countrycode"))
+            self.npp_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Site"))
+            self.npp_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Block"))
+            # hide the data / search string column:
+            self.location_dlg.table_npps.hideColumn(0)
+            # handle the selection of a NPP
+            self.location_dlg.table_npps.selectionModel().selectionChanged.connect(self.locationdlg_select_npp)
         # show the location dialog
         self.locationdlg_show()
 
@@ -698,6 +698,7 @@ class SectorPlot:
         if self.locationdlg_lonlat_checked(lon, lat):
             self.zoom_map_to_lonlat(lon, lat)
         self.unset_npp()
+        #self.debug('setting last_location to: %s' % [lon, lat])
         QSettings().setValue("plugins/SectorPlot/last_location", [lon, lat])
 
     def unset_npp(self):
@@ -741,12 +742,9 @@ class SectorPlot:
         self.location_dlg.le_latitude.setText('')
         self.npp_proxy_model.setFilterCaseSensitivity(Qt.CaseInsensitive)
         self.npp_proxy_model.setFilterFixedString(string)
-        # ONLY if we have just one result, select it
-        # this makes it possible to remember a value...
-        if self.npp_proxy_model.rowCount() == 1:
+        # always select top one IF we are filtering by hand (that is, editing the search line)
+        if self.npp_proxy_model.rowCount() > 0:
             self.location_dlg.table_npps.selectRow(0)
-        #else:
-        #    self.unset_npp()
 
     def locationdlg_select_npp(self):
         # needed to scroll To the selected row incase of using the keyboard / arrows
@@ -763,6 +761,7 @@ class SectorPlot:
             self.current_pie = Pie(npp['longitude'], npp['latitude'], npp['angle'], npp['numberofsectors'], npp['zoneradii'])
             self.get_pie_layer().dataProvider().addFeatures(self.current_pie.get_features())
             self.repaint_sector_layers()
+            #self.debug('setting last_location to: %s' % npp['block'])
             QSettings().setValue("plugins/SectorPlot/last_location", npp['block'])
         else:
             self.unset_npp()
@@ -782,15 +781,17 @@ class SectorPlot:
         self.iface.mapCanvas().unsetMapTool(self.xy_tool)
 
     def locationdlg_show(self):
-        self.location_dlg.le_search_npp.setText('')  # use '' here first, to be able to trigger filter in next line
-
+        self.location_dlg.le_search_npp.setText('')
         # self.location_dlg.le_search_npp.setText('borssele')
         last_location = QSettings().value("plugins/SectorPlot/last_location")
         if isinstance(last_location, list):
             self.location_dlg.le_longitude.setText(unicode(last_location[0]))
             self.location_dlg.le_latitude.setText(unicode(last_location[1]))
+            self.npp_proxy_model.setFilterFixedString('')
         elif isinstance(last_location, str) or isinstance(last_location, unicode):
             self.location_dlg.le_search_npp.setText(last_location)
+            self.locationdlg_filter_npps(last_location)
+
         # See if OK was pressed
         if self.location_dlg.exec_():
             lon = self.location_dlg.le_longitude.text()
