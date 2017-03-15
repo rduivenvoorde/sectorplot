@@ -85,12 +85,6 @@ class SectorPlot:
 
         self.DEMO = False
 
-        # TODO connect to new project event, sectorlayer opruimen bij uninstall plugin, evt self.sector_layer -> self.get_sector_layer (mits nog beschikbaar)
-        # create self.sector_layer when the user creates a new project (and removes this memory layer)
-
-        # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
-        self.iface.newProjectCreated.connect(self.stop_sectorplot_session)
-
         # inits
         self.settings = SectorPlotSettings()
 
@@ -127,6 +121,16 @@ class SectorPlot:
         self.menu = self.tr(u'&SectorPlot')
         self.toolbar = self.iface.addToolBar(u'SectorPlot')
         self.toolbar.setObjectName(u'SectorPlot')
+
+        self.sector_dlg = None
+        self.location_dlg = None
+        self.sectorplotset_dlg = None
+        self.sectorplotsets_dlg = None
+        # TODO connect to new project event, sectorlayer opruimen bij uninstall plugin, evt self.sector_layer -> self.get_sector_layer (mits nog beschikbaar)
+        # create self.sector_layer when the user creates a new project (and removes this memory layer)
+
+        # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
+        self.iface.newProjectCreated.connect(self.stop_sectorplot_session)
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
@@ -373,7 +377,8 @@ class SectorPlot:
         self.sectorplotsetsdlg_open_dialog()
 
     def get_sector_layer(self):
-        if self.sector_layer is None:
+        #if self.sector_layer is None:
+        if len(QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) >= 0:
             # check IF there is already a SECTOR_LAYER_NAME in the project with the right fields
             if len(QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) > 0:
                 # not 100% sure if this layers IS the real SECTOR_LAYER_NAME but no further checks for now
@@ -393,13 +398,14 @@ class SectorPlot:
                 self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectorplot.qml'))
                 # add empty layer to the map
                 QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
-                # WHEN one the sectorplot layer is deleted from the layer tree, stop the session
-                self.sector_layer.destroyed.connect(self.stop_sectorplot_session)
-
+                # WHEN the sectorplot layer is deleted from the layer tree, stop the session
+                # mmm, trying this results in SegFaults when quiting QGIS
+                #self.sector_layer.destroyed.connect(self.stop_sectorplot_session)
         return self.sector_layer
 
     def get_pie_layer(self):
-        if self.pie_layer is None:
+        #if self.pie_layer is None:
+        if len(QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)) >= 0:
             if len(QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)) > 0:
                 self.pie_layer = QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)[0]
             else:
@@ -418,9 +424,10 @@ class SectorPlot:
                 # add empty layer to the map
                 QgsMapLayerRegistry.instance().addMapLayer(self.pie_layer)
                 # connect selectionChanged to sector_dlg_pie_sector_select
-                self.get_pie_layer().selectionChanged.connect(self.sector_dlg_pie_sector_select)
-                # WHEN one the sectorplot layer is deleted from the layer tree, stop the session
-                self.pie_layer.layerDeleted.connect(self.stop_sectorplot_session)
+                self.pie_layer.selectionChanged.connect(self.sector_dlg_pie_sector_select)
+                # WHEN the pie layer is deleted from the layer tree, stop the session
+                # mmm, trying this results in SegFaults when quiting QGIS
+                #self.pie_layer.destroyed.connect(self.stop_sectorplot_session)
         return self.pie_layer
 
     def stop_sectorplot_session(self):
@@ -434,10 +441,10 @@ class SectorPlot:
         if self.sectorplotsets_dlg is not None:
             self.sectorplotsets_dlg.reject()
         # remove all layers
-        if len(QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)) > 0:
-            QgsMapLayerRegistry.instance().removeMapLayer(self.pie_layer)
-        if len(QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) > 0:
-            QgsMapLayerRegistry.instance().removeMapLayer(self.sector_layer)
+        QgsMapLayerRegistry.instance().removeMapLayers(
+            QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME))
+        QgsMapLayerRegistry.instance().removeMapLayers(
+            QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME))
         #  set instances to None
         self.sector_layer = None
         self.pie_layer = None
@@ -452,16 +459,13 @@ class SectorPlot:
         self.show_current_sectorplotset_on_map()
 
     def show_current_sectorplotset_on_map(self):
-
         self.clean_sector_layer(sectorset=True, pie=True)
         if self.current_pie is not None and self.pie_layer is not None:
             self.get_pie_layer().dataProvider().addFeatures(self.current_pie.get_features())
         self.repaint_sector_layers()
-
         if self.current_sectorset is not None and self.sector_layer is not None:
             self.get_sector_layer().dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
             self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat)
-
         self.repaint_sector_layers()
 
     def repaint_sector_layers(self):
@@ -504,16 +508,13 @@ class SectorPlot:
         # be sure that the copy button is disabled (as nothing is selected?)
         self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(False)
         for sectorplot_set in self.sectorplotsets:
-            lon = sectorplot_set.lon
-            lat = sectorplot_set.lat
-            name = QStandardItem("%s" % sectorplot_set.name )
-            set_id = QStandardItem("%s" % sectorplot_set.setId )
+            name = QStandardItem("%s" % sectorplot_set.name)
+            set_id = QStandardItem("%s" % sectorplot_set.setId)
             # TODO: get time right instead of get_***_time_string()
             save_time = QStandardItem(unicode(sectorplot_set.get_save_time_string()))
             countermeasure_time = QStandardItem(unicode(sectorplot_set.get_counter_measure_time_string()))
             # attach the sectorplot_set as data to the first row item
             set_id.setData(sectorplot_set, Qt.UserRole)
-            #self.sectorplotlist_source_model.appendRow([set_id, name, save_time, countermeasure_time])
             self.sectorplotsets_source_model.insertRow(0, [set_id, name, countermeasure_time, save_time])
         # headers
         self.sectorplotsets_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Id"))
@@ -532,6 +533,7 @@ class SectorPlot:
                     selected_row = row
                     break;
         self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(selected_row)
+        self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.setFocus()
         # See if OK was pressed
         if self.sectorplotsets_dlg.exec_():
             pass
@@ -584,10 +586,8 @@ class SectorPlot:
         else:
             self.sectorplotset_dlg.lbl_npp_block.setText('')
         date_format = "yyyy-MM-dd HH:mm:ss +0000"
-
         #self.msg(None, ("%s" % self.current_sectorset.sectors[0].counterMeasureTime) + " *** " + self.current_sectorset.get_counter_measure_time_string())
         #self.msg(None, date_format + " *** " + self.current_sectorset.get_counter_measure_time_string())
-
         datetime = QDateTime.fromString(self.current_sectorset.get_counter_measure_time_string(), date_format)
 
         if datetime.isValid():
@@ -812,12 +812,21 @@ class SectorPlot:
         else:
             self.clean_sector_layer(True, True)
 
+    def sectorplotsetdlg_create_backup(self):
+        # create a copy of current sectors, to be able to go back to current status
+        sectors = []
+        for i in range(0, self.sectorplotset_source_model.rowCount()):
+            idx = self.sectorplotset_dlg.table_sectors.model().index(i, 0)
+            sectors.append(self.sectorplotset_dlg.table_sectors.model().data(idx, Qt.UserRole))
+        self.sector_dlg.old_sectors = sectors
+
     # note: when new sector button is clicked, this method is called with 'bool checked = false'
     # that is why the signature is self, bool, old_sector
     def sectorplotsetdlg_open_new_sector_dialog(self, bool=False, edited_sector=None):
         if edited_sector is None:
+            self.sectorplotsetdlg_create_backup()
             # ok creating a fresh new sector from scratch
-            # we do twe setCurrentIndex's to be sure we fire the currentIndexChanged
+            # we do two setCurrentIndex's to be sure we fire the currentIndexChanged
             self.sector_dlg.combo_countermeasures.setCurrentIndex(1)
             self.sector_dlg.combo_countermeasures.setCurrentIndex(0)
             # self.sector_dlg.le_sector_name.setText('') #  already reset by countermeasure rest
@@ -830,7 +839,7 @@ class SectorPlot:
             self.sector_dlg.le_min_distance.setText('0')
         else:
             # prefill the dialog with the values of the original sector
-            # select the right countermeasure in the combo (but not that the sectorName can be changed too)
+            # select the right countermeasure in the combo (but note that the sectorName can be changed too)
             for i in range(0, self.sector_dlg.combo_countermeasures.count()):
                 if edited_sector.counterMeasureId == self.sector_dlg.combo_countermeasures.itemData(i)['id']:
                     self.sector_dlg.combo_countermeasures.setCurrentIndex(i)
@@ -854,6 +863,7 @@ class SectorPlot:
     def sectorplotsetdlg_open_sector_for_edit_dialog(self):
         if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
             sector = self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].data(Qt.UserRole)
+            self.sectorplotsetdlg_create_backup()
             self.sectorplotsetdlg_open_new_sector_dialog(True, sector.clone())
 
     def sectorplotsetdlg_sector_selected(self):
@@ -928,6 +938,7 @@ class SectorPlot:
         self.show_current_sectorplotset_on_map()
 
     def sectorplotsetdlg_show(self):
+        self.sectorplotset_dlg.btn_new_sector.setFocus()
         # OK will save to db
         if self.sectorplotset_dlg.exec_():
             self.sectorplotsetdlg_create_sectorset_from_sector_table()
@@ -1118,13 +1129,17 @@ class SectorPlot:
                 return
             else:
                 self.sector_dlg_sector_create()
-       # else:
-            # user canceled
+        else:
+            # user canceled dialog
             # set the data of the selected row BACK to the old_sector (original sector)
-            # if len(self.sectorplotset_dlg.table_sectors.selectedIndexes()) > 0:
-            #     self.sectorplotset_source_model.item(
-            #         self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row(), 0).setData(old_sector, Qt.UserRole)
-            # nope too much hassle...
+            self.sectorplotset_dlg.table_sectors.model().clear()
+            row = 0
+            for sector in self.sector_dlg.old_sectors:
+                self.sectorplotsetdlg_add_sector_to_table(sector, row)
+                row = row + 1
+            # repaint restored state
+            self.sectorplotsetdlg_create_sectorset_from_sector_table()
+
         self.sectorplotset_dlg.table_sectors.clearSelection()
         self.iface.actionPan().trigger()  # just want to disable selection tool... by activating Panning tool...
 
@@ -1161,7 +1176,7 @@ class SectorPlot:
         self.settings_dlg.exec_()
 
     def debug(self, s):
-        QgsMessageLog.logMessage(s, tag="SectorPlot Debug", level=QgsMessageLog.INFO)
+        QgsMessageLog.logMessage('%s' % s, tag="SectorPlot Debug", level=QgsMessageLog.INFO)
 
 
 class GetPointTool(QgsMapTool):
