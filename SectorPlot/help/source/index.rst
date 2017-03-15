@@ -1,20 +1,19 @@
-.. SectorPlot documentation master file, created by
-   sphinx-quickstart on Sun Feb 12 17:11:03 2012.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
 
-Welcome to SectorPlot's documentation!
-============================================
+Documentation
+=============
 
-Contents:
+.. contents::
+   :local:
 
-.. toctree::
-   :maxdepth: 2
 
-Indices and tables
-==================
+What does it do
+---------------
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+
+Make it work
+------------
+
+
+How does it work
+----------------
 

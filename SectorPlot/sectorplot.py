@@ -20,10 +20,10 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt, QDateTime
+from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt, QDateTime, QUrl
 from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
     QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator, \
-    QCursor, QPixmap, QWidget, QFileDialog
+    QCursor, QPixmap, QWidget, QFileDialog, QDesktopServices
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
     QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsVectorFileWriter, \
     QgsMessageLog, QgsExpression, QgsFeatureRequest
@@ -222,7 +222,7 @@ class SectorPlot:
 
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-        # main dialog
+        # main menu/dialog
         icon_path = ':/plugins/SectorPlot/images/icon.png'
         self.add_action(
             icon_path,
@@ -230,12 +230,21 @@ class SectorPlot:
             callback=self.run,
             parent=self.iface.mainWindow())
 
-        # settings dialog
+        # settings menu
         icon_path = ':/plugins/SectorPlot/images/icon.png'
         self.add_action(
             icon_path,
             text=self.tr(u'Show Settings'),
             callback=self.settingsdlg_show,
+            add_to_toolbar=False,
+            parent=self.iface.mainWindow())
+
+        # help menu
+        icon_path = ':/plugins/SectorPlot/images/icon.png'
+        self.add_action(
+            icon_path,
+            text=self.tr(u'Documentation'),
+            callback=self.show_help,
             add_to_toolbar=False,
             parent=self.iface.mainWindow())
 
@@ -338,6 +347,10 @@ class SectorPlot:
         if parent is None:
             parent = self.iface.mainWindow()
         QMessageBox.warning(parent, self.MSG_BOX_TITLE, "%s" % msg, QMessageBox.Ok, QMessageBox.Ok)
+
+    def show_help(self):
+        docs = os.path.join(os.path.dirname(__file__), "help/html", "index.html")
+        QDesktopServices.openUrl(QUrl("file:" + docs))
 
     def run(self):
         """Start the plugin"""

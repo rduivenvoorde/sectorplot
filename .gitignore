@@ -8,3 +8,6 @@ repo/SectorPlot.zip
 .~lock.*r
 .buildinfo
 .~lock.*
+
+# Sphinx documentation
+SectorPlot/help/build
