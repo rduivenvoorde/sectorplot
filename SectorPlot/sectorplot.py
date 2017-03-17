@@ -619,11 +619,12 @@ class SectorPlot:
         self.sectorplotsetdlg_show()
 
     def sectorplotsetsdlg_create_wms(self):
-        result = self.current_sectorset.publish(self.current_sectorset.getUniqueName())
+        name = self.current_sectorset.getUniqueName()
+        result = self.current_sectorset.publish(name)
         # TODO: show more verbose messages
         # till now only True or False is returned!
         if result is True:
-            self.msg(self.sectorplotsets_dlg, self.tr(u"WMS layer created successfully."))
+            self.msg(self.sectorplotsets_dlg, self.tr(u"WMS layer created successfully as layer\n%s." % name))
         else:
             self.msg(self.sectorplotsets_dlg, self.tr(u"Problem creating WMS layer\n(Maybe already published? A SectorPlot cannot be republished...)"))
 

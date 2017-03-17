@@ -65,7 +65,7 @@ PEP8EXCLUDE=pydev,resources.py,conf.py,third_party,ui
 # Normally you would not need to edit below here
 #################################################
 
-HELP = help/build/html
+HELP = help/build
 
 PLUGIN_UPLOAD = $(c)/plugin_upload.py
 
@@ -116,7 +116,7 @@ deploy: compile doc transcompile
 	cp -vf $(COMPILED_RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vfr i18n $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help
+	cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help/
     # TODO: TIJDELIJK totdat de npp's ui de databse komen
 	mkdir $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/data
 	cp -vf data/tabel-npp-export.txt $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/data
@@ -206,6 +206,7 @@ doc:
 	@echo "Building documentation using sphinx."
 	@echo "------------------------------------"
 	cd help; make html
+	rm -rf $(HELP)/doctrees
 
 pylint:
 	@echo
