@@ -171,3 +171,61 @@ When you open the local shape file in JRodos this style file will be used.
 Note that QGIS itself does not automatically use that .sld file currently,
 but you can load it via the layer properties though.
 
+
+
+Development
+-----------
+
+Repo's:
+
+- https://github.com/rduivenvoorde/sectorplot
+
+- https://git.svc.cal-net.nl/qgis/sectorplotplugin
+
+All dialogs in english. Create dutch version via `make transup` see below.
+
+NOTE: all strings in plugins should be surrounded by `self.tr()` to be sure
+they show up in the .po files::
+
+ text=self.tr(u'Sector plot')
+
+
+ Create a new translation (given you work with sphinx)::
+
+  # update the nl.ts file using
+  make transup
+  # load the nl.ts file in Linguist and translate all strings
+  make transclean
+  # compile the ts file to qm file which can be used in the plugin
+  make transcompile
+
+To create a zip for the repository::
+
+ # make sure you can create docs (sphinx in path)
+ make zip
+
+This will first copy all needed files to `.qgis2/python/plugins/SectorPlot` and then zip that directory
+and place in the the directory `repo`.
+
+To develop live, either create a symlink in `.qgis2/python/plugins/SectorPlot` to the dev environment.
+
+To deploy the plugin: RIVM has their own plugin repo: http://repo.svc.cal-net.nl/repo/rivm/qgis/plugins.xml
+
+This is a web directory with:
+
+- the lastes version of SectorPlot.zip
+- een plugins.xml with the data of all plugins in that dir
+- een plugins.xsl just for viewing the xml
+
+Creating a new version:
+
+- in SectorPlot/metadata.txt in item General, upgrade the 'version' number
+
+- in plugins.xml on website and repo update the element
+::
+
+ <pyqgis_plugin name="SectorPlot" version="0.4">
+
+- create a new zip
+
+- scp both plugins.xml and SectorPlot.zip to the webdir
