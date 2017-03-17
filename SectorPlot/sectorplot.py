@@ -516,6 +516,8 @@ class SectorPlot:
         # create emtpy model for new list
         self.sectorplotsets_source_model = QStandardItemModel()
         self.sectorplotsets_dlg.table_sectorplot_sets.setModel(self.sectorplotsets_source_model)
+        # enable the sorting of columns by clicking on header
+        self.sectorplotsets_dlg.table_sectorplot_sets.setSortingEnabled(True)
         # resize columns to fit text in it
         self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
         # be sure that the copy button is disabled (as nothing is selected?)
@@ -663,6 +665,8 @@ class SectorPlot:
         # setFilterKeyColumn = search in the data in column
         self.npp_proxy_model.setFilterKeyColumn(0)
         self.location_dlg.table_npps.setModel(self.npp_proxy_model)
+        # enable the sorting of columns by clicking on header
+        self.location_dlg.table_npps.setSortingEnabled(True)
         self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
         # using textEdited here to be sure, that we only filter when a user types
         self.location_dlg.le_search_npp.textEdited.connect(self.locationdlg_filter_npps)
