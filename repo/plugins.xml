@@ -2,7 +2,7 @@
 <?xml-stylesheet type="text/xsl" href="plugins.xsl"?>
  <plugins>
 
-   <pyqgis_plugin name="SectorPlot" version="0.6.3">
+   <pyqgis_plugin name="SectorPlot" version="0.7.0">
      <description>Plots sector areas on risk management map</description>
      <homepage>https://github.com/rduivenvoorde/sectorplot</homepage>
      <qgis_minimum_version>2.12</qgis_minimum_version>
