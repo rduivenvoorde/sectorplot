@@ -1034,22 +1034,27 @@ class SectorPlot:
         max_distance = 0
         for feature in selected_features:
             # self.debug("selectedfeature attributes: %s" % feature.attributes())
-            arr = feature['sectorname'].split('|')
-            if len(arr) == 4:
-                    direction = arr[0]
-                    angle = arr[1]
-                    #min_distance = float(arr[2])/1000
-                    max_distance = float(arr[3])/1000
-            # if len(selected_features) > 1:
-            #     self.msg(self.sector_dlg, self.tr("Sorry, just one click per sector. \nOnly the first feature is used."))
-            #     break
-        self.sector_dlg.le_direction.setText('%s' % direction)
-        self.sector_dlg.le_angle.setText('%s' % angle)
-        if min_distance > 0:
-            self.sector_dlg.le_min_distance.setEnabled(True)
-            self.sector_dlg.le_min_distance.setText('%s' % min_distance)
-        self.sector_dlg.le_distance.setText('%s' % max_distance)
-        self.sector_dlg_preview()
+            # really do not know, but clicking a second feature by using the CTRL-button
+            # one of the returned selected features will have zero attributes....
+            # not sure where this comes from, but with this if we are sure to handle this...
+            if len(feature.attributes()) > 0:
+                arr = feature['sectorname'].split('|')
+                if len(arr) == 4:
+                        direction = arr[0]
+                        angle = arr[1]
+                        #min_distance = float(arr[2])/1000
+                        max_distance = float(arr[3])/1000
+                # if len(selected_features) > 1:
+                #     self.msg(self.sector_dlg, self.tr("Sorry, just one click per sector. \nOnly the first feature is used."))
+                #break
+                self.sector_dlg.le_direction.setText('%s' % direction)
+                self.sector_dlg.le_angle.setText('%s' % angle)
+                if min_distance > 0:
+                    self.sector_dlg.le_min_distance.setEnabled(True)
+                    self.sector_dlg.le_min_distance.setText('%s' % min_distance)
+                self.sector_dlg.le_distance.setText('%s' % max_distance)
+                self.sector_dlg_preview()
+                break
 
     def sector_dlg_sector_is_ok(self):
         acceptable = QDoubleValidator.Acceptable
