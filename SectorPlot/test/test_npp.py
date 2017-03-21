@@ -36,7 +36,7 @@ class TestNPP(TestProviderBase):
         self.assertGreater(len(npps), 0)
 
     def test_npp_service(self):
-        url = 'http://jrodos.dev.cal-net.nl:8080/jrodos-rest-service/jrodos/npps'
+        url = 'http://jrodos.dev.cal-net.nl/rest/jrodos/npps'
         npps = NppSet(url)
         self.assertGreater(len(npps), 0)
 

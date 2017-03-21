@@ -32,7 +32,8 @@ When you click the button the first time the settings window (also available via
 
 ..  image:: img/settings.png
 
-There you have to give (and test) passwords for database and web services. These can be found in Cal-net wiki.
+There you have to give (and test) passwords for database and web services. These can be found in Cal-net wiki
+(in the referencelist in the modelmakers space).
 
 Use it
 ------
@@ -190,7 +191,7 @@ they show up in the .po files::
  text=self.tr(u'Sector plot')
 
 
- Create a new translation (given you work with sphinx)::
+Create a new translation (given you work with sphinx)::
 
   # update the nl.ts file using
   make transup
@@ -229,3 +230,78 @@ Creating a new version:
 - create a new zip
 
 - scp both plugins.xml and SectorPlot.zip to the webdir
+
+
+Notes
+.....
+
+Plugin is developed using PyCharm
+
+The plugin is a standard QGIS plugin with some ui-dialogs created with QT-Creator
+
+Settings are handled via https://github.com/3nids/qgissettingmanager
+
+FIRST set and test all settings (Web/SectorplotPlugin/Show Settings)
+
+Custom HTTP services (WMS, REST) are called via 'providers', classes which wrap some funcionality around
+QgsNetworkAccessManager (to be sure the proxies from QGIS' settings are picked up).
+
+You can run all tests in the test directory using the Pycharm test functionality.
+
+The tests can also be used to test the services.
+
+NPP information is retrieved using a NPP-RestService 'http://jrodos.dev.cal-net.nl/rest/jrodos/npps'. These return
+a json (a saved version is in providers/npp-rest.json)::
+
+   {"links":[
+     {"rel":"self","href":"http://localhost:8080/jrodos/npps"}],
+     "content":[
+     {"id":346437,
+       "block":"ALMARAZ-1",
+       "site":"ALMARAZ",
+       "longitude":-5.6977,
+       "latitude":39.8074,
+       "inventory":"INVE.PWR_2686MWth_ALMARAZ",
+       "stackheight":45.0,
+       "thermalpower":2947.0,
+       "operationtime":999,
+       "blocktype":"PWR",
+       "buildingwidth":55.0,
+       "buildingheight":40.0,
+       "volumeflux":-1.0,
+       "ventopening":-1.0,
+       "countrycode":"ESP",
+       "numberofzones":3,
+       "zoneradii":[5.0,10.0,30.0],
+       "numberofsectors":16,
+       "angle":-11.25,
+       "closetoborder":false,
+       "links":[{"rel":"self","href":"http://localhost:8080/jrodos/npps/346437"}]
+     },...]
+   }
+
+CounterMeasures/Tegenmaatregelen are defined in `countermeasures.py`, this file defines both the categories
+and the default colors to use.
+
+Creating Sectors and Pie-sectors is done in `sector.py`. All times are in GMT(!).
+
+Retrieving recent sectors (from database) is done in `sector.py`, using code in `connect.py`
+
+REST-communication with Geoserver is coded in `connect.py`
+
+Styling of sectorpie in `sectorpie.qml`.
+
+Styling of sectors in `sectorplot.qml`.
+
+Publishing a SectorPlot in Geoserver is done by:
+
+1) pushing all sectorplots to Geoserver via Postgres db
+
+2) creating a Postgres view which registres all sectors of one sectorplot (via db connection)
+
+3) create a Geoserver-layer based on this view (via Geoserver REST api)
+
+4) setting a default style for this layer ('sectorplot', as `sectorplot.sld` in sources)
+
+
+

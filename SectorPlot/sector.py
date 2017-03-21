@@ -418,7 +418,7 @@ class SectorSet:
         db = Database('sectorplot')
         q = {}
         q['text'] = 'CREATE OR REPLACE VIEW ' + name + ' AS'
-        q['text'] +=  ' SELECT * FROM sectors WHERE setid = %s ORDER BY z_order;'
+        q['text'] += ' SELECT * FROM sectors WHERE setid = %s ORDER BY z_order;'
         q['vals'] = (self.setId,)
         result = db.execute([q])
         return result['db_ok']
@@ -431,7 +431,7 @@ class SectorSet:
         store = 'sectorplot'
 
         rest = RestClient('sectorplot')
-        headers={'Content-Type': 'text/xml'}
+        headers = {'Content-Type': 'text/xml'}
 
         try:
             # create layer

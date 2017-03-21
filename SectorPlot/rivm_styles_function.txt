@@ -5,11 +5,13 @@
 # en wordt gebruikt in onze sectors.qml (styling)
 # om de kleur van de sector uit de 'colors' kolom the halen
 
+# NOTE: deze wordt volgens mij (Richard) niet meer gebruikt
+
 # in styling expression gebruik:
 #
 #   hexcolor_to_rgb("color")+',127'
 #
-# (en dit komt in de qml terecht
+# (en dit komt in de qml terecht)
 
 
 @qgsfunction(args='auto', group='Custom')

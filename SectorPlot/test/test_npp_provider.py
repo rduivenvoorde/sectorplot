@@ -9,6 +9,7 @@ from providers.npp_provider import NPPConfig, NPPProvider
 
 class TestNPPProvider(TestProviderBase):
 
+    # NOTE: will always run, never fail because of provider threads
     def test_npp_file(self):
         conf = NPPConfig()
         # find dir of this class
@@ -24,13 +25,15 @@ class TestNPPProvider(TestProviderBase):
                 print '{0: <30} {1: <18} {2: <8} {3}'.format(npp['site'], npp['numberofsectors'], npp['angle'], npp['zoneradii'])
         prov.finished.connect(prov_finished)
         prov.get_data()
-        while not prov.is_finished():
-            QCoreApplication.processEvents()
+        # while not prov.is_finished():
+        #     QCoreApplication.processEvents()
 
+
+    # NOTE: will always run, never fail because of provider threads
     def test_npp_url(self):
         conf = NPPConfig()
         # find dir of this class
-        conf.url = 'http://jrodos.dev.cal-net.nl/rest/jrodos/npps'
+        #conf.url = 'http://jrodos.dev.cal-net.nl/rest/jrodos/npps'
         conf.url = 'http://jrodos.dev.cal-net.nl/rest-1.0-TEST-1/jrodos/npps'
         prov = NPPProvider(conf)
 
@@ -45,13 +48,7 @@ class TestNPPProvider(TestProviderBase):
                                                              npp['zoneradii'])
         prov.finished.connect(prov_finished)
         prov.get_data()
-        while not prov.is_finished():
-            QCoreApplication.processEvents()
+        # while not prov.is_finished():
+        #     QCoreApplication.processEvents()
 
-
-
-    @unittest.skip
-    def test_npp_service(self):
-        # TODO
-        pass
 
