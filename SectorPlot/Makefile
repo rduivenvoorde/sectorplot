@@ -116,7 +116,7 @@ deploy: compile doc transcompile
 	cp -vf $(COMPILED_RESOURCE_FILES) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vf $(EXTRAS) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vfr i18n $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
-	cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help/
+	cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help
     # TODO: TIJDELIJK totdat de npp's ui de databse komen
 	mkdir $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/data
 	cp -vf data/tabel-npp-export.txt $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/data
