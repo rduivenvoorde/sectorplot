@@ -33,3 +33,10 @@ SELECT AddGeometryColumn ('public','sectors','geom',4326,'POLYGON',2);
 -- SELECT * FROM sectors;
 
 -- DELETE FROM sectors;
+
+-- NOTE!!!! the role sectorplot used by the geoserver should have priviliges enough to see the views + geom tables etc
+-- else error: "Trying to create new feature type inside the store, but no attributes were specified"
+-- see: http://osgeo-org.1560.x6.nabble.com/Problem-with-RESTful-creation-of-layers-based-on-Postgis-tables-td3790217.html
+GRANT ALL ON SCHEMA public TO sectorplot;
+GRANT ALL ON TABLE geography_columns TO sectorplot;
+GRANT ALL ON TABLE geometry_columns TO sectorplot;

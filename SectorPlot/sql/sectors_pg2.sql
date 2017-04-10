@@ -32,12 +32,9 @@ WITH (
 -- create extension postgis;
 -- select version()
 
-
-
--- select * from sectors;
-
--- delete from sectors where left(name,1)='d';
-
--- werkt niet meer:
--- INSERT INTO sectors (x, y, distance, direction, angle, type, z_order, geom, savetime) VALUES (10, 20, 5000, 45, 45, 'jodium', 0, ST_GeomFromText('Polygon((0 0,1 1,1 0,0 0))',4326), '2003-1-1 20:30:00'::timestamp);
-
+-- NOTE!!!! the role sectorplot used by the geoserver should have priviliges enough to see the views + geom tables etc
+-- else error: "Trying to create new feature type inside the store, but no attributes were specified"
+-- see: http://osgeo-org.1560.x6.nabble.com/Problem-with-RESTful-creation-of-layers-based-on-Postgis-tables-td3790217.html
+GRANT ALL ON SCHEMA public TO sectorplot;
+GRANT ALL ON TABLE geography_columns TO sectorplot;
+GRANT ALL ON TABLE geometry_columns TO sectorplot;
