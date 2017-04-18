@@ -24,6 +24,7 @@ repository=http://github.com/rduivenvoorde/sectorplot
 
 # Uncomment the following line and add your changelog:
 changelog=
+    0.7.2   small fixes
     0.7.1   cleanup and documentation
     0.7.0   documentation, clicking in roses to fill fields etc
     0.6     adding npp pie/roses

@@ -183,6 +183,10 @@ Repo's:
 
 - https://git.svc.cal-net.nl/qgis/sectorplotplugin
 
+Wiki page for Install and Configuration:
+
+- https://wiki.cal-net.nl/display/CALNET3/Installatie+en+configuratie+van+de+sectorplotplugin
+
 All dialogs in english. Create dutch version via `make transup` see below.
 
 NOTE: all strings in plugins should be surrounded by `self.tr()` to be sure
@@ -299,7 +303,8 @@ Publishing a SectorPlot in Geoserver is done by:
 
 2) creating a Postgres view which registres all sectors of one sectorplot (via db connection)
 
-3) create a Geoserver-layer based on this view (via Geoserver REST api)
+3) create a Geoserver-layer based on this view (via Geoserver REST api) NOTE!! Geoserver needs to have the sectorplot
+with the right username (sectorplot) and password (see hieradata, or https://wiki.cal-net.nl/display/CALNET3/Installatie+en+configuratie+van+de+sectorplotplugin)
 
 4) setting a default style for this layer ('sectorplot', as `sectorplot.sld` in sources)
 
