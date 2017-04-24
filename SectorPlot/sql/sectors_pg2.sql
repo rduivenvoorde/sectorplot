@@ -39,9 +39,15 @@ ALTER TABLE sectors
 -- see: http://osgeo-org.1560.x6.nabble.com/Problem-with-RESTful-creation-of-layers-based-on-Postgis-tables-td3790217.html
 
 -- sector specific
+-- REVOKE ALL ON TABLE sectors from sectorplot;
 GRANT SELECT, INSERT,UPDATE ON TABLE sectors TO sectorplot;
+-- REVOKE ALL ON SEQUENCE sectors_id_seq FROM sectorplot;
 GRANT USAGE, SELECT ON TABLE sectors_id_seq TO sectorplot;
+
 -- postgis specific
+-- REVOKE ALL ON spatial_ref_sys FROM sectorplot;
 GRANT SELECT ON spatial_ref_sys TO sectorplot;
+-- REVOKE ALL ON geography_columns FROM sectorplot;
 GRANT SELECT ON geography_columns TO sectorplot;
+-- REVOKE ALL ON geometry_columns FROM sectorplot;
 GRANT SELECT ON geometry_columns TO sectorplot;
