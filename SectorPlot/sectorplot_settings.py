@@ -10,7 +10,7 @@ class SectorPlotSettings(SettingManager):
 
     def __init__(self):
 
-        plugin_name = 'SectorPlot'
+        plugin_name = 'sectorplot'  # NOTE: will be root node in QSettings: always lowercase!
 
         SettingManager.__init__(self, plugin_name)
 
