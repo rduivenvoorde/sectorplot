@@ -23,7 +23,7 @@
 from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt, QDateTime, QUrl
 from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
     QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator, \
-    QCursor, QPixmap, QWidget, QFileDialog, QDesktopServices
+    QCursor, QPixmap, QWidget, QFileDialog, QDesktopServices, QToolBar
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
     QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsVectorFileWriter, \
     QgsMessageLog, QgsExpression, QgsFeatureRequest
@@ -77,6 +77,7 @@ class SectorPlot:
                 QCoreApplication.installTranslator(self.translator)
 
         self.MSG_BOX_TITLE = self.tr("SectorPlot Plugin")
+        self.TOOLBAR_TITLE = self.tr("RIVM Cal-Net Toolbar")  # TODO get this from commons
         # ALPHA is a fixed number for opacity, used in other sld's (Geoserver etc)
         self.ALPHA = 127
         # name of sector layer (memory layer) to be used to draw sectors in
@@ -119,8 +120,7 @@ class SectorPlot:
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr(u'&SectorPlot')
-        self.toolbar = self.iface.addToolBar(u'SectorPlot')
-        self.toolbar.setObjectName(u'SectorPlot')
+        self.toolbar = self.get_rivm_toolbar()
 
         self.sector_dlg = None
         self.location_dlg = None
@@ -131,6 +131,17 @@ class SectorPlot:
 
         # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
         self.iface.newProjectCreated.connect(self.stop_sectorplot_session)
+
+    # TODO: move this to a commons class/module
+    def get_rivm_toolbar(self):
+        TOOLBAR_TITLE = 'RIVM Cal-Net Toolbar'  # TODO get this from commons and make translatable
+        toolbars = self.iface.mainWindow().findChildren(QToolBar, TOOLBAR_TITLE)
+        if len(toolbars)==0:
+            toolbar = self.iface.addToolBar(TOOLBAR_TITLE)
+            toolbar.setObjectName(TOOLBAR_TITLE)
+        else:
+            toolbar = toolbars[0]
+        return toolbar
 
     # noinspection PyMethodMayBeStatic
     def tr(self, message):
