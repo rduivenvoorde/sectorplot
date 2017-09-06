@@ -28,6 +28,8 @@
 # LOCALES = af
 LOCALES = nl
 
+VERSION = 0.7.3
+
 # If locales are enabled, set the name of the lrelease binary on your system. If
 # you have trouble compiling the translations, you may have to specify the full path to
 # lrelease
@@ -146,8 +148,8 @@ zip: deploy dclean
 	@echo "---------------------------"
 	# The zip target deploys the plugin and creates a zip file with the deployed
 	# content. You can then upload the zip file on http://plugins.qgis.org
-	rm -f $(PLUGINNAME).zip
-	cd $(HOME)/$(QGISDIR)/python/plugins; zip -9r $(CURDIR)/../repo/$(PLUGINNAME).zip $(PLUGINNAME)
+	rm -f $(CURDIR)/../repo/$(PLUGINNAME).$(VERSION).zip
+	cd $(HOME)/$(QGISDIR)/python/plugins; zip -9r $(CURDIR)/../repo/$(PLUGINNAME).$(VERSION).zip $(PLUGINNAME)
 
 package: compile
 	# Create a zip package of the plugin named $(PLUGINNAME).zip.

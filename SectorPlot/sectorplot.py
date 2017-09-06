@@ -349,9 +349,10 @@ class SectorPlot:
             self.iface.removePluginWebMenu(
                 self.tr(u'&SectorPlot'),
                 action)
-            self.iface.removeToolBarIcon(action)
-        # remove the toolbar
-        del self.toolbar
+            #self.iface.removeToolBarIcon(action)
+            self.toolbar.removeAction(action)
+        # NOT (as it is RIVM toolbar) remove the toolbar
+        #del self.toolbar
         self.stop_sectorplot_session()
 
     def msg(self, parent=None, msg=""):
