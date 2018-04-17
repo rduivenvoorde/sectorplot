@@ -73,7 +73,7 @@ PLUGIN_UPLOAD = $(c)/plugin_upload.py
 
 RESOURCE_SRC=$(shell grep '^ *<file' resources.qrc | sed 's@</file>@@g;s/.*>//g' | tr '\n' ' ')
 
-QGISDIR=.qgis2
+QGISDIR=/home/richard/z/17/rivm/qgisconfig
 
 default: compile
 
@@ -133,6 +133,16 @@ dclean:
 	find $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME) -iname "*.pyc" -delete
 	find $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME) -iname ".git" -prune -exec rm -Rf {} \;
 
+# Create a symlink for development in the default profile python plugins dir
+symlink:
+	mkdir -p $(HOME)/$(QGISDIR)/python/plugins
+	# in case there is a deployed version: remove it
+	rm -rf $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+	ln -s `pwd` $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
+
+# Remove the created symlink
+desymlink:
+	rm -Rf $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 
 derase:
 	@echo
