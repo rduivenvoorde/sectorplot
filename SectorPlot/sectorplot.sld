@@ -30,13 +30,14 @@
               <ogc:PropertyName>sectorname</ogc:PropertyName>
             </Label>
             <Font>
-              <CssParameter name="font-family">Arial</CssParameter>
-              <CssParameter name="font-size">14</CssParameter>
+              <!--<CssParameter name="font-family">Arial</CssParameter>-->
+              <CssParameter name="font-family">SansSerif</CssParameter>
+              <CssParameter name="font-size">12</CssParameter>
               <CssParameter name="font-style">normal</CssParameter>
-              <CssParameter name="font-weight">bold</CssParameter>
+              <!--<CssParameter name="font-weight">bold</CssParameter>-->
             </Font>
             <Halo>
-              <Radius>1</Radius>
+              <Radius>3</Radius>
               <Fill>
                 <CssParameter name="fill">#ffffff</CssParameter>
               </Fill>
@@ -50,7 +51,8 @@
               </PointPlacement>
             </LabelPlacement>
             <Fill>
-              <CssParameter name="fill"><ogc:PropertyName>color</ogc:PropertyName></CssParameter>
+              <!--<CssParameter name="fill"><ogc:PropertyName>color</ogc:PropertyName></CssParameter>-->
+              <CssParameter name="fill">#000000</CssParameter>
             </Fill>
           </TextSymbolizer>
         </Rule>
