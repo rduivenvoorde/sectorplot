@@ -4,7 +4,7 @@ from PyQt4.QtCore import QCoreApplication
 # Onmiddelijke evacuatie=rood
 # Schuilen=geel
 # Jodiumprofylaxe tot 18 jaar en zwangeren=blauw
-# Jodiumprofylaxe tot 40 jaar en zwangeren=licht blauw
+# Jodiumprofylaxe volwassenen=licht blauw
 # Relocatie=donker grijs
 #
 # Landbouwmaatregelen=donker groen
@@ -43,7 +43,7 @@ class CounterMeasures():
 
             {'id' :120, 'text': tr('Schuilen'), 'color': '#ffff00'},
             {'id' :130, 'text': tr('Jodiumprofylaxe tot 18 jaar en zwangeren'), 'color': '#0000ff'},
-            {'id' :131, 'text': tr('Jodiumprofylaxe tot 40 jaar en zwangeren'), 'color': '#add8e6'},
+            {'id' :131, 'text': tr('Jodiumprofylaxe volwassenen'), 'color': '#add8e6'},
             {'id' :140, 'text': tr('Relocatie'), 'color': '#a9a9a9'},
 
             {'id' :220, 'text': tr('Landbouwmaatregelen'), 'color': '#006400'},
