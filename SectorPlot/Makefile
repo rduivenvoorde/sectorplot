@@ -73,7 +73,7 @@ PLUGIN_UPLOAD = $(c)/plugin_upload.py
 
 RESOURCE_SRC=$(shell grep '^ *<file' resources.qrc | sed 's@</file>@@g;s/.*>//g' | tr '\n' ' ')
 
-QGISDIR=/home/richard/z/17/rivm/qgisconfig
+QGISDIR=/home/richard/z/18/rivm/qgisconfig
 
 default: compile
 
