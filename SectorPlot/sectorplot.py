@@ -517,7 +517,6 @@ class SectorPlot:
     def sectorplotsetsdlg_open_dialog(self, selected_id=-1):
         # show the dialog with recent sectorplotsets
         self.sectorplotsets = SectorSets()
-        self.sectorplotsets.importFromDatabase()
         db_ok, result = self.sectorplotsets.importFromDatabase()
         if self.DEMO:
             self.msg(None, "DEMO MODE: no wms and saving / retrieving of old sectors / listing of recent plots\nPlease create a new Sectorplot via 'New Sectorplot' button in next dialog.")

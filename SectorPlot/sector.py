@@ -164,6 +164,7 @@ class Sector:
                     arc.append(self._getArcPoint(x, y, dist, d))
         arc.append(self._getArcPoint(x, y, dist, arcEnd))
         return arc
+
     def calcGeometry(self):
 
         # scale distance for Mercator
@@ -184,7 +185,7 @@ class Sector:
         outer = []
         inner = []
 
-        #check if sector is circle
+        #check if sector is a full circle (or angle even greater 360...)
         if self.angle >= 360:
             for d in range(0, 360):
                 outer.append(self._getArcPoint(x, y, maxR, d))
@@ -195,14 +196,18 @@ class Sector:
                 geom = QgsGeometry.fromPolygon([outer, inner])
             else:
                 geom = QgsGeometry.fromPolygon([outer])
-        else:
+        else:  # this is a true sector
             outer = self._getArc(x, y, maxR)
             if minR > 0:
                 inner = self._getArc(x, y, minR)
                 inner.reverse()
             else:
                 inner = [QgsPoint(x, y)]
-            geom = QgsGeometry.fromPolygon([outer+inner])
+            # inner = either centerpoint, OR the inner circle
+            # start with inner(!), so the 'sharp side' of the pie slice has the first coordinate
+            # this make is it possible to determine orientation of the pie slice
+            # to be used with gradient styling
+            geom = QgsGeometry.fromPolygon([inner+outer])
 
         geom.transform(xformTo4326)
         self.geometry = geom
