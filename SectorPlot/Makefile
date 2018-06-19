@@ -28,7 +28,7 @@
 # LOCALES = af
 LOCALES = nl
 
-VERSION = 0.7.3
+VERSION=$(shell cat metadata.txt | grep version= | sed -e 's,version=,,')
 
 # If locales are enabled, set the name of the lrelease binary on your system. If
 # you have trouble compiling the translations, you may have to specify the full path to
