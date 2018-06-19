@@ -103,6 +103,16 @@ class SectorPlot:
         # inits
         # the data for the combo_countermeasures
         self.counter_measures = CounterMeasures()
+
+        # available styles
+        self.styles = {
+            'default': ['default', 'Default (more or less idential in QGIS, Geoserver, JRodos)', 'sectorplot.qml'],
+            'gradient': ['gradient', 'Gradient/Fading style (QGIS only)', 'sectorplotwithgradient.qml'],
+            'nolabels': ['nolabels', 'Default, NO labels (QGIS only)', 'sectorplotnolabels.qml'],
+            'nolabelsgradient': ['nolabelsgradient', 'Gradient/Fading style, NO labels (QGIS only)', 'sectorplotwithgradientnolabels.qml'],
+        }
+
+        # some data input validators
         self.degree_validator = QDoubleValidator(-360, 360, 100)
         self.positive_degree_validator = QDoubleValidator(1, 360, 100)
         self.distance_validator = QDoubleValidator(1, 999, 100)
@@ -110,6 +120,7 @@ class SectorPlot:
 
         self.current_sectorset = None
         self.current_pie = None
+        self.current_style = self.styles['default']
 
         # memory Layer
         self.sector_layer = None
@@ -278,6 +289,18 @@ class SectorPlot:
         self.sectorplotsets_dlg.btn_create_wms.clicked.connect(self.sectorplotsetsdlg_create_wms)
         self.sectorplotsets_dlg.btn_create_shapefile.clicked.connect(self.sectorplotsetsdlg_create_shapefile)
         self.sectorplotsets_dlg.table_sectorplot_sets.doubleClicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
+        cur = 0
+        style_idx = cur
+        for style_key in self.styles.keys():
+            # add styles key + title to the styles dropdown
+            self.sectorplotsets_dlg.combo_styles.addItem(self.styles[style_key][1], self.styles[style_key][0])
+            # remember index corresponding to settings key
+            if style_key == self.settings.value('sector_style'):
+                style_idx = cur
+            cur = cur+1
+        self.sectorplotsets_dlg.combo_styles.setCurrentIndex(style_idx)
+        self.sectorplotsets_dlg.combo_styles.currentIndexChanged.connect(self.sectorplotsetsdlg_style_selected)
+
 
         # The Location_dialog for setting x/y lat/lon
         self.location_dlg = SectorPlotLocationDialog(parent=self.sectorplotsets_dlg)
@@ -318,6 +341,7 @@ class SectorPlot:
             self.sectorplotsetdlg_create_sectorset_from_sector_table)
         self.sectorplotset_dlg.table_sectors.clicked.connect(self.sectorplotsetdlg_sector_selected)
         self.sectorplotset_dlg.table_sectors.doubleClicked.connect(self.sectorplotsetdlg_open_sector_for_edit_dialog)
+
         # inits
         self.sectorplotset_source_model = QStandardItemModel()
         self.sectorplotset_dlg.table_sectors.setModel(self.sectorplotset_source_model)
@@ -395,6 +419,9 @@ class SectorPlot:
                 self.msg(self.location_dlg, self.tr("Problem retrieving the NPP (Nuclear Power Plant) list.\nPlease check if the the url used in the settings is valid."))
                 return
 
+        if self.styles.has_key(self.settings.value('sector_style')):
+            self.current_style = self.styles[self.settings.value('sector_style')]
+
         # add a memory layer to show sectors and the pie if not yet available
         self.get_pie_layer()
         self.get_sector_layer()
@@ -421,7 +448,7 @@ class SectorPlot:
                     self.SECTOR_LAYER_NAME,
                     "memory")
                 # use a saved style as style
-                self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectorplot.qml'))
+                self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), self.current_style[2]))
                 # add empty layer to the map
                 QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
                 self.sector_layer.editingStopped.connect(self.sector_layer_edited_finished)
@@ -658,13 +685,22 @@ class SectorPlot:
             filename = filename.replace('.shp', '')
             new_sld_name = filename + '.sld'
             shutil.copy2(sld_name, new_sld_name)
-            qml_name = os.path.join(self.plugin_dir, 'sectorplot.qml')
+            qml_name = os.path.join(self.plugin_dir, self.current_style[2])
             new_qml_name = filename + '.qml'
             shutil.copy2(qml_name, new_qml_name)
             self.msg(self.sectorplotsets_dlg, self.tr(u"Shapefile created successfully:\n ") + filename + ".shp")
         else:
             # should not come here!!
             self.msg(self.sectorplotsets_dlg, self.tr("Problem saving shapefile"))
+
+    def sectorplotsetsdlg_style_selected(self):
+        idx = self.sectorplotsets_dlg.combo_styles.currentIndex()
+        style_name = self.sectorplotsets_dlg.combo_styles.itemData(idx)
+        self.settings.setValue('sector_style', style_name)
+        self.current_style = self.styles[style_name]
+        if self.sector_layer is not None:
+            self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), self.current_style[2]))
+            self.repaint_sector_layers()
 
     def locationdlg_open_dialog(self):
         self.new_sectorplotset()
@@ -947,7 +983,6 @@ class SectorPlot:
             self.sectorplotset_source_model.removeRow(self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row())
             self.sectorplotsetdlg_create_sectorset_from_sector_table()
             self.show_current_sectorplotset_on_map()
-
 
     def sector_layer_edited_finished(self):
         '''

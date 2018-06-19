@@ -20,7 +20,7 @@ class SectorPlotSettings(SettingManager):
         # "1.5 USE_GEOS=1 USE_PROJ=1 USE_STATS=1"
         #
         # conn_string_sectorplot = "host='db02.dev.cal-net.nl' dbname='sectorplot' user='sectorplot' password=''"
-        self.add_setting(String('postgis_host', Scope.Global, 'db02.dev.cal-net.nl'))
+        self.add_setting(String('postgis_host', Scope.Global, 'db03.dev.cal-net.nl'))
         self.add_setting(String('postgis_database', Scope.Global, 'sectorplot'))
         self.add_setting(String('postgis_user', Scope.Global, 'sectorplot'))
         self.add_setting(String('postgis_password', Scope.Global, ''))
@@ -46,4 +46,7 @@ class SectorPlotSettings(SettingManager):
             # OLD: http://jrodos.dev.cal-net.nl:8080/jrodos-rest-service/jrodos
             # new: http://jrodos.dev.cal-net.nl/rest/jrodos/npps
             String('jrodos_rest_url', Scope.Global, 'http://jrodos.dev.cal-net.nl/rest/jrodos/npps'))
+
+        # style to use (default versus gradient)
+        self.add_setting(String('sector_style', Scope.Global, 'default'))
 
