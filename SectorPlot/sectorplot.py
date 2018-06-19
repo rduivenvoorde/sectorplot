@@ -359,8 +359,6 @@ class SectorPlot:
             self.toolbar.removeAction(action)
         # NOT (as it is RIVM toolbar) remove the toolbar
         #del self.toolbar
-        if self.sector_layer is not None:
-            self.sector_layer.editingStopped.disconnect(self.sector_layer_edited_finished)
         self.stop_sectorplot_session()
 
     def msg(self, parent=None, msg=""):

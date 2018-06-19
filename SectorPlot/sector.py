@@ -113,7 +113,7 @@ class Sector:
         self.color = rec.color
         self.npp_block = rec.npp_block
         #self.calcGeometry()
-        if rec.geom is not None and rec.geomkt is not None:
+        if rec.geom is not None and rec.geomwkt is not None:
             self.geometry = QgsGeometry.fromWkt(rec.geomwkt)
 
     def getQgsFeature(self):
