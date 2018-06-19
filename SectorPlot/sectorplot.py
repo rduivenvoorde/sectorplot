@@ -129,6 +129,12 @@ class SectorPlot:
         # TODO connect to new project event, sectorlayer opruimen bij uninstall plugin, evt self.sector_layer -> self.get_sector_layer (mits nog beschikbaar)
         # create self.sector_layer when the user creates a new project (and removes this memory layer)
 
+        # pycharm debugging
+        # COMMENT OUT BEFORE PACKAGING !!!
+        #import pydevd
+        #cd
+        # pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
+
         # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
         self.iface.newProjectCreated.connect(self.stop_sectorplot_session)
 
@@ -353,6 +359,8 @@ class SectorPlot:
             self.toolbar.removeAction(action)
         # NOT (as it is RIVM toolbar) remove the toolbar
         #del self.toolbar
+        if self.sector_layer is not None:
+            self.sector_layer.editingStopped.disconnect(self.sector_layer_edited_finished)
         self.stop_sectorplot_session()
 
     def msg(self, parent=None, msg=""):
@@ -373,11 +381,6 @@ class SectorPlot:
                 "Please enable OTF for this project or open a project with OTF enabled."),
                                 QMessageBox.Ok, QMessageBox.Ok)
             return
-
-        # pycharm debugging
-        # COMMENT OUT BEFORE PACKAGING !!!
-        #import pydevd
-        #pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
 
         # fresh installs do not have passwords, present the settings dialog upon first use
         settings = SectorPlotSettings()
@@ -423,6 +426,7 @@ class SectorPlot:
                 self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectorplot.qml'))
                 # add empty layer to the map
                 QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
+                self.sector_layer.editingStopped.connect(self.sector_layer_edited_finished)
                 # WHEN the sectorplot layer is deleted from the layer tree, stop the session
                 # mmm, trying this results in SegFaults when quiting QGIS
                 #self.sector_layer.destroyed.connect(self.stop_sectorplot_session)
@@ -945,6 +949,23 @@ class SectorPlot:
             self.sectorplotset_source_model.removeRow(self.sectorplotset_dlg.table_sectors.selectedIndexes()[0].row())
             self.sectorplotsetdlg_create_sectorset_from_sector_table()
             self.show_current_sectorplotset_on_map()
+
+
+    def sector_layer_edited_finished(self):
+        '''
+        To make it possible that a user edits the geometry (sector) after defining it,
+        we listen to the 'layer_edited' signal.
+
+        If received, we define all geometries based on the geometries of the layer!
+
+        Passing a handle of a geometry does not work so we export the geometry from the
+        edit buffer as WKT to the sector, where a geometry is created from the wkt
+        '''
+        for feat in self.sector_layer.getFeatures():
+            # actually the z_order is the 'id' of a sector in the sectorset, so use that
+            sector = self.current_sectorset.get_sector_by_z_order(feat['z_order'])
+            # passing a wkt string to the sector so sector will be responsible for/owner of QgsGeometry creation
+            sector.setGeometryFromWkt4326(feat.geometry().exportToWkt())
 
     def sectorplotsetdlg_create_sectorset_from_sector_table(self):
         # NOW get the sectors from the model/dialog, put them in a sectorset in the order they are seen in the table.

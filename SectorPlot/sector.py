@@ -1,6 +1,6 @@
 from math import ceil, floor, cos, sin, pi
 from qgis.core import QgsFeature, QgsPoint, QgsGeometry, QgsField, QgsFields
-from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform
+from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsMessageLog
 from PyQt4.QtCore import QVariant
 from time import strftime, strptime, gmtime, struct_time
 import time
@@ -31,7 +31,7 @@ class Sector:
     def __init__(self, setName=None, lon=0, lat=0, minDistance=0,
                  maxDistance=1, direction=0, angle=45, counterMeasureId=-1,
                  z_order=-1, saveTime=None, counterMeasureTime=None,
-                 sectorName=None, setId=-1, color='#ffffff', npp_block=None):
+                 sectorName=None, setId=-1, color='#ffffff', npp_block=None, geometry=None):
         self.setName = setName
         self.lon = float(lon)
         self.lat = float(lat)
@@ -47,7 +47,10 @@ class Sector:
         self.setId = int(setId)
         self.color = color
         self.npp_block = npp_block
-        self.calcGeometry()
+        if geometry is None:
+            self.calcGeometry()
+        else:
+            self.geometry = geometry
 
     def __str__(self):
         result = 'Sector[%s, (%d,%d), %d, %d, %d, %d, %d, ,%s, %s]' % (self.setName, self.lon, self.lat, self.minDistance, self.maxDistance, self.direction, self.angle, self.setId, self.sectorName, self.npp_block)
@@ -109,7 +112,9 @@ class Sector:
         self.setId = rec.setid
         self.color = rec.color
         self.npp_block = rec.npp_block
-        self.calcGeometry()
+        #self.calcGeometry()
+        if rec.geom is not None and rec.geomkt is not None:
+            self.geometry = QgsGeometry.fromWkt(rec.geomwkt)
 
     def getQgsFeature(self):
         feat = QgsFeature()
@@ -133,7 +138,11 @@ class Sector:
         feat['setId'] = self.setId
         feat['color'] = self.color
         feat['npp_block'] = self.npp_block
-        feat.setGeometry(self.geometry)
+        if self.geometry is None:
+            self.debug('GEOMETRY is None!')
+            self.debug(self)
+        else:
+            feat.setGeometry(self.geometry)
         return feat
 
     def _getArcPoint(self, x, y, r, direction):
@@ -165,6 +174,10 @@ class Sector:
         arc.append(self._getArcPoint(x, y, dist, arcEnd))
         return arc
 
+    def setGeometryFromWkt4326(self, wkt):
+        geom = QgsGeometry.fromWkt(wkt)
+        self.geometry = geom
+
     def calcGeometry(self):
 
         # scale distance for Mercator
@@ -192,7 +205,6 @@ class Sector:
             if minR > 0:
                 for d in range(0, 360):
                     inner.append(self._getArcPoint(x, y, minR, d))
-                #inner.reverse()
                 geom = QgsGeometry.fromPolygon([outer, inner])
             else:
                 geom = QgsGeometry.fromPolygon([outer])
@@ -237,6 +249,9 @@ class Sector:
         vals.append(self.geometry.exportToWkt())
         query['vals'] = tuple(vals)
         return query
+
+    def debug(self, s):
+        QgsMessageLog.logMessage('%s' % s, tag="SectorPlot Debug", level=QgsMessageLog.INFO)
 
 
 class Pie:
@@ -289,7 +304,6 @@ class Pie:
         for sector in self.sectors:
             features.append(sector.getQgsFeature())
         return features
-
 
 
 class SectorSet:
@@ -391,6 +405,11 @@ class SectorSet:
         self.setId = setId
         for sector in self.sectors:
             sector.setId = setId
+
+    def get_sector_by_z_order(self, z_order):
+        for sector in self.sectors:
+            if sector.z_order == z_order:
+                return sector
 
     def get_qgs_features(self):
         result = []
@@ -494,7 +513,9 @@ class SectorSets(list):
 
     def _getImportQuery(self):
         query = {}
-        query['text'] = 'SELECT * FROM sectors ORDER BY savetime, z_order'
+        # RD 20180619 getting sectors geom as WKT because we want to be able to create QgsGeometry's ourselves
+        # and I cannot get them created from the native (wkb?) geom format retrieved
+        query['text'] = 'SELECT st_astext(geom) as geomwkt, * FROM sectors ORDER BY savetime, z_order'
         #query['text'] = 'SELECT * FROM sectors limit 1'
         query['text'] += ';'
         vals = []

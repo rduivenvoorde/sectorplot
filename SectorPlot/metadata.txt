@@ -24,7 +24,7 @@ repository=http://github.com/rduivenvoorde/sectorplot
 
 # Uncomment the following line and add your changelog:
 changelog=
-    0.7.4   new styling of plots and rose, fix label,
+    0.7.4   new styling of plots and rose, fix label, be able to edit/save sectors during creation, gradient style added
     0.7.3   using RIVM toolbar, better setting keys, stricer permissions for sectorplot user
     0.7.2   small fixes
     0.7.1   cleanup and documentation
