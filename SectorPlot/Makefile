@@ -55,6 +55,9 @@ UI_FILES = sectorplot_location_dialog_base.ui \
 
 EXTRAS = metadata.txt \
     sectorplot.qml \
+    sectorplotnolabels.qml \
+    sectorplotwithgradient.qml \
+    sectorplotwithgradientnolabels.qml \
     sectorplot.sld \
     sectorpie.qml
 
