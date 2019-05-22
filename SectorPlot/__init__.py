@@ -23,9 +23,9 @@
 """
 
 # Note Richard: without this part you will end up in resources vs resources_rc troubles...
-import os
-import site
-site.addsitedir(os.path.abspath('%s' % os.path.dirname(__file__)))
+#import os
+#import site
+#site.addsitedir(os.path.abspath('%s' % os.path.dirname(__file__)))
 
 
 # noinspection PyPep8Naming

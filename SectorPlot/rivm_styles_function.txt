@@ -31,7 +31,7 @@ from qgis.utils import plugins
 s=plugins['SectorPlot']
 
 for f in s.pie_layer.fields():
-	print f.name()
+	print(f.name())
 
 setname
 countermeasureid

@@ -1,7 +1,7 @@
-from PyQt4.QtCore import QUrl, QCoreApplication
-from PyQt4.QtNetwork import QNetworkRequest
+from qgis.PyQt.QtCore import QUrl, QCoreApplication
+from qgis.PyQt.QtNetwork import QNetworkRequest
 from functools import partial
-from provider_base import ProviderConfig, ProviderBase, ProviderResult
+from .provider_base import ProviderConfig, ProviderBase, ProviderResult
 import json
 
 
@@ -34,7 +34,8 @@ class NPPProvider(ProviderBase):
             # return without emitting 'finished'
             return
         else:
-            content = unicode(reply.readAll())
+            r = reply.readAll()  # QByteArray
+            content = r.data().decode('utf-8')
             result.set_data(json.loads(content), reply.url())
         self.finished.emit(result)
         self.ready = True

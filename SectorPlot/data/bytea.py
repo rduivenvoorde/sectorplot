@@ -20,38 +20,38 @@ def test():
     s = '40c00000'  # 6
 
     f = format(int(s, 16), '032b')
-    print f
-    print len(f)
+    print(f)
+    print(len(f))
 
     # sign part
     s = f[0:1]
-    print "sign bit: 0b%s" % s
+    print("sign bit: 0b%s" % s)
     ss = math.pow(-1, int(s, 2))
-    print ss
+    print(ss)
 
     # exponent part
     x = f[1:9]
-    print "exponent bin: 0b%s" % x
-    print "exponent dec: %s" % int(x, 2)
+    print("exponent bin: 0b%s" % x)
+    print("exponent dec: %s" % int(x, 2))
     exp = int(x, 2) - 127
-    print "exp - 127   : %s" % exp
+    print("exp - 127   : %s" % exp)
     xx = math.pow(2, (int(x, 2) - 127))
-    print xx
+    print(xx)
 
     # significand part
     m = f[9:]
-    print "significand bin: 0b%s" % m
+    print("significand bin: 0b%s" % m)
     iplus24b = '1' + m
-    print "sign plus 1 bin: 0b%s" % iplus24b
+    print("sign plus 1 bin: 0b%s" % iplus24b)
     mm = (1 + int(m, 2)*math.pow(2, -23))
-    print mm
+    print(mm)
 
     # https://en.wikipedia.org/w/index.php?title=Single-precision_floating-point_format&section=5#Converting_from_single-precision_binary_to_decimal
     # s = sign bit
     # x = exponent
     # m = significand
     # n = (-1)^s   x  (1+m*2^-23)  x 2^x-127
-    print ss * xx * mm
+    print(ss * xx * mm)
 
 # spfb2dec = single point float binary to decimal
 def spfb2dec(hex8):
@@ -69,21 +69,21 @@ def bytea2dec(hex24):
 
 #test()
 
-print spfb2dec('40a00000')  # 5
-print spfb2dec('41c80000') # 25
-print spfb2dec('41f00000')  # 30
-print spfb2dec('40c00000')  # 6
+print(spfb2dec('40a00000'))  # 5
+print(spfb2dec('41c80000'))  # 25
+print(spfb2dec('41f00000'))  # 30
+print(spfb2dec('40c00000'))  # 6
 
 # 5	       10       30
 # 40a00000 41200000 41f00000
-print bytea2dec('40a000004120000041f00000')
+print(bytea2dec('40a000004120000041f00000'))
 
 # 2        100      0
 # 40000000 42c80000 00000000
-print bytea2dec('4000000042c8000000000000')
+print(bytea2dec('4000000042c8000000000000'))
 
 # 2        4        6
 # 40000000 40800000 40c00000
-print bytea2dec('400000004080000040c00000')
+print(bytea2dec('400000004080000040c00000'))
 
 

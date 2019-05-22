@@ -1,8 +1,8 @@
 import logging
 from functools import partial
 from qgis.core import QgsNetworkAccessManager, QgsMessageLog
-from PyQt4.QtCore import QUrl, QCoreApplication, QObject, pyqtSignal
-from PyQt4.QtNetwork import QNetworkRequest
+from qgis.PyQt.QtCore import QUrl, QCoreApplication, QObject, pyqtSignal
+from qgis.PyQt.QtNetwork import QNetworkRequest
 
 """
 

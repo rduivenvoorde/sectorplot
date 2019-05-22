@@ -4,7 +4,7 @@ import os
 
 from providers.provider_base import ProviderBase, ProviderConfig, SimpleProvider, SimpleConfig
 
-from PyQt4.QtCore import QCoreApplication
+from qgis.PyQt.QtCore import QCoreApplication
 
 from qgis.core import QgsApplication
 
@@ -82,7 +82,7 @@ class TestProviderBase(unittest.TestCase):
         conf.url = 'file://'+os.path.join(os.path.dirname(__file__), 'duif.net')
         prov = SimpleProvider(conf)
         def prov_finished(result):
-            print result
+            print(result)
             self.assertFalse(result.error())
             self.assertEquals(result.data.strip(), "ok")
         prov.finished.connect(prov_finished)

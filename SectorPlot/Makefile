@@ -34,7 +34,7 @@ VERSION=$(shell cat metadata.txt | grep version= | sed -e 's,version=,,')
 # you have trouble compiling the translations, you may have to specify the full path to
 # lrelease
 #LRELEASE = lrelease
-LRELEASE = lrelease-qt4
+LRELEASE = lrelease-qt5
 
 
 # translation
@@ -61,7 +61,7 @@ EXTRAS = metadata.txt \
     sectorplot.sld \
     sectorpie.qml
 
-COMPILED_RESOURCE_FILES = resources_rc.py
+COMPILED_RESOURCE_FILES = resources.py
 
 PEP8EXCLUDE=pydev,resources.py,conf.py,third_party,ui
 
@@ -83,8 +83,8 @@ default: compile
 compile: $(COMPILED_RESOURCE_FILES)
 
 %.py : %.qrc $(RESOURCES_SRC)
-	#pyrcc4 -o $*.py  $<
-	pyrcc4 -o resources_rc.py  $<
+	pyrcc5 -o $*.py  $<
+	#pyrcc5 -o resources_rc.py  $<
 
 %.qm : %.ts
 	$(LRELEASE) $<

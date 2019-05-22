@@ -31,7 +31,7 @@ class SectorTest(unittest.TestCase):
     def test_sector(self):
         """Sector can be initiated"""
         s = Sector()
-        print s
+        print(s)
         self.assertEqual(s.lat, 0)
         self.assertEqual(s.lon, 0)
         #self.assertEqual(str(s), 'Sector[None, (0,0), 0, 1, 0, 45, 2015-11-26 14:40:10 +0000, -1]')

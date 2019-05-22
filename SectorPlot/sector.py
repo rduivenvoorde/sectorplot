@@ -1,17 +1,17 @@
 from math import ceil, floor, cos, sin, pi
-from qgis.core import QgsFeature, QgsPoint, QgsGeometry, QgsField, QgsFields
-from qgis.core import QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsMessageLog
-from PyQt4.QtCore import QVariant
+from qgis.core import QgsFeature, QgsPoint, QgsPointXY, QgsGeometry, QgsField, QgsFields, \
+    QgsProject, QgsCoordinateReferenceSystem, QgsCoordinateTransform, QgsMessageLog
+from qgis.PyQt.QtCore import QVariant
 from time import strftime, strptime, gmtime, struct_time
 import time
 import math
-from connect import Database, RestClient
+from .connect import Database, RestClient
 
 
 crs4326 = QgsCoordinateReferenceSystem(4326)
 crs3857 = QgsCoordinateReferenceSystem(3857)
-xformTo3857 = QgsCoordinateTransform(crs4326, crs3857)
-xformTo4326 = QgsCoordinateTransform(crs3857, crs4326)
+xformTo3857 = QgsCoordinateTransform(crs4326, crs3857, QgsProject.instance())
+xformTo4326 = QgsCoordinateTransform(crs3857, crs4326, QgsProject.instance())
 
 
 def getTime(t):
@@ -107,7 +107,7 @@ class Sector:
         self.z_order = rec.z_order
         self.saveTime = rec.savetime.timetuple()
         self.counterMeasureTime = rec.countermeasuretime.timetuple()
-        #print self.counterMeasureTime
+        #print(self.counterMeasureTime)
         self.sectorName = rec.sectorname
         self.setId = rec.setid
         self.color = rec.color
@@ -149,7 +149,7 @@ class Sector:
         newdir = direction/180.0*pi
         newx = x + r * sin(newdir)
         newy = y + r * cos(newdir)
-        return QgsPoint(newx, newy)
+        return QgsPointXY(newx, newy)
 
     def _getArc(self, x, y, dist):
         arc = []
@@ -186,7 +186,7 @@ class Sector:
         maxR = self.maxDistance * scale
 
         # get x/y in Mercator from lon/lat
-        pnt = QgsPoint(self.lon, self.lat)
+        pnt = QgsPointXY(self.lon, self.lat)
         pnt = xformTo3857.transform(pnt)
         x = pnt.x()
         y = pnt.y()
@@ -205,21 +205,21 @@ class Sector:
             if minR > 0:
                 for d in range(0, 360):
                     inner.append(self._getArcPoint(x, y, minR, d))
-                geom = QgsGeometry.fromPolygon([outer, inner])
+                geom = QgsGeometry.fromPolygonXY([outer, inner])
             else:
-                geom = QgsGeometry.fromPolygon([outer])
+                geom = QgsGeometry.fromPolygonXY([outer])
         else:  # this is a true sector
             outer = self._getArc(x, y, maxR)
             if minR > 0:
                 inner = self._getArc(x, y, minR)
                 inner.reverse()
             else:
-                inner = [QgsPoint(x, y)]
+                inner = [QgsPointXY(x, y)]
             # inner = either centerpoint, OR the inner circle
             # start with inner(!), so the 'sharp side' of the pie slice has the first coordinate
             # this make is it possible to determine orientation of the pie slice
             # to be used with gradient styling
-            geom = QgsGeometry.fromPolygon([inner+outer])
+            geom = QgsGeometry.fromPolygonXY([inner+outer])
 
         geom.transform(xformTo4326)
         self.geometry = geom
@@ -246,7 +246,7 @@ class Sector:
         vals.append(self.setId)
         vals.append(self.color)
         vals.append(self.npp_block)
-        vals.append(self.geometry.exportToWkt())
+        vals.append(self.geometry.asWkt())
         query['vals'] = tuple(vals)
         return query
 

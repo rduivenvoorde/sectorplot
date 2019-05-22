@@ -1,14 +1,15 @@
 import os
 
-from PyQt4 import QtGui, uic
-from sectorplot_settings import SectorPlotSettings
-from qgissettingmanager import SettingDialog
+from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt import uic
+from .sectorplot_settings import SectorPlotSettings
+from .qgissettingmanager import SettingDialog
 
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'sectorplot_settings_dialog_base.ui'))
 
 
-class SectorPlotSettingsDialog(QtGui.QDialog, FORM_CLASS, SettingDialog):
+class SectorPlotSettingsDialog(QDialog, FORM_CLASS, SettingDialog):
     def __init__(self, parent=None):
         """Constructor."""
         super(SectorPlotSettingsDialog, self).__init__(parent)

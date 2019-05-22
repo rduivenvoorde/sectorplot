@@ -23,14 +23,15 @@
 
 import os
 
-from PyQt4 import QtGui, uic
+from qgis.PyQt.QtWidgets import QDialog
+from qgis.PyQt import uic
 
 # this magic let compile Qt the ui files on the fly (if path known)
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'sectorplot_sectorplotset_dialog_base.ui'))
 
 # this determines the Class name base on the FORM_CLASS above
-class SectorPlotSectorPlotSetDialog(QtGui.QDialog, FORM_CLASS):
+class SectorPlotSectorPlotSetDialog(QDialog, FORM_CLASS):
     def __init__(self, parent=None):
         """Constructor."""
         super(SectorPlotSectorPlotSetDialog, self).__init__(parent)

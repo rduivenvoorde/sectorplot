@@ -35,16 +35,16 @@ class MyBinaryTest():
         query = self.cursor.execute('select zoneradii from npp limit 1')
         result = self.cursor.fetchall()
 
-        print result
-        print result[0]
-        print result[0][0]
-        print unicode(result[0][0])
+        print(result)
+        print(result[0])
+        print(result[0][0])
+        print(unicode(result[0][0]))
 
         # ???
         #shape = (2, 100)
         # Convert it back to a numpy array of the same shape
         #retrieved_data = np.frombuffer(result[0]['data']).reshape(*shape)
-        #print retrieved_data
+        #print(retrieved_data)
 
         return True
 

@@ -1,12 +1,12 @@
 import psycopg2
 import psycopg2.extras
-import urllib2
+import urllib
 import json
 
-from sectorplot_settings import SectorPlotSettings
+from .sectorplot_settings import SectorPlotSettings
 
 
-class Database():
+class Database:
     def __init__(self, conn_code):
         self.settings = SectorPlotSettings()
         self.conn_string = self.get_conn_string(conn_code)
@@ -77,7 +77,7 @@ class Database():
         #print result
         return result['db_ok']
 
-class RestClient():
+class RestClient:
     def __init__(self, conn_code):
         self.settings = SectorPlotSettings()
         gs_conn = self.get_conn(conn_code)
@@ -87,10 +87,10 @@ class RestClient():
         self.create_opener()
 
     def create_opener(self):
-        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_mgr = urllib.HTTPPasswordMgrWithDefaultRealm()
         password_mgr.add_password(None, self.top_level_url, self.user, self.password)
-        handler = urllib2.HTTPBasicAuthHandler(password_mgr)
-        self.opener = urllib2.build_opener(handler)
+        handler = urllib.HTTPBasicAuthHandler(password_mgr)
+        self.opener = urllib.build_opener(handler)
 
     def __str__(self):
         return 'RestClient[' + self.top_level_url + ']'
@@ -107,7 +107,7 @@ class RestClient():
         #print 'url:    ', url
         #print 'data:   ', data
         #print 'headers:', headers
-        req = urllib2.Request(url=url, data=data, headers=headers)
+        req = urllib.Request(url=url, data=data, headers=headers)
         req.get_method = lambda: method
         f = self.opener.open(req)
         #print f.read()
@@ -130,7 +130,7 @@ class RestClient():
                 return True
         except:
             # import sys
-            # print "Unexpected error:", sys.exc_info()[0]
+            # print("Unexpected error:", sys.exc_info()[0])
             pass
         return False
 
@@ -144,15 +144,15 @@ if __name__ == "__main__":
     #
     # r = db.execute([q])
     # if r['db_ok']:
-    #     print r['data'][0].col1
+    #     print(r['data'][0].col1)
     # else:
-    #     print r['error']
+    #     print(r['error'])
 
     db = Database('sectorplot')
-    print db.test_connection('db02.dev.cal-net.nl', 'sectorplot', 'sectorplot', '')
+    print(db.test_connection('db03.dev.cal-net.nl', 'sectorplot', 'sectorplot', ''))
 
     rc = RestClient('sectorplot')
-    print rc.test_connection('http://geoserver.dev.cal-net.nl', 'admin', '')
+    print(rc.test_connection('http://geoserver.dev.cal-net.nl', 'admin', ''))
 
 
 

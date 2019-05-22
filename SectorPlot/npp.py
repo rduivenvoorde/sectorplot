@@ -1,11 +1,9 @@
-from PyQt4.QtCore import QCoreApplication
-from PyQt4.QtGui import QMessageBox
+from qgis.PyQt.QtCore import QCoreApplication
+from qgis.PyQt.QtWidgets import QMessageBox
 
 import os
 
-from providers.npp_provider import NPPConfig, NPPProvider
-
-import logging
+from .providers.npp_provider import NPPConfig, NPPProvider
 
 
 class Npp(dict):
@@ -95,7 +93,7 @@ class NppSet(list):
             npp['numberofsectors'] = int(npp_data['numberofsectors'])
             npp['angle'] = float(npp_data['angle'])
             npp['closetoborder'] = npp_data['closetoborder']
-            #print npp
+            #print(npp)
             self.append(npp)
 
     def __str__(self):

@@ -1,10 +1,10 @@
-from qgissettingmanager import *
+from .qgissettingmanager.setting import Scope, Setting
+from .qgissettingmanager.setting_manager import SettingManager
+from .qgissettingmanager.types.string import String
 
 # Working with: https://github.com/3nids/qgissettingmanager
 # learning from: https://github.com/3nids/wincan2qgep
 # https://github.com/3nids/quickfinder
-
-# KNMI services:
 
 class SectorPlotSettings(SettingManager):
 

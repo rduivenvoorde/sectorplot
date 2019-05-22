@@ -20,29 +20,33 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt4.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt, QDateTime, QUrl
-from PyQt4.QtGui import QAction, QIcon, QSortFilterProxyModel, QStandardItemModel, \
-    QStandardItem, QAbstractItemView, QMessageBox, QColorDialog, QColor, QDoubleValidator, \
-    QCursor, QPixmap, QWidget, QFileDialog, QDesktopServices, QToolBar
-from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPoint, \
-    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsMapLayerRegistry, QgsVectorFileWriter, \
-    QgsMessageLog, QgsExpression, QgsFeatureRequest
+from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, \
+    QCoreApplication, Qt, QDateTime, QUrl, QSortFilterProxyModel
+from qgis.PyQt.QtGui import QIcon, \
+    QStandardItemModel, QStandardItem, \
+    QColor, QDoubleValidator, \
+    QCursor, QPixmap, QDesktopServices
+from qgis.PyQt.QtWidgets import QAction, QToolBar, \
+    QAbstractItemView, QColorDialog, QMessageBox, QWidget, QFileDialog
+from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPointXY, \
+    QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsProject, QgsPoint, \
+    QgsVectorFileWriter, QgsMessageLog, QgsExpression, QgsFeatureRequest
 from qgis.gui import QgsMapTool
-# Initialize Qt resources from file resources_rc.py
-import resources_rc
+# Initialize Qt resources from file resources.py
+import resources
 # Import the code for the dialogs
-from sectorplot_sectorplotsets_dialog import SectorPlotSetsDialog
-from sectorplot_location_dialog import SectorPlotLocationDialog
-from sectorplot_sector_dialog import SectorPlotSectorDialog
-from sectorplot_sectorplotset_dialog import SectorPlotSectorPlotSetDialog
-from sectorplot_settings_dialog import SectorPlotSettingsDialog
-from sectorplot_settings import SectorPlotSettings
+from .sectorplot_sectorplotsets_dialog import SectorPlotSetsDialog
+from .sectorplot_location_dialog import SectorPlotLocationDialog
+from .sectorplot_sector_dialog import SectorPlotSectorDialog
+from .sectorplot_sectorplotset_dialog import SectorPlotSectorPlotSetDialog
+from .sectorplot_settings_dialog import SectorPlotSettingsDialog
+from .sectorplot_settings import SectorPlotSettings
 
-from countermeasures import CounterMeasures
+from .countermeasures import CounterMeasures
 
-from npp import NppSet
-from sector import Sector, SectorSet, SectorSets, Pie
-from connect import Database, RestClient
+from .npp import NppSet
+from .sector import Sector, SectorSet, SectorSets, Pie
+from .connect import Database, RestClient
 
 import os.path
 import shutil
@@ -327,10 +331,10 @@ class SectorPlot:
         self.sectorplotset_dlg.table_sectors.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.sectorplotset_dlg.table_sectors.setSelectionMode(QAbstractItemView.SingleSelection)
         # user is able to drag/drop both columns and rows
-        self.sectorplotset_dlg.table_sectors.horizontalHeader().setMovable(True)
+#        self.sectorplotset_dlg.table_sectors.horizontalHeader().setSectionResizeMode(True)
         self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragEnabled(True)
         self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragDropMode(QAbstractItemView.InternalMove)
-        self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
+#        self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
         self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
         self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)
         # actions
@@ -397,12 +401,12 @@ class SectorPlot:
     def run(self):
         """Start the plugin"""
         # we REALLY need OTF enabled
-        if self.iface.mapCanvas().hasCrsTransformEnabled() == False:
-            QMessageBox.warning(self.iface.mainWindow(), self.MSG_BOX_TITLE, self.tr(
-                "This Plugin ONLY works when you have OTF (On The Fly Reprojection) enabled for current QGIS Project.\n\n" +
-                "Please enable OTF for this project or open a project with OTF enabled."),
-                                QMessageBox.Ok, QMessageBox.Ok)
-            return
+        #if self.iface.mapCanvas().hasCrsTransformEnabled() == False:
+        #    QMessageBox.warning(self.iface.mainWindow(), self.MSG_BOX_TITLE, self.tr(
+        #        "This Plugin ONLY works when you have OTF (On The Fly Reprojection) enabled for current QGIS Project.\n\n" +
+        #        "Please enable OTF for this project or open a project with OTF enabled."),
+        #                        QMessageBox.Ok, QMessageBox.Ok)
+        #    return
 
         # fresh installs do not have passwords, present the settings dialog upon first use
         settings = SectorPlotSettings()
@@ -419,7 +423,7 @@ class SectorPlot:
                 self.msg(self.location_dlg, self.tr("Problem retrieving the NPP (Nuclear Power Plant) list.\nPlease check if the the url used in the settings is valid."))
                 return
 
-        if self.sector_styles.has_key(self.settings.value('sector_style')):
+        if self.settings.value('sector_style') in self.sector_styles:
             self.current_style = self.sector_styles[self.settings.value('sector_style')]
 
         # add a memory layer to show sectors and the pie if not yet available
@@ -431,11 +435,11 @@ class SectorPlot:
 
     def get_sector_layer(self):
         #if self.sector_layer is None:
-        if len(QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) >= 0:
+        if len(QgsProject.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) >= 0:
             # check IF there is already a SECTOR_LAYER_NAME in the project with the right fields
-            if len(QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) > 0:
+            if len(QgsProject.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) > 0:
                 # not 100% sure if this layers IS the real SECTOR_LAYER_NAME but no further checks for now
-                self.sector_layer = QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME)[0]
+                self.sector_layer = QgsProject.instance().mapLayersByName(self.SECTOR_LAYER_NAME)[0]
             else:
                 # give the memory layer the same CRS as the source layer
                 # NOTE!!! the order of the attributes is vital, to the order you add the fields in sector.py!!!
@@ -443,14 +447,14 @@ class SectorPlot:
                 self.sector_layer = QgsVectorLayer(
                     "Polygon?crs=epsg:4326&field=setname:string(50)&field=countermeasureid:integer&field=z_order:integer" +
                     "&field=saveTime:string(50)&field=counterMeasureTime:string(50)&field=sectorname:string(50)" +
-                    "&field=setid:integer&field=color:string(9)" +
+                    "&field=setid:integer&field=color:string(9)&field=npp_block:string(50)" +
                     "&index=yes",
                     self.SECTOR_LAYER_NAME,
                     "memory")
                 # use a saved style as style
                 self.sector_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), self.current_style[2]))
                 # add empty layer to the map
-                QgsMapLayerRegistry.instance().addMapLayer(self.sector_layer)
+                QgsProject.instance().addMapLayer(self.sector_layer)
                 self.sector_layer.editingStopped.connect(self.sector_layer_edited_finished)
                 # WHEN the sectorplot layer is deleted from the layer tree, stop the session
                 # mmm, trying this results in SegFaults when quiting QGIS
@@ -459,9 +463,9 @@ class SectorPlot:
 
     def get_pie_layer(self):
         #if self.pie_layer is None:
-        if len(QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)) >= 0:
-            if len(QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)) > 0:
-                self.pie_layer = QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME)[0]
+        if len(QgsProject.instance().mapLayersByName(self.PIE_LAYER_NAME)) >= 0:
+            if len(QgsProject.instance().mapLayersByName(self.PIE_LAYER_NAME)) > 0:
+                self.pie_layer = QgsProject.instance().mapLayersByName(self.PIE_LAYER_NAME)[0]
             else:
                 # give the memory layer the same CRS as the source layer
                 # NOTE!!! the order of the attributes is vital, to the order you add the fields in sector.py!!!
@@ -469,14 +473,14 @@ class SectorPlot:
                 self.pie_layer = QgsVectorLayer(
                     "Polygon?crs=epsg:4326&field=setname:string(50)&field=countermeasureid:integer&field=z_order:integer" +
                     "&field=saveTime:string(50)&field=counterMeasureTime:string(50)&field=sectorname:string(50)" +
-                    "&field=setid:integer&field=color:string(9)" +
+                    "&field=setid:integer&field=color:string(9)&field=npp_block:string(50)" +
                     "&index=yes",
                     self.PIE_LAYER_NAME,
                     "memory")
                 # use a saved style as style
                 self.pie_layer.loadNamedStyle(os.path.join(os.path.dirname(__file__), 'sectorpie.qml'))
                 # add empty layer to the map
-                QgsMapLayerRegistry.instance().addMapLayer(self.pie_layer)
+                QgsProject.instance().addMapLayer(self.pie_layer)
                 # connect selectionChanged to sector_dlg_pie_sector_select
                 self.pie_layer.selectionChanged.connect(self.sector_dlg_pie_sector_select)
                 # WHEN the pie layer is deleted from the layer tree, stop the session
@@ -495,15 +499,20 @@ class SectorPlot:
         if self.sectorplotsets_dlg is not None:
             self.sectorplotsets_dlg.reject()
         # remove all layers
-        QgsMapLayerRegistry.instance().removeMapLayers(
-            QgsMapLayerRegistry.instance().mapLayersByName(self.PIE_LAYER_NAME))
-        QgsMapLayerRegistry.instance().removeMapLayers(
-            QgsMapLayerRegistry.instance().mapLayersByName(self.SECTOR_LAYER_NAME))
+        #QgsProject.instance().removeMapLayers(
+        #    QgsProject.instance().mapLayersByName(self.PIE_LAYER_NAME))
+        #QgsProject.instance().removeMapLayers(
+        #    QgsProject.instance().mapLayersByName(self.SECTOR_LAYER_NAME))
+        if self.pie_layer:
+            QgsProject.instance().removeMapLayers([self.pie_layer.id()])
+        if self.sector_layer:
+            QgsProject.instance().removeMapLayers([self.sector_layer.id()])
         #  set instances to None
         self.sector_layer = None
         self.pie_layer = None
         self.current_sectorset = None
         self.current_pie = None
+        self.iface.mapCanvas().refreshAllLayers()
 
     def new_sectorplotset(self):
         self.current_sectorset = None
@@ -523,18 +532,19 @@ class SectorPlot:
         self.repaint_sector_layers()
 
     def repaint_sector_layers(self):
-        if self.iface.mapCanvas().isCachingEnabled():
-            if self.sector_layer is not None:
-                self.get_sector_layer().setCacheImage(None)
-            if self.pie_layer is not None:
-                self.get_pie_layer().setCacheImage(None)
-        self.iface.mapCanvas().refresh()
+# TODO: QGIS3 not needed anymore?
+#        if self.iface.mapCanvas().isCachingEnabled():
+#            if self.sector_layer is not None:
+#                self.get_sector_layer().setCacheImage(None)
+#            if self.pie_layer is not None:
+#                self.get_pie_layer().setCacheImage(None)
+        self.iface.mapCanvas().refreshAllLayers()
 
     def zoom_map_to_lonlat(self, lon, lat):
         crs_to = self.iface.mapCanvas().mapSettings().destinationCrs()
-        crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to)
-        point = QgsPoint(float(lon), float(lat))
-        geom = QgsGeometry.fromPoint(point)
+        crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to, QgsProject.instance())
+        point = QgsPointXY(float(lon), float(lat))
+        geom = QgsGeometry.fromPointXY(point)
         geom.transform(crs_transform)
         # zoom to with center is actually setting a point rectangle and then zoom
         center = geom.asPoint()
@@ -674,11 +684,11 @@ class SectorPlot:
         # open file dialog with unique name preselected
         # TODO: onthoud de laatste directory
         default_name = str('/tmp/' + self.current_sectorset.getUniqueName())
-        filename = QFileDialog.getSaveFileName(self.sectorplotsets_dlg, self.tr("Save shapefile as"), default_name, filter="*.shp")
+        filename, filter = QFileDialog.getSaveFileName(self.sectorplotsets_dlg, self.tr("Save shapefile as"), default_name, filter="*.shp")
         if self.sector_layer is not None:
             # save shapefile
             # check if it is already there??
-            QgsVectorFileWriter.writeAsVectorFormat(self.sector_layer, filename, "utf-8", None, "ESRI Shapefile")
+            QgsVectorFileWriter.writeAsVectorFormat(self.sector_layer, filename, 'utf-8',  QgsCoordinateReferenceSystem(), 'ESRI Shapefile')
             # AND corresponding sld with same name
             sld_name = os.path.join(self.plugin_dir, 'sectorplot.sld')
             # on windows .shp is added to filename already, so remove it here IF it is there
@@ -841,7 +851,7 @@ class SectorPlot:
         # we retrieve an x,y from the mapcanvas in the project crs
         # set it to epsg:4326 if different
         crs_from = self.iface.mapCanvas().mapSettings().destinationCrs()
-        crs_transform = QgsCoordinateTransform(crs_from, self.crs_4326)
+        crs_transform = QgsCoordinateTransform(crs_from, self.crs_4326, QgsProject.instance())
         xy4326 = crs_transform.transform(xy)
         self.location_dlg.le_longitude.setText(unicode(xy4326.x()))
         self.location_dlg.le_latitude.setText(unicode(xy4326.y()))
@@ -998,7 +1008,7 @@ class SectorPlot:
             # actually the z_order is the 'id' of a sector in the sectorset, so use that
             sector = self.current_sectorset.get_sector_by_z_order(feat['z_order'])
             # passing a wkt string to the sector so sector will be responsible for/owner of QgsGeometry creation
-            sector.setGeometryFromWkt4326(feat.geometry().exportToWkt())
+            sector.setGeometryFromWkt4326(feat.geometry().asWkt())
 
     def sectorplotsetdlg_create_sectorset_from_sector_table(self):
         # NOW get the sectors from the model/dialog, put them in a sectorset in the order they are seen in the table.
@@ -1203,7 +1213,7 @@ class SectorPlot:
 
     def sector_dlg_show(self, old_sector=None):
         #self.debug('sector_dlg_show with old sector = %s' % old_sector)
-        self.iface.legendInterface().setCurrentLayer(self.pie_layer)  # make pie_layer current for selections
+        self.iface.layerTreeView().setCurrentLayer(self.pie_layer)  # make pie_layer current for selections
         self.iface.actionSelect().trigger()  # activate the selecttool
         # OK pressed in Sector dialog(!)
         if self.sector_dlg.exec_():
@@ -1211,7 +1221,7 @@ class SectorPlot:
             if not self.sector_dlg_sector_is_ok():
                 # mmm, one of the validators failed: reopen the sector_dlg after the msg was OK'ed
                 # self.sector_dlg_show(old_sector) # nope: recursive calls HELL!
-                self.iface.legendInterface().setCurrentLayer(self.pie_layer)  # make pie_layer current for selections
+                self.iface.layerTreeView().setCurrentLayer(self.pie_layer)  # make pie_layer current for selections
                 self.iface.actionSelect().trigger()  # activate the selecttool
                 self.sector_dlg.show()
                 return

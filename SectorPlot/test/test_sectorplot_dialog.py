@@ -14,7 +14,7 @@ __copyright__ = 'Copyright 2015, RIVM'
 
 import unittest
 
-from PyQt4.QtGui import QDialogButtonBox, QDialog
+from qgis.PyQt.QtWidgets import QDialogButtonBox, QDialog
 
 from sectorplot_sectorplotsets_dialog import SectorPlotSetsDialog
 

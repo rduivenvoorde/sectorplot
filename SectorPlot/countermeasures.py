@@ -1,4 +1,4 @@
-from PyQt4.QtCore import QCoreApplication
+from qgis.PyQt.QtCore import QCoreApplication
 
 # Evacuatie=rood
 # Onmiddelijke evacuatie=rood
@@ -96,13 +96,13 @@ if __name__ == "__main__":
 
     # test
     cm = CounterMeasures()
-    print cm
-    print
-    print cm.keys()
-    print
+    print(cm)
+    print()
+    print(cm.keys())
+    print()
     for m in cm.all():
-        print "%i %s" % (m['id'], m['text'])
-    print
-    print cm.list()
-    print
-    print cm.get(40)
+        print("%i %s" % (m['id'], m['text']))
+    print()
+    print(cm.list())
+    print()
+    print(cm.get(40))
