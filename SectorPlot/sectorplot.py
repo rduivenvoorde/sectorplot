@@ -33,7 +33,7 @@ from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPointXY, \
     QgsVectorFileWriter, QgsMessageLog, QgsExpression, QgsFeatureRequest
 from qgis.gui import QgsMapTool
 # Initialize Qt resources from file resources.py
-import resources
+from . import resources  # needed for button images!
 # Import the code for the dialogs
 from .sectorplot_sectorplotsets_dialog import SectorPlotSetsDialog
 from .sectorplot_location_dialog import SectorPlotLocationDialog
@@ -50,6 +50,10 @@ from .connect import Database, RestClient
 
 import os.path
 import shutil
+
+import logging
+from . import LOGGER_NAME
+log = logging.getLogger(LOGGER_NAME)
 
 
 class SectorPlot:
@@ -152,6 +156,7 @@ class SectorPlot:
 
         # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
         self.iface.newProjectCreated.connect(self.stop_sectorplot_session)
+        log.debug('Sectorplot Plugin init')
 
     # TODO: move this to a commons class/module
     def get_rivm_toolbar(self):
@@ -331,10 +336,10 @@ class SectorPlot:
         self.sectorplotset_dlg.table_sectors.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.sectorplotset_dlg.table_sectors.setSelectionMode(QAbstractItemView.SingleSelection)
         # user is able to drag/drop both columns and rows
-#        self.sectorplotset_dlg.table_sectors.horizontalHeader().setSectionResizeMode(True)
+        self.sectorplotset_dlg.table_sectors.horizontalHeader().setSectionResizeMode(True)
         self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragEnabled(True)
         self.sectorplotset_dlg.table_sectors.horizontalHeader().setDragDropMode(QAbstractItemView.InternalMove)
-#        self.sectorplotset_dlg.table_sectors.verticalHeader().setMovable(True)
+        self.sectorplotset_dlg.table_sectors.verticalHeader().setSectionsMovable(True)
         self.sectorplotset_dlg.table_sectors.verticalHeader().setDragEnabled(True)
         self.sectorplotset_dlg.table_sectors.verticalHeader().setDragDropMode(QAbstractItemView.InternalMove)
         # actions
@@ -498,15 +503,20 @@ class SectorPlot:
             self.sectorplotset_dlg.reject()
         if self.sectorplotsets_dlg is not None:
             self.sectorplotsets_dlg.reject()
-        # remove all layers
-        #QgsProject.instance().removeMapLayers(
-        #    QgsProject.instance().mapLayersByName(self.PIE_LAYER_NAME))
-        #QgsProject.instance().removeMapLayers(
-        #    QgsProject.instance().mapLayersByName(self.SECTOR_LAYER_NAME))
-        if self.pie_layer:
-            QgsProject.instance().removeMapLayers([self.pie_layer.id()])
-        if self.sector_layer:
-            QgsProject.instance().removeMapLayers([self.sector_layer.id()])
+        # remove plugin layers
+        pie_lyrs = QgsProject.instance().mapLayersByName(self.PIE_LAYER_NAME)
+        if len(pie_lyrs) > 0 and self.pie_layer:
+            try:
+                QgsProject.instance().removeMapLayer(pie_lyrs[0].id())
+            except:
+                pass
+        sector_lyrs = QgsProject.instance().mapLayersByName(self.SECTOR_LAYER_NAME)
+        if len(sector_lyrs) > 0 and self.sector_layer:
+            try:
+                QgsProject.instance().removeMapLayer(sector_lyrs[0].id())
+            except:
+                pass
+
         #  set instances to None
         self.sector_layer = None
         self.pie_layer = None

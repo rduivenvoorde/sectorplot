@@ -1,6 +1,6 @@
 import logging
 from functools import partial
-from qgis.core import QgsNetworkAccessManager, QgsMessageLog
+from qgis.core import QgsNetworkAccessManager, QgsMessageLog, Qgis
 from qgis.PyQt.QtCore import QUrl, QCoreApplication, QObject, pyqtSignal
 from qgis.PyQt.QtNetwork import QNetworkRequest
 
@@ -70,8 +70,8 @@ class ProviderResult:
         :param msg:  Either a descriptive message, or ''. In case of '' we will try to find a msg based on code
         :return:
         """
-        if code ==0 and msg == '':
-            code = -1 # just to be sure we do not have a 0 code
+        if code == 0 and msg == '':
+            code = -1  # just to be sure we do not have a 0 code
         self.error_code = code
         self.error_msg = msg
         if self.error_msg == '':
@@ -79,7 +79,7 @@ class ProviderResult:
         else:
             self.error_msg = self.error_msg+' ... '+self.network_error_msg(self.error_code)
         self.url = url
-        QgsMessageLog.logMessage(unicode(self.error_msg + ':\n  ' + self.url), 'Network providers', QgsMessageLog.INFO)
+        QgsMessageLog.logMessage('{}:\n{}'.format(self.error_msg, self.url), 'Network providers', Qgis.Info)
 
     def set_data(self, data, url=''):
         self.url = url

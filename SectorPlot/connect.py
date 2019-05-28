@@ -5,6 +5,10 @@ import json
 
 from .sectorplot_settings import SectorPlotSettings
 
+import logging
+from . import LOGGER_NAME
+log = logging.getLogger(LOGGER_NAME)
+
 
 class Database:
     def __init__(self, conn_code):
@@ -23,6 +27,7 @@ class Database:
         except psycopg2.Error as e:
             self.db_ok = False
             self.error = e
+            log.debug('Error connecting to database [{}]\nError = {}'.format(self.conn_string, self.error))
             #return self.connection
 
     def disconnect(self):
@@ -87,10 +92,10 @@ class RestClient:
         self.create_opener()
 
     def create_opener(self):
-        password_mgr = urllib.HTTPPasswordMgrWithDefaultRealm()
+        password_mgr = urllib.request.HTTPPasswordMgrWithDefaultRealm()
         password_mgr.add_password(None, self.top_level_url, self.user, self.password)
-        handler = urllib.HTTPBasicAuthHandler(password_mgr)
-        self.opener = urllib.build_opener(handler)
+        handler = urllib.request.HTTPBasicAuthHandler(password_mgr)
+        self.opener = urllib.request.build_opener(handler)
 
     def __str__(self):
         return 'RestClient[' + self.top_level_url + ']'
@@ -107,7 +112,7 @@ class RestClient:
         #print 'url:    ', url
         #print 'data:   ', data
         #print 'headers:', headers
-        req = urllib.Request(url=url, data=data, headers=headers)
+        req = urllib.request.Request(url=url, data=data, headers=headers)
         req.get_method = lambda: method
         f = self.opener.open(req)
         #print f.read()
@@ -128,10 +133,8 @@ class RestClient:
             result = json.loads(self.doRequest(self.top_level_url+'/geoserver/rest/workspaces.json', None, {'Content-Type': 'application/json'}, 'GET'))
             if 'workspaces' in result:
                 return True
-        except:
-            # import sys
-            # print("Unexpected error:", sys.exc_info()[0])
-            pass
+        except Exception as e:
+            log.debug('Error connecting to url [{} user: {}]\nError = {}'.format(url, user, e))
         return False
 
 

@@ -7,6 +7,10 @@ import time
 import math
 from .connect import Database, RestClient
 
+import logging
+from . import LOGGER_NAME
+log = logging.getLogger(LOGGER_NAME)
+
 
 crs4326 = QgsCoordinateReferenceSystem(4326)
 crs3857 = QgsCoordinateReferenceSystem(3857)
@@ -461,6 +465,7 @@ class SectorSet:
             # create layer
             url = rest.top_level_url + '/geoserver/rest/workspaces/' + workspace + '/datastores/' + store + '/featuretypes'
             data = '<featureType><name>' + name + '</name></featureType>'
+            data = data.encode('utf-8')  # should be bytes now
             result = rest.doRequest(url=url, data=data, headers=headers)
 
             # set default style
@@ -468,10 +473,13 @@ class SectorSet:
             #data = '<layer><defaultStyle><name>' + workspace + ':' + style + '</name></defaultStyle></layer>'
             # currently namespace:style is NOT working
             data = '<layer><defaultStyle><name>' + style + '</name></defaultStyle></layer>'
+            data = data.encode('utf-8')  # should be bytes now
             result = rest.doRequest(url=url, data=data, headers=headers, method='PUT')
 
             return True
-        except:
+        except Exception as e:
+            log.debug(
+              'Error creating sector via wms [{}]\nError = {}'.format(name, e))
             return False
 
     def publish(self, name):
