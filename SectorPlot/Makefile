@@ -75,7 +75,7 @@ PLUGIN_UPLOAD = $(c)/plugin_upload.py
 
 RESOURCE_SRC=$(shell grep '^ *<file' resources.qrc | sed 's@</file>@@g;s/.*>//g' | tr '\n' ' ')
 
-QGISDIR=/home/richard/z/18/rivm/qgisconfig
+QGISDIR=.local/share/QGIS/QGIS3/profiles/default
 
 default: compile
 
@@ -122,7 +122,7 @@ deploy: compile doc transcompile
 	cp -vfr i18n $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)
 	cp -vfr $(HELP) $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/help
     # TODO: TIJDELIJK totdat de npp's ui de databse komen
-	mkdir $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/data
+	mkdir -p $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/data
 	cp -vf data/tabel-npp-export.txt $(HOME)/$(QGISDIR)/python/plugins/$(PLUGINNAME)/data
 
 # The dclean target removes compiled python files from plugin directory
@@ -162,8 +162,9 @@ zip: deploy dclean
 	# content. You can then upload the zip file on http://plugins.qgis.org
 	rm -f $(CURDIR)/../repo/$(PLUGINNAME).$(VERSION).zip
 	cd $(HOME)/$(QGISDIR)/python/plugins; zip -9r $(CURDIR)/../repo/$(PLUGINNAME).$(VERSION).zip $(PLUGINNAME)
+	@echo Successfully created zip: $(CURDIR)/../repo/$(PLUGINNAME).$(VERSION).zip
 
-package: compile
+package: compile dclean
 	# Create a zip package of the plugin named $(PLUGINNAME).zip.
 	# This requires use of git (your plugin development directory must be a
 	# git repository).
@@ -220,6 +221,7 @@ doc:
 	@echo "Building documentation using sphinx."
 	@echo "------------------------------------"
 	cd help; make html
+	rm -rf build
 	rm -rf $(HELP)/doctrees
 
 pylint:

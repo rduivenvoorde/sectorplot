@@ -32,13 +32,14 @@ def timeToString(t_struct):
 
 
 class Sector:
-    def __init__(self, setName=None, lon=0, lat=0, minDistance=0,
+    def __init__(self, setName=None, lon: float = 0, lat: float = 0, minDistance=0,
                  maxDistance=1, direction=0, angle=45, counterMeasureId=-1,
                  z_order=-1, saveTime=None, counterMeasureTime=None,
-                 sectorName=None, setId=-1, color='#ffffff', npp_block=None, geometry=None):
+                 sectorName=None, setId=-1, color='#ffffff',
+                 npp_block=None, geometry=None):
         self.setName = setName
-        self.lon = float(lon)
-        self.lat = float(lat)
+        self.lon = lon
+        self.lat = lat
         self.minDistance = float(minDistance)
         self.maxDistance = float(maxDistance)
         self.direction = float(direction)
@@ -311,7 +312,8 @@ class Pie:
 
 
 class SectorSet:
-    def __init__(self, lon=0, lat=0, name=None, npp_block=None, setId=-1):
+    def __init__(self, lon: float = 0, lat: float = 0, name=None,
+                 npp_block=None, setId=-1):
         self.lon = lon
         self.lat = lat
         self.name = name

@@ -227,6 +227,7 @@ Creating a new version:
 - in SectorPlot/metadata.txt in item General, upgrade the 'version' number
 
 - in plugins.xml on website and repo update the element
+
 ::
 
  <pyqgis_plugin name="SectorPlot" version="0.4">
