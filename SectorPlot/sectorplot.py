@@ -792,10 +792,10 @@ class SectorPlot:
         # by cleaning the npp name
         # remembering the lat lon
         self.location_dlg.table_npps.clearSelection()
-        lon = self.location_dlg.le_longitude.text()
-        lat = self.location_dlg.le_latitude.text()
+        lon = self.locale.toFloat(self.location_dlg.le_longitude.text())[0]
+        lat = self.locale.toFloat(self.location_dlg.le_latitude.text())[0]
         if self.locationdlg_lonlat_checked(lon, lat):
-            self.zoom_map_to_lonlat(self.locale.toFloat(lon)[0], self.locale.toFloat(lat)[0])
+            self.zoom_map_to_lonlat(lon, lat)
         self.unset_npp()
         #self.debug('setting last_location to: %s' % [lon, lat])
         QSettings().setValue("plugins/SectorPlot/last_location", [lon, lat])
@@ -882,9 +882,14 @@ class SectorPlot:
         self.location_dlg.le_search_npp.setText('')
         # self.location_dlg.le_search_npp.setText('borssele')
         last_location = QSettings().value("plugins/SectorPlot/last_location")
-        if isinstance(last_location, list):
-            self.location_dlg.le_longitude.setText(self.locale.toString(last_location[0]))
-            self.location_dlg.le_latitude.setText(self.locale.toString(last_location[1]))
+        if isinstance(last_location, list):  # should be a list of two floats
+            # try to retrieve lat location lon and lat, BUT can have locale problems, then pass
+            try:
+              self.location_dlg.le_longitude.setText(self.locale.toString(last_location[0]))
+              self.location_dlg.le_latitude.setText(self.locale.toString(last_location[1]))
+            except:
+              self.location_dlg.le_longitude.setText('')
+              self.location_dlg.le_latitude.setText('')
             self.npp_proxy_model.setFilterFixedString('')
         elif isinstance(last_location, str):
             self.location_dlg.le_search_npp.setText(last_location)
