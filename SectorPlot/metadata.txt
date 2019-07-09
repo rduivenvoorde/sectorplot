@@ -10,7 +10,7 @@
 name=SectorPlot
 qgisMinimumVersion=3.4
 description=Plots sector areas on risk management map
-version=1.0.3
+version=1.0.4
 author=RIVM
 email=marnix.de.ridder@rivm.nl
 
@@ -24,6 +24,7 @@ repository=http://github.com/rduivenvoorde/sectorplot
 
 # Uncomment the following line and add your changelog:
 changelog=
+    1.0.4   More Locale and number fixes
     1.0.3   Handle Lat Lon locale problem
     1.0.2   Make numbers locale aware
     1.0.1   QGIS3 fixes
