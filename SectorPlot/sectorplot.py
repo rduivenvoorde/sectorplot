@@ -125,13 +125,15 @@ class SectorPlot:
         # some data input validators
         # set to current locale of QGIS application, else number input troubles
         self.locale = QLocale(QgsApplication.instance().locale())
-        self.degree_validator = QDoubleValidator(-360, 360, 3)
+        # using RejectGroupSeparator makes input of wrong numbers harder !!
+        self.locale.setNumberOptions(QLocale.RejectGroupSeparator)
+        self.degree_validator = QDoubleValidator(-360.00, 360.00, 3)
         self.degree_validator.setLocale(self.locale)
-        self.positive_degree_validator = QDoubleValidator(1, 360, 3)
+        self.positive_degree_validator = QDoubleValidator(1, 360.00, 3)
         self.positive_degree_validator.setLocale(self.locale)
-        self.distance_validator = QDoubleValidator(1, 999, 3)
+        self.distance_validator = QDoubleValidator(0.1, 999.99, 3)
         self.distance_validator.setLocale(self.locale)
-        self.min_distance_validator = QDoubleValidator(0, 999, 3)
+        self.min_distance_validator = QDoubleValidator(0.0, 999.99, 3)
         self.min_distance_validator.setLocale(self.locale)
 
         self.current_sectorset = None
@@ -331,11 +333,11 @@ class SectorPlot:
         self.location_dlg.le_longitude.textEdited.connect(self.locationdlg_lonlat_edited)
         self.location_dlg.le_latitude.textEdited.connect(self.locationdlg_lonlat_edited)
         self.location_dlg.btn_location_from_map.clicked.connect(self.locationdlg_btn_location_clicked)
-        self.lon_validator = QDoubleValidator(-180, 180, 12, self.location_dlg.le_longitude)
+        self.lon_validator = QDoubleValidator(-180.0, 180.0, 7, self.location_dlg.le_longitude)
         self.lon_validator.setLocale(self.locale)
         self.location_dlg.le_longitude.setValidator(self.lon_validator)
         # epsg:3857 valid untill about -85/85 ! Not sure if this is ok?
-        self.lat_validator = QDoubleValidator(-85, 85, 12, self.location_dlg.le_latitude)
+        self.lat_validator = QDoubleValidator(-85.0, 85.0, 7, self.location_dlg.le_latitude)
         self.lat_validator.setLocale(self.locale)
         self.location_dlg.le_latitude.setValidator(self.lat_validator)
 
@@ -782,23 +784,23 @@ class SectorPlot:
         self.locationdlg_show()
 
     def locationdlg_lonlat_changed(self):
-        lon = self.location_dlg.le_longitude.text()
-        lat = self.location_dlg.le_latitude.text()
-        if self.locationdlg_lonlat_checked(lon, lat):
-            self.zoom_map_to_lonlat(self.locale.toFloat(lon)[0], self.locale.toFloat(lat)[0])
+        lon_txt = self.location_dlg.le_longitude.text()
+        lat_txt = self.location_dlg.le_latitude.text()
+        if self.locationdlg_lonlat_checked(lon_txt, lat_txt):
+            self.zoom_map_to_lonlat(self.locale.toFloat(lon_txt)[0], self.locale.toFloat(lat_txt)[0])
 
     def locationdlg_lonlat_edited(self):
         # ONLY if the user edits coords by hand, override npp selection
         # by cleaning the npp name
         # remembering the lat lon
         self.location_dlg.table_npps.clearSelection()
-        lon = self.locale.toFloat(self.location_dlg.le_longitude.text())[0]
-        lat = self.locale.toFloat(self.location_dlg.le_latitude.text())[0]
-        if self.locationdlg_lonlat_checked(lon, lat):
-            self.zoom_map_to_lonlat(lon, lat)
+        lon_txt = self.location_dlg.le_longitude.text()
+        lat_txt = self.location_dlg.le_latitude.text()
+        if self.locationdlg_lonlat_checked(lon_txt, lat_txt):
+            self.zoom_map_to_lonlat(self.locale.toFloat(lon_txt)[0], self.locale.toFloat(lat_txt)[0])
         self.unset_npp()
-        #self.debug('setting last_location to: %s' % [lon, lat])
-        QSettings().setValue("plugins/SectorPlot/last_location", [lon, lat])
+        #self.debug('setting last_location to: %s' % [lon_txt, lat_txt])
+        QSettings().setValue("plugins/SectorPlot/last_location", [lon_txt, lat_txt])
 
     def unset_npp(self):
         # clear npp search input
@@ -829,9 +831,9 @@ class SectorPlot:
             self.get_pie_layer().dataProvider().deleteFeatures(self.get_pie_layer().allFeatureIds())
         self.repaint_sector_layers()
 
-    def locationdlg_lonlat_checked(self, lon, lat):
-        lat_state, ln, pos = self.lat_validator.validate(lat, 0)
-        lon_state, lt, pos = self.lon_validator.validate(lon, 0)
+    def locationdlg_lonlat_checked(self, lon_txt, lat_txt):
+        lat_state, lon, pos = self.lat_validator.validate(lat_txt, 6)
+        lon_state, lat, pos = self.lon_validator.validate(lon_txt, 6)
         # only return True for full accaptence, not for intermediate ok's
         return lat_state == QDoubleValidator.Acceptable and lon_state == QDoubleValidator.Acceptable
 
@@ -878,7 +880,7 @@ class SectorPlot:
         self.location_dlg.le_latitude.setText(self.locale.toString(xy4326.y()))
         self.iface.mapCanvas().unsetMapTool(self.xy_tool)
 
-    def locationdlg_show(self):
+    def locationdlg_show(self, lon_txt='', lat_txt=''):
         self.location_dlg.le_search_npp.setText('')
         # self.location_dlg.le_search_npp.setText('borssele')
         last_location = QSettings().value("plugins/SectorPlot/last_location")
@@ -888,8 +890,8 @@ class SectorPlot:
               self.location_dlg.le_longitude.setText(self.locale.toString(last_location[0]))
               self.location_dlg.le_latitude.setText(self.locale.toString(last_location[1]))
             except:
-              self.location_dlg.le_longitude.setText('')
-              self.location_dlg.le_latitude.setText('')
+              self.location_dlg.le_longitude.setText(lon_txt)
+              self.location_dlg.le_latitude.setText(lat_txt)
             self.npp_proxy_model.setFilterFixedString('')
         elif isinstance(last_location, str):
             self.location_dlg.le_search_npp.setText(last_location)
@@ -899,12 +901,12 @@ class SectorPlot:
         if self.location_dlg.exec_():
             # the le's (LineEdit's) should contain a locale aware TEXT number
             # we CHECK the float numbers
-            lon = self.location_dlg.le_longitude.text()
-            lat = self.location_dlg.le_latitude.text()
-            if self.locationdlg_lonlat_checked(lon, lat):
+            lon_txt = self.location_dlg.le_longitude.text()
+            lat_txt = self.location_dlg.le_latitude.text()
+            if self.locationdlg_lonlat_checked(lon_txt, lat_txt):
                 # location coordinates are OK: create floats from them
-                lon = self.locale.toFloat(lon)[0]
-                lat = self.locale.toFloat(lat)[0]
+                lon = self.locale.toFloat(lon_txt)[0]
+                lat = self.locale.toFloat(lat_txt)[0]
                 # IF and only IF a NPP is selected in the table, pass it to the sectorplotset dialog
                 npp_block = None
                 if len(self.location_dlg.table_npps.selectedIndexes()) > 0:
@@ -914,8 +916,10 @@ class SectorPlot:
                 self.sectorplotsetsdlg_new_sectorplotset_dialog(lon, lat, set_name, npp_block)
             else:
                 # problem validating the lat lon coordinates
-                self.msg(self.sectorplotsets_dlg, self.tr("At least one of the coordinates is not valid.\nPlease check and correct."))
-                self.locationdlg_show()
+                self.msg(self.sectorplotsets_dlg,
+                         self.tr('At least one of the coordinates is not valid.\nPlease check and correct.\nNote: number notation: {}'
+                                 .format(self.locale.toString(52.123456, 'f', 5))))
+                self.locationdlg_show(lon_txt, lat_txt)
         else:
             self.clean_sector_layer(True, True)
 
@@ -952,13 +956,13 @@ class SectorPlot:
                     self.sector_dlg.combo_countermeasures.setCurrentIndex(i)
                     break
             self.sector_dlg.le_sector_name.setText(edited_sector.sectorName)
-            self.sector_dlg.le_direction.setText('%s' % int(edited_sector.direction))
-            self.sector_dlg.le_angle.setText('%s' % int(edited_sector.angle))
-            self.sector_dlg.le_distance.setText('%s' % (int(edited_sector.maxDistance)/1000))
+            self.sector_dlg.le_direction.setText('{}'.format(self.locale.toString(edited_sector.direction, 'f', 2)))
+            self.sector_dlg.le_angle.setText('{}'.format(self.locale.toString(edited_sector.angle, 'f', 2)))
+            self.sector_dlg.le_distance.setText('%s' % (self.locale.toString(edited_sector.maxDistance / 1000, 'f', 3)))
             # use can have overridden the color
             self.sector_dlg_set_color(edited_sector.color)
             if edited_sector.minDistance != 0:
-                self.sector_dlg.le_min_distance.setText('%s' % (int(edited_sector.minDistance)/1000))
+                self.sector_dlg.le_min_distance.setText('{}'.format(self.locale.toString(edited_sector.minDistance / 1000, 'f', 3)))
                 self.sector_dlg.le_min_distance.setEnabled(True)
                 self.sector_dlg.lbl_min_distance.setEnabled(True)
                 self.sector_dlg.cb_min_distance.setChecked(True)
@@ -1185,41 +1189,51 @@ class SectorPlot:
             log.debug(problem)
         # check direction
         elif self.degree_validator.validate(self.sector_dlg.le_direction.text(), 0)[0] != acceptable:
-            problem = self.tr('The Direction value is not valid: {} \nValid between: [{} - {}].\nPlease check and correct') \
+            problem = self.tr('The Direction value is not valid: {} \nValid between: [{} - {}].\nPlease check and correct.\nExample number format: {}') \
                 .format(
                   self.sector_dlg.le_direction.text(),
                   self.locale.toString(self.degree_validator.bottom(), 'f', 2),
-                  self.locale.toString(self.degree_validator.top(), 'f', 2))
+                  self.locale.toString(self.degree_validator.top(), 'f', 2),
+                  self.locale.toString(75.505, 'f', 2))
             log.debug(problem)
         # check angle
         elif self.positive_degree_validator.validate(self.sector_dlg.le_angle.text(), 0)[0] != acceptable:
-            problem = self.tr('The Angle value is not valid: {} \nValid between: [{} - {}].\nPlease check and correct.') \
+            problem = self.tr('The Angle value is not valid: {} \nValid between: [{} - {}].\nPlease check and correct.\nExample number format: {}') \
                 .format(
                   self.sector_dlg.le_angle.text(),
                   self.locale.toString(self.positive_degree_validator.bottom(), 'f', 2),
-                  self.locale.toString(self.positive_degree_validator.top(), 'f', 2))
+                  self.locale.toString(self.positive_degree_validator.top(), 'f', 2),
+                  self.locale.toString(52.522, 'f', 2))
             log.debug(problem)
         # check max distance
         elif self.distance_validator.validate(self.sector_dlg.le_distance.text(), 0)[0] != acceptable:
-            problem = self.tr('The Distance value is not valid: {} \nValid between: [{} - {}].\nPlease check and correct.') \
+            problem = self.tr('The Distance value is not valid: {} \nValid between: [{} - {}].\nPlease check and correct.\nExample number format: {}') \
                 .format(
                   self.sector_dlg.le_distance.text(),
                   self.locale.toString(self.distance_validator.bottom(), 'f', 3),
-                  self.locale.toString(self.distance_validator.top(), 'f', 3))
+                  self.locale.toString(self.distance_validator.top(), 'f', 3),
+                  self.locale.toString(7.553, 'f', 3)
+                )
             log.debug(problem)
         # check min distance
         elif self.min_distance_validator.validate(self.sector_dlg.le_min_distance.text(), 0)[0] != acceptable:
-            problem = self.tr('The Min Distance value is not valid: {} \nValid between: [{} - {}].\nPlease check and correct.') \
+            problem = self.tr('The Min Distance value is not valid {} \nValid between: [{} - {}].\nPlease check and correct.\nExample number format: {}') \
                 .format(
                   self.sector_dlg.le_min_distance.text(),
                   self.locale.toString(self.min_distance_validator.bottom(), 'f', 3),
-                  self.locale.toString(self.min_distance_validator.top(), 'f', 3))
+                  self.locale.toString(self.min_distance_validator.top(), 'f', 3),
+                self.locale.toString(2.123, 'f', 3),
+                )
             log.debug(problem)
         # check if min_distance < then distance
         elif self.locale.toFloat(self.sector_dlg.le_min_distance.text())[0] >= self.locale.toFloat(self.sector_dlg.le_distance.text())[0]:
             problem = self.tr(
-                'The Min Distance value is not valid:\n Min Distance value is bigger then Distance value.\n' +
-                ' Please check and correct.')
+                'The Min Distance value is not valid. \nMin Distance value is bigger then Distance value:\n{} >= {}\n' +
+                ' Please check and correct.\nExample number format: {}').format(
+                     self.locale.toFloat(self.sector_dlg.le_min_distance.text())[0],
+                     self.locale.toFloat(self.sector_dlg.le_distance.text())[0],
+                     self.locale.toString(2.755, 'f', 3)
+                )
             log.debug(problem)
         if problem is not None:
             self.msg(None, problem)
@@ -1234,8 +1248,10 @@ class SectorPlot:
         # countermeasureid and (default) color from dropdown
         countermeasure_id = countermeasure['id']
         color = self.sector_dlg.le_color.text()
+
         lon = self.current_sectorset.lon # self.locale.toFloat(self.current_sectorset.lon)[0]
         lat = self.current_sectorset.lat # self.locale.toFloat(self.current_sectorset.lat)[0]
+
         direction = self.locale.toFloat(self.sector_dlg.le_direction.text())[0]  # toFloat returns tuple like (60,0 True)
         log.debug('direction {}'.format(direction))
         angle = self.locale.toFloat(self.sector_dlg.le_angle.text())[0]
