@@ -31,7 +31,7 @@ from qgis.PyQt.QtWidgets import QAction, QToolBar, \
 from qgis.core import QgsCoordinateReferenceSystem, QgsGeometry, QgsPointXY, \
     QgsRectangle, QgsCoordinateTransform, QgsVectorLayer, QgsProject, QgsPoint, \
     QgsVectorFileWriter, QgsMessageLog, QgsExpression, QgsFeatureRequest, \
-    QgsApplication
+    QgsApplication, Qgis
 from qgis.gui import QgsMapTool
 # Initialize Qt resources from file resources.py
 from . import resources  # needed for button images!
@@ -328,6 +328,7 @@ class SectorPlot:
         self.location_dlg.table_npps.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.location_dlg.table_npps.setSelectionMode(QAbstractItemView.SingleSelection)
         # actions
+        self.location_dlg.tabs.currentChanged.connect(self.locationdlg_tab_changed)
         self.location_dlg.le_longitude.textChanged.connect(self.locationdlg_lonlat_changed)
         self.location_dlg.le_latitude.textChanged.connect(self.locationdlg_lonlat_changed)
         self.location_dlg.le_longitude.textEdited.connect(self.locationdlg_lonlat_edited)
@@ -784,6 +785,8 @@ class SectorPlot:
         self.locationdlg_show()
 
     def locationdlg_lonlat_changed(self):
+        # called via several routes: when user clicks in npp list
+        # or when user sets location via 'click in map'
         lon_txt = self.location_dlg.le_longitude.text()
         lat_txt = self.location_dlg.le_latitude.text()
         if self.locationdlg_lonlat_checked(lon_txt, lat_txt):
@@ -876,26 +879,45 @@ class SectorPlot:
         crs_from = self.iface.mapCanvas().mapSettings().destinationCrs()
         crs_transform = QgsCoordinateTransform(crs_from, self.crs_4326, QgsProject.instance())
         xy4326 = crs_transform.transform(xy)
-        self.location_dlg.le_longitude.setText(self.locale.toString(xy4326.x()))
-        self.location_dlg.le_latitude.setText(self.locale.toString(xy4326.y()))
+        lon_txt = self.locale.toString(xy4326.x())
+        lat_txt = self.locale.toString(xy4326.y())
+        self.location_dlg.le_longitude.setText(lon_txt)
+        self.location_dlg.le_latitude.setText(lat_txt)
+        QSettings().setValue("plugins/SectorPlot/last_location", [lon_txt, lat_txt])
         self.iface.mapCanvas().unsetMapTool(self.xy_tool)
 
-    def locationdlg_show(self, lon_txt='', lat_txt=''):
-        self.location_dlg.le_search_npp.setText('')
-        # self.location_dlg.le_search_npp.setText('borssele')
+    def locationdlg_tab_changed(self, tab):
+        log.debug('locationdlg_tab_changed: {}'.format(tab))
+        if tab == 1:  # via map
+            self.clean_sector_layer()
+            self.location_dlg.le_longitude.setText('')
+            self.location_dlg.le_latitude.setText('')
+        elif tab == 0:  # via npp's list
+            self.locationdlg_select_npp()
+
+    def locationdlg_show(self):
         last_location = QSettings().value("plugins/SectorPlot/last_location")
-        if isinstance(last_location, list):  # should be a list of two floats
-            # try to retrieve lat location lon and lat, BUT can have locale problems, then pass
+        log.debug('last_location: {}'.format(last_location))
+        if isinstance(last_location, list):  # should be a list of two floats as string
+            # last try was one via setting lat lon, enable tab 1
+            #self.location_dlg.tabs.setCurrentIndex(1)
+            # try to retrieve lat location lon and lat, BUT can have locale
+            # problems, then pass
             try:
-              self.location_dlg.le_longitude.setText(self.locale.toString(last_location[0]))
-              self.location_dlg.le_latitude.setText(self.locale.toString(last_location[1]))
-            except:
-              self.location_dlg.le_longitude.setText(lon_txt)
-              self.location_dlg.le_latitude.setText(lat_txt)
-            self.npp_proxy_model.setFilterFixedString('')
+                self.location_dlg.le_longitude.setText(
+                    self.locale.toString(last_location[0]))
+                self.location_dlg.le_latitude.setText(
+                    self.locale.toString(last_location[1]))
+            except Exception as e:
+                #log.debug('Locale number issue with lon {} lat {}'.format(last_location[0], last_location[1]))
+                #log.debug(e)
+                self.location_dlg.le_longitude.setText(last_location[0])
+                self.location_dlg.le_latitude.setText(last_location[1])
+            self.location_dlg.tabs.setCurrentIndex(1)
         elif isinstance(last_location, str):
             self.location_dlg.le_search_npp.setText(last_location)
             self.locationdlg_filter_npps(last_location)
+            self.location_dlg.tabs.setCurrentIndex(0)
 
         # See if OK was pressed
         if self.location_dlg.exec_():
@@ -907,19 +929,20 @@ class SectorPlot:
                 # location coordinates are OK: create floats from them
                 lon = self.locale.toFloat(lon_txt)[0]
                 lat = self.locale.toFloat(lat_txt)[0]
-                # IF and only IF a NPP is selected in the table, pass it to the sectorplotset dialog
                 npp_block = None
-                if len(self.location_dlg.table_npps.selectedIndexes()) > 0:
+                set_name = ''
+                # IF and only IF a NPP is selected in the table, pass it to the sectorplotset dialog
+                if self.location_dlg.tabs.currentIndex() == 0 and len(self.location_dlg.table_npps.selectedIndexes()) > 0:
                     npp = self.location_dlg.table_npps.selectedIndexes()[0].data(Qt.UserRole)
                     npp_block = npp['block']
-                set_name = self.location_dlg.selected_npp_name
+                    set_name = self.location_dlg.selected_npp_name
                 self.sectorplotsetsdlg_new_sectorplotset_dialog(lon, lat, set_name, npp_block)
             else:
                 # problem validating the lat lon coordinates
                 self.msg(self.sectorplotsets_dlg,
                          self.tr('At least one of the coordinates is not valid.\nPlease check and correct.\nNote: number notation: {}'
                                  .format(self.locale.toString(52.123456, 'f', 5))))
-                self.locationdlg_show(lon_txt, lat_txt)
+                self.location_dlg.show()
         else:
             self.clean_sector_layer(True, True)
 
@@ -1280,7 +1303,7 @@ class SectorPlot:
 
     def sector_dlg_show(self, old_sector=None):
         #self.debug('sector_dlg_show with old sector = %s' % old_sector)
-        self.iface.layerTreeView().setCurrentLayer(self.pie_layer)  # make pie_layer current for selections
+        self.iface.layerTreeView().setCurrentLayer(self.get_pie_layer())  # make pie_layer current for selections
         self.iface.actionSelect().trigger()  # activate the selecttool
         # OK pressed in Sector dialog(!)
         if self.sector_dlg.exec_():
@@ -1288,7 +1311,7 @@ class SectorPlot:
             if not self.sector_dlg_sector_is_ok():
                 # mmm, one of the validators failed: reopen the sector_dlg after the msg was OK'ed
                 # self.sector_dlg_show(old_sector) # nope: recursive calls HELL!
-                self.iface.layerTreeView().setCurrentLayer(self.pie_layer)  # make pie_layer current for selections
+                self.iface.layerTreeView().setCurrentLayer(self.get_pie_layer())  # make pie_layer current for selections
                 self.iface.actionSelect().trigger()  # activate the selecttool
                 self.sector_dlg.show()
                 return
@@ -1341,7 +1364,7 @@ class SectorPlot:
         self.settings_dlg.exec_()
 
     def debug(self, s):
-        QgsMessageLog.logMessage('%s' % s, tag="SectorPlot Debug", level=QgsMessageLog.INFO)
+        QgsMessageLog.logMessage('%s' % s, tag="SectorPlot Debug", level=Qgis.Info)
 
 
 class GetPointTool(QgsMapTool):
