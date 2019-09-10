@@ -1,7 +1,7 @@
 import unittest
 import os
 
-from providers.provider_base import ProviderBase, SimpleProvider, SimpleConfig
+from SectorPlot.providers.provider_base import ProviderBase, SimpleProvider, SimpleConfig
 
 from qgis.PyQt.QtCore import QCoreApplication
 

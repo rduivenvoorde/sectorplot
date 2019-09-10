@@ -1,8 +1,8 @@
 import unittest
 
-from test_provider_base import TestProviderBase
+from test.test_provider_base import TestProviderBase
 
-from providers.npp_provider import NPPConfig, NPPProvider
+from SectorPlot.providers.npp_provider import NPPConfig, NPPProvider
 
 from qgis.PyQt.QtCore import QCoreApplication
 
