@@ -5,7 +5,6 @@ import os
 
 from .providers.npp_provider import NPPConfig, NPPProvider
 
-
 class Npp(dict):
     def __init__(self, rec=None):
         self.ok = False

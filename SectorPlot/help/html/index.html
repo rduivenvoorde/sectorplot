@@ -1,0 +1,279 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Documentation &#8212; SectorPlot 0.7.2 documentation</title>
+    <link rel="stylesheet" href="_static/haiku.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+  </head><body>
+      <div class="header" role="banner"><h1 class="heading"><a href="#">
+          <span>SectorPlot 0.7.2 documentation</span></a></h1>
+        <h2 class="heading"><span>Documentation</span></h2>
+      </div>
+      <div class="topnav" role="navigation" aria-label="top navigation">
+      
+        <p>
+        <a class="uplink" href="#">Contents</a>
+        </p>
+
+      </div>
+      <div class="content">
+        
+        
+  <div class="section" id="documentation">
+<h1>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h1>
+<div class="contents local topic" id="contents">
+<ul class="simple">
+<li><a class="reference internal" href="#what-does-it-do" id="id1">What does it do</a></li>
+<li><a class="reference internal" href="#make-it-work" id="id2">Make it work</a></li>
+<li><a class="reference internal" href="#use-it" id="id3">Use it</a></li>
+<li><a class="reference internal" href="#development" id="id4">Development</a><ul>
+<li><a class="reference internal" href="#notes" id="id5">Notes</a></li>
+</ul>
+</li>
+</ul>
+</div>
+<div class="section" id="what-does-it-do">
+<h2><a class="toc-backref" href="#id1">What does it do</a><a class="headerlink" href="#what-does-it-do" title="Permalink to this headline">¶</a></h2>
+<p>The QGIS SectorPlot plugin is a plugin to show recent sectorplots or to create them based on a location in the map.</p>
+<p>One sectorplot is saved as several polygons in a database, but can also be exported as an Esri Shapefile
+or pushed over the network to a Geoserver WMS (Web Mapping Server).
+Both to make it possible to view/use the sectorplots in JRodos.</p>
+<img alt="_images/sector_in_qgis.png" src="_images/sector_in_qgis.png" />
+</div>
+<div class="section" id="make-it-work">
+<h2><a class="toc-backref" href="#id2">Make it work</a><a class="headerlink" href="#make-it-work" title="Permalink to this headline">¶</a></h2>
+<p>If not already installed, first install it via the QGIS plugin manager (make sure you have RIVM’s own repo:
+<a class="reference external" href="http://repo.svc.cal-net.nl/repo/rivm/qgis/plugins.xml">http://repo.svc.cal-net.nl/repo/rivm/qgis/plugins.xml</a> added and enabled).</p>
+<p>If installed you will see the sectorplot plugin icon in your QGIS toolbars:</p>
+<img alt="_images/icon.png" src="_images/icon.png" />
+<p>When you click the button the first time the settings window (also available via menu <cite>Web/SectorPlot/Show settings</cite>):</p>
+<img alt="_images/settings.png" src="_images/settings.png" />
+<p>There you have to give (and test) passwords for database and web services. These can be found in Cal-net wiki
+(in the referencelist in the modelmakers space).</p>
+</div>
+<div class="section" id="use-it">
+<h2><a class="toc-backref" href="#id3">Use it</a><a class="headerlink" href="#use-it" title="Permalink to this headline">¶</a></h2>
+<p>First create a fresh QGIS project using epsg:3857 (World Mercator) as crs/projection, and be sure to enable
+‘On The Fly reprojection’ (OTF). Or open such a project.</p>
+<p>Because the NPP’s (Nuclear Power Plants) are spread world wide, it is easiest to add a World map as reference layer.</p>
+<p>There are two ways to do this:</p>
+<ul class="simple">
+<li>Get the OSM (OpenStreetMap) world map from the cal-net WMS service (<a class="reference external" href="http://geoserver.prd.cal-net.nl/maps">http://geoserver.prd.cal-net.nl/maps</a>)</li>
+<li>Install the QuickMapServices-plugin, and via Web/QuickMapService/OSM/OSM Mapnik get a world map.</li>
+</ul>
+<p>Now click the SectorPlot button, the next screen will appear with a list of recent sectorplots.</p>
+<img alt="_images/recent_plots.png" src="_images/recent_plots.png" />
+<p>NOTE that a once created/saved SectorPlot can not be deleted anymore. It can only be COPIED first and
+then changed an saved again.</p>
+<p>Now click the button ‘New SectorPLot’.</p>
+<p>To set the location, the user is presented with the following screen:</p>
+<img alt="_images/location_screen.png" src="_images/location_screen.png" />
+<p>There are 3 ways to set the location:</p>
+<ul class="simple">
+<li>at (1) search for a county code, site name or block name, and select a NPP</li>
+<li>at (2) via this button you can click in the map so the coordinates will be set in the (3) input boxes</li>
+<li>at (3) directly set the lon/lat coordinates in the lon/lat input boxes.</li>
+</ul>
+<p>Below an example where the user searches for Borselle.</p>
+<img alt="_images/borselle.png" src="_images/borselle.png" />
+<p>NOTE: the last search will be remembered for a user</p>
+<p>Accepting the location dialog by clicking OK, and you will be presented the next dialog:</p>
+<img alt="_images/new_sectorplot.png" src="_images/new_sectorplot.png" />
+<p>In this screen a temporary name will be set (the Block name) and the location is set.
+Also the countermeasure time is set at ‘now’ but can be changed at will.</p>
+<p>Create the first ‘sector’ of the sectorplot by clicking the button ‘Add New Sector’.</p>
+<p>You will see the ‘Sector dialog’:</p>
+<img alt="_images/new_sector.png" src="_images/new_sector.png" />
+<p>In that dialog you have to give specific information about the sector, either by filling the
+text inputs by hand OR in case of a NPP with a ‘Pie-plot’, by clicking on a pie-sector (see example below).</p>
+<p>The following values should be present:</p>
+<ul class="simple">
+<li>the CounterMeasure</li>
+<li>which has specified colors, which can be overridden</li>
+<li>a Direction (in degrees)</li>
+<li>an Angle (in degrees)</li>
+<li>a Distance (in km)</li>
+<li>optionally you can set a Min Disance (in km)</li>
+<li>You can set a custom name for the sector.</li>
+</ul>
+<p>There is a button ‘Preview’ to preview the result in the map.</p>
+<p>Below an example in which the user clicked on the ‘Pie plot’ of Borselle and then added a
+Min Distance of 5 km, and hit the preview botton:</p>
+<img alt="_images/one_sector.png" src="_images/one_sector.png" />
+<p>After clicking Ok the sector will be added to the list of ‘Sectors’ and you are able to create another
+sector.</p>
+<p>Below is an example of a sectorplot with three sectors:</p>
+<img alt="_images/3sectors.png" src="_images/3sectors.png" />
+<p>Some notes:</p>
+<p>The drawing order is determined by the order of adding them to the list.</p>
+<p>You can rearrange the order by dragging the number in the first column to another position.</p>
+<p>You can edit a sector by double clicking it, or by selecting it and using the button ‘Open Selected Sector’.</p>
+<p>You can also remove a sector from the list, by selecting it and using the button ‘Remove Selected Sector’.</p>
+<p>After adding enough sectors, click ‘OK and the full SectorPlot will be added to the list of Recent SectorPlots.</p>
+<p>The last created sector will be selected and is presented in the Map.</p>
+<img alt="_images/finished_plot.png" src="_images/finished_plot.png" />
+<p>To publish a SectorPlot into Geoserver:</p>
+<ul class="simple">
+<li>select it in the list</li>
+<li>click ‘Create WMS’</li>
+</ul>
+<p>If all is ok, you will be presented with an alert showing the layername that is to be used to view it in JRodos using a WMS</p>
+<img alt="_images/wms_success.png" src="_images/wms_success.png" />
+<p>You can see this layer / SectorPlot in JRodos by making a WMS connection in JRodos to</p>
+<blockquote>
+<div><a class="reference external" href="http://geoserver.dev.cal-net.nl/geoserver/sectorplots/wms">http://geoserver.dev.cal-net.nl/geoserver/sectorplots/wms</a></div></blockquote>
+<p>and searching for the layername from the alert.</p>
+<p>To create an Esri Shapefile of the SectorPlot:</p>
+<ul class="simple">
+<li>select it in the list</li>
+<li>click ‘Create Shapefile’</li>
+</ul>
+<p>You will be asked where to save the file (actually a set of at least 5 files…).</p>
+<img alt="_images/shape_success.png" src="_images/shape_success.png" />
+<p>The plugins also creates a style file (a SLD file) next to the shape.</p>
+<p>When you open the local shape file in JRodos this style file will be used.</p>
+<p>Note that QGIS itself does not automatically use that .sld file currently,
+but you can load it via the layer properties though.</p>
+</div>
+<div class="section" id="development">
+<h2><a class="toc-backref" href="#id4">Development</a><a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h2>
+<p>Repo’s:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://github.com/rduivenvoorde/sectorplot">https://github.com/rduivenvoorde/sectorplot</a></li>
+<li><a class="reference external" href="https://git.svc.cal-net.nl/qgis/sectorplotplugin">https://git.svc.cal-net.nl/qgis/sectorplotplugin</a></li>
+</ul>
+<p>Wiki page for Install and Configuration:</p>
+<ul class="simple">
+<li><a class="reference external" href="https://wiki.cal-net.nl/display/CALNET3/Installatie+en+configuratie+van+de+sectorplotplugin">https://wiki.cal-net.nl/display/CALNET3/Installatie+en+configuratie+van+de+sectorplotplugin</a></li>
+</ul>
+<p>All dialogs in english. Create dutch version via <cite>make transup</cite> see below.</p>
+<p>NOTE: all strings in plugins should be surrounded by <cite>self.tr()</cite> to be sure
+they show up in the .po files:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">text</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">tr</span><span class="p">(</span><span class="sa">u</span><span class="s1">&#39;Sector plot&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Create a new translation (given you work with sphinx):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># update the nl.ts file using</span>
+<span class="n">make</span> <span class="n">transup</span>
+<span class="c1"># load the nl.ts file in Linguist and translate all strings</span>
+<span class="n">make</span> <span class="n">transclean</span>
+<span class="c1"># compile the ts file to qm file which can be used in the plugin</span>
+<span class="n">make</span> <span class="n">transcompile</span>
+</pre></div>
+</div>
+<p>To create a zip for the repository:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># make sure you can create docs (sphinx in path)</span>
+<span class="n">make</span> <span class="nb">zip</span>
+</pre></div>
+</div>
+<p>This will first copy all needed files to <cite>.qgis2/python/plugins/SectorPlot</cite> and then zip that directory
+and place in the the directory <cite>repo</cite>.</p>
+<p>To develop live, either create a symlink in <cite>.qgis2/python/plugins/SectorPlot</cite> to the dev environment.</p>
+<p>To deploy the plugin: RIVM has their own plugin repo: <a class="reference external" href="http://repo.svc.cal-net.nl/repo/rivm/qgis/plugins.xml">http://repo.svc.cal-net.nl/repo/rivm/qgis/plugins.xml</a></p>
+<p>This is a web directory with:</p>
+<ul class="simple">
+<li>the lastes version of SectorPlot.zip</li>
+<li>een plugins.xml with the data of all plugins in that dir</li>
+<li>een plugins.xsl just for viewing the xml</li>
+</ul>
+<p>Creating a new version:</p>
+<ul class="simple">
+<li>in SectorPlot/metadata.txt in item General, upgrade the ‘version’ number</li>
+<li>in plugins.xml on website and repo update the element</li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">&lt;</span><span class="n">pyqgis_plugin</span> <span class="n">name</span><span class="o">=</span><span class="s2">&quot;SectorPlot&quot;</span> <span class="n">version</span><span class="o">=</span><span class="s2">&quot;0.4&quot;</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li>create a new zip</li>
+<li>scp both plugins.xml and SectorPlot.zip to the webdir</li>
+</ul>
+<div class="section" id="notes">
+<h3><a class="toc-backref" href="#id5">Notes</a><a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h3>
+<p>Plugin is developed using PyCharm</p>
+<p>The plugin is a standard QGIS plugin with some ui-dialogs created with QT-Creator</p>
+<p>Settings are handled via <a class="reference external" href="https://github.com/3nids/qgissettingmanager">https://github.com/3nids/qgissettingmanager</a></p>
+<p>FIRST set and test all settings (Web/SectorplotPlugin/Show Settings)</p>
+<p>Custom HTTP services (WMS, REST) are called via ‘providers’, classes which wrap some funcionality around
+QgsNetworkAccessManager (to be sure the proxies from QGIS’ settings are picked up).</p>
+<p>You can run all tests in the test directory using the Pycharm test functionality.</p>
+<p>The tests can also be used to test the services.</p>
+<p>NPP information is retrieved using a NPP-RestService ‘<a class="reference external" href="http://jrodos.dev.cal-net.nl/rest/jrodos/npps">http://jrodos.dev.cal-net.nl/rest/jrodos/npps</a>’. These return
+a json (a saved version is in providers/npp-rest.json):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="s2">&quot;links&quot;</span><span class="p">:[</span>
+  <span class="p">{</span><span class="s2">&quot;rel&quot;</span><span class="p">:</span><span class="s2">&quot;self&quot;</span><span class="p">,</span><span class="s2">&quot;href&quot;</span><span class="p">:</span><span class="s2">&quot;http://localhost:8080/jrodos/npps&quot;</span><span class="p">}],</span>
+  <span class="s2">&quot;content&quot;</span><span class="p">:[</span>
+  <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span><span class="mi">346437</span><span class="p">,</span>
+    <span class="s2">&quot;block&quot;</span><span class="p">:</span><span class="s2">&quot;ALMARAZ-1&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;site&quot;</span><span class="p">:</span><span class="s2">&quot;ALMARAZ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;longitude&quot;</span><span class="p">:</span><span class="o">-</span><span class="mf">5.6977</span><span class="p">,</span>
+    <span class="s2">&quot;latitude&quot;</span><span class="p">:</span><span class="mf">39.8074</span><span class="p">,</span>
+    <span class="s2">&quot;inventory&quot;</span><span class="p">:</span><span class="s2">&quot;INVE.PWR_2686MWth_ALMARAZ&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stackheight&quot;</span><span class="p">:</span><span class="mf">45.0</span><span class="p">,</span>
+    <span class="s2">&quot;thermalpower&quot;</span><span class="p">:</span><span class="mf">2947.0</span><span class="p">,</span>
+    <span class="s2">&quot;operationtime&quot;</span><span class="p">:</span><span class="mi">999</span><span class="p">,</span>
+    <span class="s2">&quot;blocktype&quot;</span><span class="p">:</span><span class="s2">&quot;PWR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;buildingwidth&quot;</span><span class="p">:</span><span class="mf">55.0</span><span class="p">,</span>
+    <span class="s2">&quot;buildingheight&quot;</span><span class="p">:</span><span class="mf">40.0</span><span class="p">,</span>
+    <span class="s2">&quot;volumeflux&quot;</span><span class="p">:</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="s2">&quot;ventopening&quot;</span><span class="p">:</span><span class="o">-</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="s2">&quot;countrycode&quot;</span><span class="p">:</span><span class="s2">&quot;ESP&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;numberofzones&quot;</span><span class="p">:</span><span class="mi">3</span><span class="p">,</span>
+    <span class="s2">&quot;zoneradii&quot;</span><span class="p">:[</span><span class="mf">5.0</span><span class="p">,</span><span class="mf">10.0</span><span class="p">,</span><span class="mf">30.0</span><span class="p">],</span>
+    <span class="s2">&quot;numberofsectors&quot;</span><span class="p">:</span><span class="mi">16</span><span class="p">,</span>
+    <span class="s2">&quot;angle&quot;</span><span class="p">:</span><span class="o">-</span><span class="mf">11.25</span><span class="p">,</span>
+    <span class="s2">&quot;closetoborder&quot;</span><span class="p">:</span><span class="n">false</span><span class="p">,</span>
+    <span class="s2">&quot;links&quot;</span><span class="p">:[{</span><span class="s2">&quot;rel&quot;</span><span class="p">:</span><span class="s2">&quot;self&quot;</span><span class="p">,</span><span class="s2">&quot;href&quot;</span><span class="p">:</span><span class="s2">&quot;http://localhost:8080/jrodos/npps/346437&quot;</span><span class="p">}]</span>
+  <span class="p">},</span><span class="o">...</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>CounterMeasures/Tegenmaatregelen are defined in <cite>countermeasures.py</cite>, this file defines both the categories
+and the default colors to use.</p>
+<p>Creating Sectors and Pie-sectors is done in <cite>sector.py</cite>. All times are in GMT(!).</p>
+<p>Retrieving recent sectors (from database) is done in <cite>sector.py</cite>, using code in <cite>connect.py</cite></p>
+<p>REST-communication with Geoserver is coded in <cite>connect.py</cite></p>
+<p>Styling of sectorpie in <cite>sectorpie.qml</cite>.</p>
+<p>Styling of sectors in <cite>sectorplot.qml</cite>.</p>
+<p>Publishing a SectorPlot in Geoserver is done by:</p>
+<ol class="arabic simple">
+<li>pushing all sectorplots to Geoserver via Postgres db</li>
+<li>creating a Postgres view which registres all sectors of one sectorplot (via db connection)</li>
+</ol>
+<p>3) create a Geoserver-layer based on this view (via Geoserver REST api) NOTE!! Geoserver needs to have the sectorplot
+with the right username (sectorplot) and password (see hieradata, or <a class="reference external" href="https://wiki.cal-net.nl/display/CALNET3/Installatie+en+configuratie+van+de+sectorplotplugin">https://wiki.cal-net.nl/display/CALNET3/Installatie+en+configuratie+van+de+sectorplotplugin</a>)</p>
+<ol class="arabic simple" start="4">
+<li>setting a default style for this layer (‘sectorplot’, as <cite>sectorplot.sld</cite> in sources)</li>
+</ol>
+</div>
+</div>
+</div>
+
+
+      </div>
+      <div class="bottomnav" role="navigation" aria-label="bottom navigation">
+      
+        <p>
+        <a class="uplink" href="#">Contents</a>
+        </p>
+
+      </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2017, Richard Duivenvoorde.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.8.4.
+    </div>
+  </body>
+</html>

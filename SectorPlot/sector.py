@@ -20,7 +20,7 @@ xformTo4326 = QgsCoordinateTransform(crs3857, crs4326, QgsProject.instance())
 
 def getTime(t):
     result = gmtime()
-    if type(t) is unicode or type(t) is str:
+    if type(t) is str:
         result = strptime(t, "%Y-%m-%d %H:%M:%S")
     elif isinstance(t, time.struct_time):
         result = t
@@ -159,13 +159,13 @@ class Sector:
     def _getArc(self, x, y, dist):
         arc = []
         arcStart = self.direction
-        if isinstance(arcStart, (int, long)):
+        if isinstance(arcStart, (int)):
             loopStart = arcStart + 1
         else:
             loopStart = int(ceil(arcStart))
 
         arcEnd = self.direction + (self.angle % 360)
-        if isinstance(arcEnd, (int, long)):
+        if isinstance(arcEnd, (int)):
             loopEnd = arcEnd - 1
         else:
             loopEnd = int(floor(arcEnd))
@@ -268,14 +268,14 @@ class Pie:
         # "numberofsectors":16,
         # "angle":0.0,
 
-    def __init__(self, lon=0, lat=0, start_angle=0.0, sector_count=8, zone_radii=[5]):
+    def __init__(self, lon=0, lat=0, start_angle=0.0, sector_count=8, zone_radii=[5], sectorset_id=None):
 
         self.lat = lat
         self.lon = lon
         self.start_angle = start_angle
         self.sector_count = sector_count
         self.zone_radii = zone_radii
-
+        self.sectorset_id = sectorset_id
         self.sectors = []
 
         if self.sector_count > 0:
@@ -310,6 +310,36 @@ class Pie:
             features.append(sector.getQgsFeature())
         return features
 
+    def exportToDatabase(self): #, newSetId=True):
+        db = Database('sectorplot')
+        # if newSetId:
+        #     queries = [{'text': "SELECT nextval(pg_get_serial_sequence('sectors', 'id')) as newsetid", 'vals': ()}]
+        #     result = db.execute(queries)
+        #     if not result['db_ok']:
+        #         return (False, result['error'])
+        #     setId = result['data'][0].newsetid
+        #     self.setSetId(setId)
+        result = db.execute(self.getInsertQuery())
+        if not result['db_ok']:
+            return (False, result['error'])
+        else:
+            return (True, self.setId)
+
+    def getInsertQuery(self):
+        query = {}
+        query['text'] = 'INSERT INTO pies'
+        query['text'] += ' (sectorset_id, lon, lat, start_angle, sector_count, zone_radii, geom)'
+        query['text'] += ' VALUES (%s, %s, %s, %s, %s, %s, ST_GeomFromText(%s, 4326))'
+        query['text'] += ';'
+        vals = []
+        vals.append(self.setName)
+        vals.append(self.lon)
+        vals.append(self.lat)
+
+        vals.append(self.geometry.asWkt())
+        query['vals'] = tuple(vals)
+        return query
+
 
 class SectorSet:
     def __init__(self, lon: float = 0, lat: float = 0, name=None,
@@ -336,7 +366,7 @@ class SectorSet:
             print('    ' + str(s))
         print('-----------------')
 
-    def clone(self, clearSetId=True):
+    def clone(self, clear_setid=True):
         result = SectorSet(
             lon=self.lon,
             lat=self.lat,
@@ -345,7 +375,7 @@ class SectorSet:
             setId=self.setId)
         for s in self.sectors:
             result.sectors.append(s.clone())
-        if clearSetId:
+        if clear_setid:
             result.setSetId(-1)
         return result
 

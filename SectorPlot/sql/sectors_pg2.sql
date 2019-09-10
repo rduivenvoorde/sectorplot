@@ -51,3 +51,24 @@ GRANT SELECT ON spatial_ref_sys TO sectorplot;
 GRANT SELECT ON geography_columns TO sectorplot;
 -- REVOKE ALL ON geometry_columns FROM sectorplot;
 GRANT SELECT ON geometry_columns TO sectorplot;
+
+-- drop table pies
+CREATE TABLE pies
+(
+  id serial NOT NULL,
+  sectorset_id int,
+  lon float,
+  lat float,
+  start_angle float,
+  sector_count int,
+  zone_radii varchar(50),
+  geom geometry(MultiPolygon, 4326),
+  CONSTRAINT pies_pkey PRIMARY KEY (id),
+  CONSTRAINT "pies_fk__sectors$setid" FOREIGN KEY (sectorset_id)
+      REFERENCES sectors (id) MATCH SIMPLE
+)
+WITH (
+  OIDS=FALSE
+);
+ALTER TABLE pies
+  OWNER TO sectorplot_owner;
