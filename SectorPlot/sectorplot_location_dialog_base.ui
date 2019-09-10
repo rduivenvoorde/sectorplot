@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>598</width>
-    <height>357</height>
+    <width>737</width>
+    <height>451</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -160,33 +160,28 @@
         </spacer>
        </item>
        <item row="6" column="1">
-        <widget class="QComboBox" name="comboBox">
+        <widget class="QComboBox" name="cmb_pie_sectors">
          <property name="editable">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
          <item>
           <property name="text">
-           <string/>
+           <string>8</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>1</string>
+           <string>4</string>
           </property>
          </item>
-        </widget>
-       </item>
-       <item row="6" column="2">
-        <widget class="QComboBox" name="comboBox_2">
-         <property name="editable">
-          <bool>true</bool>
-         </property>
-         <property name="sizeAdjustPolicy">
-          <enum>QComboBox::AdjustToContents</enum>
-         </property>
          <item>
           <property name="text">
-           <string/>
+           <string>12</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>16</string>
           </property>
          </item>
          <item>
@@ -194,21 +189,79 @@
            <string>5</string>
           </property>
          </item>
-        </widget>
-       </item>
-       <item row="6" column="3">
-        <widget class="QComboBox" name="comboBox_3">
-         <property name="editable">
-          <bool>true</bool>
-         </property>
          <item>
           <property name="text">
-           <string/>
+           <string>6</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>7</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>9</string>
           </property>
          </item>
          <item>
           <property name="text">
            <string>10</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>11</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>13</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>14</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>15</string>
+          </property>
+         </item>
+        </widget>
+       </item>
+       <item row="6" column="2">
+        <widget class="QComboBox" name="cmb_pie_angle">
+         <property name="editable">
+          <bool>false</bool>
+         </property>
+         <property name="sizeAdjustPolicy">
+          <enum>QComboBox::AdjustToContents</enum>
+         </property>
+         <item>
+          <property name="text">
+           <string>0</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>5</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>10</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>15</string>
+          </property>
+         </item>
+         <item>
+          <property name="text">
+           <string>20</string>
           </property>
          </item>
         </widget>
@@ -217,6 +270,62 @@
         <widget class="QLabel" name="label_8">
          <property name="text">
           <string>Rings and distances (m)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="1">
+        <widget class="QLabel" name="label_9">
+         <property name="text">
+          <string>Sectors / Ring</string>
+         </property>
+        </widget>
+       </item>
+       <item row="7" column="2">
+        <widget class="QLabel" name="label_10">
+         <property name="text">
+          <string>Angle</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="1">
+        <widget class="QLabel" name="label_12">
+         <property name="text">
+          <string>Distance Ring 1</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="2">
+        <widget class="QLabel" name="label_13">
+         <property name="text">
+          <string>Distance Ring 2</string>
+         </property>
+        </widget>
+       </item>
+       <item row="9" column="3">
+        <widget class="QLabel" name="label_14">
+         <property name="text">
+          <string>Distance Ring 3</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="3">
+        <widget class="QSpinBox" name="spin_pie_ring3">
+         <property name="maximum">
+          <number>200</number>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="2">
+        <widget class="QSpinBox" name="spin_pie_ring2">
+         <property name="maximum">
+          <number>200</number>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="1">
+        <widget class="QSpinBox" name="spin_pie_ring1">
+         <property name="maximum">
+          <number>200</number>
          </property>
         </widget>
        </item>

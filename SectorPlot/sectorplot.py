@@ -166,7 +166,7 @@ class SectorPlot:
 
         # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
         self.iface.newProjectCreated.connect(self.stop_sectorplot_session)
-        log.debug('Sectorplot Plugin init')
+        log.debug('Sectorplot Plugin init, end')
 
     # TODO: move this to a commons class/module
     def get_rivm_toolbar(self):
@@ -270,6 +270,7 @@ class SectorPlot:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
         # main menu/dialog
+        log.debug('Sectorplot initGui, start')
         icon_path = ':/plugins/SectorPlot/images/icon.png'
         self.add_action(
             icon_path,
@@ -334,6 +335,8 @@ class SectorPlot:
         self.location_dlg.le_longitude.textEdited.connect(self.locationdlg_lonlat_edited)
         self.location_dlg.le_latitude.textEdited.connect(self.locationdlg_lonlat_edited)
         self.location_dlg.btn_location_from_map.clicked.connect(self.locationdlg_btn_location_clicked)
+        self.location_dlg.cmb_pie_sectors.currentIndexChanged.connect(self.locationdlg_lonlat_changed)
+        self.location_dlg.cmb_pie_angle.currentIndexChanged.connect(self.locationdlg_lonlat_changed)
         self.lon_validator = QDoubleValidator(-180.0, 180.0, 7, self.location_dlg.le_longitude)
         self.lon_validator.setLocale(self.locale)
         self.location_dlg.le_longitude.setValidator(self.lon_validator)
@@ -341,6 +344,14 @@ class SectorPlot:
         self.lat_validator = QDoubleValidator(-85.0, 85.0, 7, self.location_dlg.le_latitude)
         self.lat_validator.setLocale(self.locale)
         self.location_dlg.le_latitude.setValidator(self.lat_validator)
+        # using currentTextChanged below, because user can edit text in combo's
+        self.location_dlg.spin_pie_ring1.valueChanged.connect(self.locationdlg_lonlat_changed)
+        self.location_dlg.spin_pie_ring2.valueChanged.connect(self.locationdlg_lonlat_changed)
+        self.location_dlg.spin_pie_ring3.valueChanged.connect(self.locationdlg_lonlat_changed)
+        # defaults
+        self.location_dlg.spin_pie_ring1.setValue(2)
+        self.location_dlg.spin_pie_ring2.setValue(5)
+        self.location_dlg.spin_pie_ring3.setValue(10)
 
         # SectorplotSet_dialog showing current sectorplot (list of sectors in this plot)
         self.sectorplotset_dlg = SectorPlotSectorPlotSetDialog(parent=self.sectorplotsets_dlg)
@@ -394,6 +405,7 @@ class SectorPlot:
         self.settings_dlg.btn_test_postgis.clicked.connect(self.settingsdlg_test_postgis_clicked)
         self.settings_dlg.btn_test_geoserver.clicked.connect(self.settingsdlg_test_geoserver_clicked)
         self.settings_dlg.btn_test_jrodos.clicked.connect(self.settingsdlg_test_jrodos_clicked)
+        log.debug('Sectorplot initGui, end')
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -406,6 +418,8 @@ class SectorPlot:
         # NOT (as it is RIVM toolbar) remove the toolbar
         #del self.toolbar
         self.stop_sectorplot_session()
+        del self.xy_tool
+        self.xy_tool = None
 
     def msg(self, parent=None, msg=""):
         if parent is None:
@@ -738,6 +752,8 @@ class SectorPlot:
             self.repaint_sector_layers()
 
     def locationdlg_open_dialog(self):
+        # hide the start/sets dialog
+        self.sectorplotsets_dlg.hide()
         self.new_sectorplotset()
         self.location_dlg.le_longitude.clear()
         self.location_dlg.le_latitude.clear()
@@ -787,15 +803,32 @@ class SectorPlot:
     def locationdlg_lonlat_changed(self):
         # called via several routes: when user clicks in npp list
         # or when user sets location via 'click in map'
+        log.debug('locationdlg_lonlat_changed')
         lon_txt = self.location_dlg.le_longitude.text()
         lat_txt = self.location_dlg.le_latitude.text()
+
         if self.locationdlg_lonlat_checked(lon_txt, lat_txt):
-            self.zoom_map_to_lonlat(self.locale.toFloat(lon_txt)[0], self.locale.toFloat(lat_txt)[0])
+            self.zoom_map_to_lonlat(self.locale.toFloat(lon_txt)[0],
+                                    self.locale.toFloat(lat_txt)[0])
+            self.clean_sector_layer()
+            sector_count = int(self.location_dlg.cmb_pie_sectors.currentText())
+            start_angle = float(self.location_dlg.cmb_pie_angle.currentText())
+            ring1 = int(self.location_dlg.spin_pie_ring1.value())
+            ring2 = int(self.location_dlg.spin_pie_ring2.value())
+            ring3 = int(self.location_dlg.spin_pie_ring3.value())
+            self.current_pie = Pie(self.locale.toFloat(lon_txt)[0],
+                                   self.locale.toFloat(lat_txt)[0],
+                                   start_angle=start_angle,
+                                   sector_count=sector_count,
+                                   zone_radii=[ring1, ring2, ring3])
+            self.get_pie_layer().dataProvider().addFeatures(self.current_pie.get_features())
+            self.repaint_sector_layers()
 
     def locationdlg_lonlat_edited(self):
         # ONLY if the user edits coords by hand, override npp selection
         # by cleaning the npp name
         # remembering the lat lon
+        log.debug('locationdlg_lonlat_edited')
         self.location_dlg.table_npps.clearSelection()
         lon_txt = self.location_dlg.le_longitude.text()
         lat_txt = self.location_dlg.le_latitude.text()
@@ -876,6 +909,7 @@ class SectorPlot:
     def locationdlg_xy_clicked(self, xy):
         # we retrieve an x,y from the mapcanvas in the project crs
         # set it to epsg:4326 if different
+        log.debug('locationdlg_xy_clicked')
         crs_from = self.iface.mapCanvas().mapSettings().destinationCrs()
         crs_transform = QgsCoordinateTransform(crs_from, self.crs_4326, QgsProject.instance())
         xy4326 = crs_transform.transform(xy)
