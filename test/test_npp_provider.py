@@ -3,7 +3,7 @@ from qgis.PyQt.QtCore import QCoreApplication
 import os
 import unittest
 
-from test.test_provider_base import TestProviderBase
+from test_provider_base import TestProviderBase
 from SectorPlot.providers.npp_provider import NPPConfig, NPPProvider
 
 

@@ -64,11 +64,23 @@ CREATE TABLE pies
   zone_radii varchar(50),
   geom geometry(MultiPolygon, 4326),
   CONSTRAINT pies_pkey PRIMARY KEY (id),
-  CONSTRAINT "pies_fk__sectors$setid" FOREIGN KEY (sectorset_id)
-      REFERENCES sectors (id) MATCH SIMPLE
+  --CONSTRAINT "pies_fk__sectors$setid" FOREIGN KEY (sectorset_id)
+  --    REFERENCES sectors (setid) MATCH SIMPLE
+  CONSTRAINT "pies_fk__sectors$setid" REFERENCES sectors (setid) MATCH SIMPLE
 )
 WITH (
   OIDS=FALSE
 );
-ALTER TABLE pies
-  OWNER TO sectorplot_owner;
+ALTER TABLE pies OWNER TO sectorplot_owner;
+GRANT SELECT, UPDATE, INSERT ON TABLE pies TO sectorplot;
+
+-- not sure if this is to be done....????
+GRANT SELECT, USAGE ON SEQUENCE public.pies_id_seq TO sectorplot;
+GRANT ALL ON SEQUENCE public.pies_id_seq TO sectorplot_owner;
+
+
+-- TESTS AND INFO
+
+select * from pies
+
+select id, setname, lon, lat, setid from sectors order by setid desc

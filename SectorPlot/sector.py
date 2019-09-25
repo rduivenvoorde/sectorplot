@@ -11,12 +11,10 @@ import logging
 from . import LOGGER_NAME
 log = logging.getLogger(LOGGER_NAME)
 
-
 crs4326 = QgsCoordinateReferenceSystem(4326)
 crs3857 = QgsCoordinateReferenceSystem(3857)
 xformTo3857 = QgsCoordinateTransform(crs4326, crs3857, QgsProject.instance())
 xformTo4326 = QgsCoordinateTransform(crs3857, crs4326, QgsProject.instance())
-
 
 def getTime(t):
     result = gmtime()
@@ -26,10 +24,25 @@ def getTime(t):
         result = t
     return result
 
-
 def timeToString(t_struct):
     return strftime("%Y-%m-%d %H:%M:%S +0000", t_struct)
 
+
+"""
+Sector
+SectorSet
+Pie
+
+A Sector is 1 (often triangular shaped) with some properties.
+
+A SectorSet is a SET of Sectors, where EVERY Sector is saved in the sectorplot 
+database as 1 record in the 'sectors' Table with a Polygon as geom.
+
+A Pie is also a set of Sectors, BUT without individual(!) sectors. A Pie is saved
+in the sectorplot database as 1 record in the 'pies' table with a MultiPolygon
+as geom and  set of params like: sector_count (eg 4), zone_radii (eg 2,5,10),
+start_angle (eg 15) and sectorset_id (to which SectorSet the pie belongs)
+"""
 
 class Sector:
     def __init__(self, setName=None, lon: float = 0, lat: float = 0, minDistance=0,
@@ -276,70 +289,139 @@ class Pie:
         self.sector_count = sector_count
         self.zone_radii = zone_radii
         self.sectorset_id = sectorset_id
-        self.sectors = []
+        self._create_sectors()
 
+    def _create_sectors(self):
+        self.sectors = []
         if self.sector_count > 0:
             angle = 360.0 / self.sector_count
             min_distance = 0
-            max_distance = 0
+            # self.zone_radii can be a commaseparated string from db or a list
+            if type(self.zone_radii) is str:
+                self.zone_radii = self.zone_radii.split(',')
             for radius in self.zone_radii:
-                direction = self.start_angle
-                min_distance = max_distance
-                max_distance = radius * 1000
-                for x in range(0, self.sector_count):
-                    # Sector(setName=None, lon=0, lat=0, minDistance=0,
-                    #          maxDistance=1, direction=0, angle=45, counterMeasureId=-1,
-                    #          z_order=-1, saveTime=None, counterMeasureTime=None,
-                    #          sectorName=None, setId=-1, color='#ffffff'):
+                radius = float(radius)
+                if radius > 0:
+                    direction = self.start_angle
+                    max_distance = radius * 1000
+                    for x in range(0, self.sector_count):
+                        # Sector(setName=None, lon=0, lat=0, minDistance=0,
+                        #          maxDistance=1, direction=0, angle=45, counterMeasureId=-1,
+                        #          z_order=-1, saveTime=None, counterMeasureTime=None,
+                        #          sectorName=None, setId=-1, color='#ffffff'):
 
-                    # sectorName is pipe-separated string: direction, angle, mindistance, maxdistance
-                    sectorName ='%s|%s|%s|%s' % (direction, angle, min_distance, max_distance)
-                    sec = Sector(setName='rose', lon=lon, lat=lat, minDistance=min_distance, maxDistance=max_distance,
-                                 direction=direction, angle=angle, counterMeasureId=-1, z_order=-1, saveTime=None,
-                                 counterMeasureTime=None, sectorName=sectorName, setId=-1, color='#000000')
-                    self.sectors.append(sec)
-                    direction += angle
+                        # sectorName is pipe-separated string: direction, angle, mindistance, maxdistance
+                        sectorName ='%s|%s|%s|%s' % (direction, angle, min_distance, max_distance)
+                        sec = Sector(setName='rose', lon=self.lon, lat=self.lat, minDistance=min_distance, maxDistance=max_distance,
+                                     direction=direction, angle=angle, counterMeasureId=-1, z_order=-1, saveTime=None,
+                                     counterMeasureTime=None, sectorName=sectorName, setId=-1, color='#000000')
+                        self.sectors.append(sec)
+                        direction += angle
 
     def __str__(self):
-        result = 'Pie[%s, %s, %s] ' % (self.lon, self.lat, len(self.sectors))
+        result = 'Pie[lon: %s, lat: %s, #sectors: %s, sectorsetid: %s]' % (self.lon, self.lat, len(self.sectors), self.sectorset_id)
+        if len(self.sectors)>0:
+            result = result + '\nSectors[0]: {}'.format(self.sectors[0])
+        result = result + '\nFeatures: {}'.format(self.get_features())
+        if len(self.get_features())>0:
+            result = result + '\nFeatures[0].geometry(): {}'.format(self.get_features()[0].geometry())
+        #result = result + '\nFeatures[0].geometry().asGeometryCollection(): {}'.format(self.get_features()[0].geometry().asGeometryCollection())
+        #result = result + '\nFeatures[0].geometry().asGeometryCollection().collectGeometry(): {}'.format(self.get_features()[0].geometry().collectGeometry(self.get_features()[0].geometry().asGeometryCollection()))
+        #result = result + '\nQgsGeometry.collectGeometry(): {}'.format(QgsGeometry.collectGeometry(self.get_features()[0].geometry().asGeometryCollection()))
         return result
 
-    def get_features(self):
+    def get_features(self, multi_polygon=False):
+        """
+        For the 'SectorRoos' / Pie we sometimes want the features as a LIST
+        of individual Sectors, eg when we want to show it on the MapCanvas and
+        make individual sectors clickable.
+        But to save (and retrieve) it from the database we use ONE feature (in
+        a list) with a MultiPolygon as geometry.
+        :return: a List with QgsFeatures
+        """
         features = []
+        geoms = []
         for sector in self.sectors:
-            features.append(sector.getQgsFeature())
-        return features
+            f = sector.getQgsFeature()
+            features.append(f)
+            geoms.append(f.geometry())
+        if multi_polygon:
+            pie = features[0]
+            pie.setGeometry(QgsGeometry.collectGeometry(geoms))
+            # returning ONE Sector with a MultiPolygon geom
+            return [pie]
+        else:
+            # returning a List of Sectors, each with one Polygon as geom
+            return features
 
-    def exportToDatabase(self): #, newSetId=True):
+    def set_sectorset_id(self, sectorset_id):
+        self.sectorset_id = sectorset_id
+
+    def exportToDatabase(self):
         db = Database('sectorplot')
-        # if newSetId:
-        #     queries = [{'text': "SELECT nextval(pg_get_serial_sequence('sectors', 'id')) as newsetid", 'vals': ()}]
-        #     result = db.execute(queries)
-        #     if not result['db_ok']:
-        #         return (False, result['error'])
-        #     setId = result['data'][0].newsetid
-        #     self.setSetId(setId)
-        result = db.execute(self.getInsertQuery())
+        # db.execute wants a list of queries:
+        queries = [self.getInsertQuery()]
+        result = db.execute(queries)
         if not result['db_ok']:
             return (False, result['error'])
         else:
-            return (True, self.setId)
+            return (True, self.sectorset_id)
 
     def getInsertQuery(self):
+        f = self.get_features(True)
+        geometry = f[0].geometry()
         query = {}
         query['text'] = 'INSERT INTO pies'
         query['text'] += ' (sectorset_id, lon, lat, start_angle, sector_count, zone_radii, geom)'
         query['text'] += ' VALUES (%s, %s, %s, %s, %s, %s, ST_GeomFromText(%s, 4326))'
         query['text'] += ';'
         vals = []
-        vals.append(self.setName)
+        vals.append(self.sectorset_id)
         vals.append(self.lon)
         vals.append(self.lat)
-
-        vals.append(self.geometry.asWkt())
+        vals.append(self.start_angle)
+        vals.append(self.sector_count)
+        vals.append(','.join(str(x) for x in self.zone_radii))
+        vals.append(geometry.asWkt())
         query['vals'] = tuple(vals)
         return query
 
+    def _getImportQuery(self, sectorset_id):
+        query = {}
+        # RD 20180619 getting sectors geom as WKT because we want to be able to create QgsGeometry's ourselves
+        # and I cannot get them created from the native (wkb?) geom format retrieved
+        query[
+            'text'] = 'SELECT st_astext(geom) as geomwkt, * FROM pies where sectorset_id = %s;'
+        vals = [sectorset_id]
+        query['vals'] = tuple(vals)
+        return query
+
+    def importFromDatabase(self, sectorset_id):
+        q = self._getImportQuery(sectorset_id)
+        db = Database('sectorplot')
+        result = db.execute([q])
+
+        if not result['db_ok']:
+            return (False, result['error'])
+
+        records = result['data']
+        if len(records) > 1:
+            return (False, 'Error: more then one record received for sectorset_id: {}'.format(sectorset_id))
+        if len(records) == 0:
+            return (False, 'NO record received for sectorset_id: {}'.format(sectorset_id))
+        else:
+            rec = records[0]
+            self.id = rec.id
+            self.lat = rec.lat
+            self.lon = rec.lon
+            self.start_angle = rec.start_angle
+            self.sector_count = rec.sector_count
+            self.zone_radii = rec.zone_radii
+            self.sectorset_id = rec.sectorset_id
+            self._create_sectors()
+            if rec.geom is not None and rec.geomwkt is not None:
+                self.geometry = QgsGeometry.fromWkt(rec.geomwkt)
+            return (True, None)
 
 class SectorSet:
     def __init__(self, lon: float = 0, lat: float = 0, name=None,

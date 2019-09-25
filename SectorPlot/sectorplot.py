@@ -161,8 +161,7 @@ class SectorPlot:
         # pycharm debugging
         # COMMENT OUT BEFORE PACKAGING !!!
         #import pydevd
-        #cd
-        # pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
+        #pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True)
 
         # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
         self.iface.newProjectCreated.connect(self.stop_sectorplot_session)
@@ -172,7 +171,7 @@ class SectorPlot:
     def get_rivm_toolbar(self):
         TOOLBAR_TITLE = 'RIVM Cal-Net Toolbar'  # TODO get this from commons and make translatable
         toolbars = self.iface.mainWindow().findChildren(QToolBar, TOOLBAR_TITLE)
-        if len(toolbars)==0:
+        if len(toolbars) == 0:
             toolbar = self.iface.addToolBar(TOOLBAR_TITLE)
             toolbar.setObjectName(TOOLBAR_TITLE)
         else:
@@ -661,6 +660,14 @@ class SectorPlot:
                         self.current_pie = Pie(npp['longitude'], npp['latitude'], npp['angle'], npp['numberofsectors'],
                                                npp['zoneradii'])
                         break
+            else:
+                # CHECK if the sectorset has a 'pie' in the database and make it self.current_pie
+                self.current_pie = Pie()
+                db_ok, result = self.current_pie.importFromDatabase(self.current_sectorset.setId)
+                if not db_ok:
+                    self.current_pie = None
+                    self.msg(self.sectorplotset_dlg, self.tr('Problem retrieving Pie for this SectorSet {}\n{}').format(self.current_sectorset.setId, result))
+
             # zoom to and show
             self.show_current_sectorplotset_on_map()
             self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(True)
@@ -1151,9 +1158,13 @@ class SectorPlot:
                 datetime = QDateTime(date, time)
                 #self.msg(None, datetime.toString("yyyy-MM-dd HH:mm:00"))
                 self.current_sectorset.setCounterMeasureTime(datetime.toString("yyyy-MM-dd HH:mm:00"))
-                # save to DB and retrieve id of sectorplotset
+                # save the sectors to DB and retrieve id of sectorplotset
                 db_ok, result = self.current_sectorset.exportToDatabase()
+                # save the pie to DB
                 if db_ok:
+                    self.current_pie.set_sectorset_id(self.current_sectorset.setId)
+                db_ok2, result2 = self.current_pie.exportToDatabase()
+                if (db_ok and db_ok2):
                     # (re)open sectorplotlist_dialog on row with just saved id BUT without pie
                     self.current_pie = None
                     # if OK exportToDatabase returns the inserted id

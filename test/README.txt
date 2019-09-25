@@ -23,3 +23,10 @@ export LD_LIBRARY_PATH=/home/richard/bin/qgis/master/debug/lib/:/usr/lib/grass76
 export PYTHONPATH=/home/richard/bin/qgis/master/debug/share/qgis/python
 
 python3 -m unittest discover -s /home/richard/git/sectorplot/test -t /home/richard/git/sectorplot
+
+Wat OOK werkt om individuele tests aan te roepen:
+
+python3 -m unittest /home/richard/git/sectorplot/test/test_sectors.py
+
+# of 1 test (-k = testnamepatterns)
+python3 -m unittest /home/richard/git/sectorplot/test/test_sectors.py -k test_pie_with_sectorset_id
