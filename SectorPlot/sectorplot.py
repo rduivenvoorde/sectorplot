@@ -116,10 +116,10 @@ class SectorPlot:
 
         # available styles
         self.sector_styles = {
-            'default': ['default', 'Default (more or less idential in QGIS, Geoserver, JRodos)', 'sectorplot.qml'],
-            'gradient': ['gradient', 'Gradient/Fading style (QGIS only)', 'sectorplotwithgradient.qml'],
-            'nolabels': ['nolabels', 'Default, NO labels (QGIS only)', 'sectorplotnolabels.qml'],
-            'nolabelsgradient': ['nolabelsgradient', 'Gradient/Fading style, NO labels (QGIS only)', 'sectorplotwithgradientnolabels.qml'],
+            'default': ['default', self.tr('Default (more or less idential in QGIS, Geoserver, JRodos)'), 'sectorplot.qml'],
+            'gradient': ['gradient', self.tr('Gradient/Fading style (QGIS only)'), 'sectorplotwithgradient.qml'],
+            'nolabels': ['nolabels', self.tr('Default, NO labels (QGIS only)'), 'sectorplotnolabels.qml'],
+            'nolabelsgradient': ['nolabelsgradient', self.tr('Gradient/Fading style, NO labels (QGIS only)'), 'sectorplotwithgradientnolabels.qml'],
         }
 
         # some data input validators
