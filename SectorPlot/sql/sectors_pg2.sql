@@ -63,13 +63,7 @@ CREATE TABLE pies
   sector_count int,
   zone_radii varchar(50),
   geom geometry(MultiPolygon, 4326),
-  CONSTRAINT pies_pkey PRIMARY KEY (id),
-  --CONSTRAINT "pies_fk__sectors$setid" FOREIGN KEY (sectorset_id)
-  --    REFERENCES sectors (setid) MATCH SIMPLE
-  CONSTRAINT "pies_fk__sectors$setid" REFERENCES sectors (setid) MATCH SIMPLE
-)
-WITH (
-  OIDS=FALSE
+  CONSTRAINT pies_pkey PRIMARY KEY (id)
 );
 ALTER TABLE pies OWNER TO sectorplot_owner;
 GRANT SELECT, UPDATE, INSERT ON TABLE pies TO sectorplot;
