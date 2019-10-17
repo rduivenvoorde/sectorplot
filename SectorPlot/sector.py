@@ -303,7 +303,7 @@ class Pie:
                 radius = float(radius)
                 if radius > 0:
                     direction = self.start_angle
-                    max_distance = radius * 1000
+                    max_distance = radius # * 1000 # 20191017 Richard: now in meters instead of km
                     for x in range(0, self.sector_count):
                         # Sector(setName=None, lon=0, lat=0, minDistance=0,
                         #          maxDistance=1, direction=0, angle=45, counterMeasureId=-1,

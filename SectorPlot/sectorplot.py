@@ -348,9 +348,9 @@ class SectorPlot:
         self.location_dlg.spin_pie_ring2.valueChanged.connect(self.locationdlg_lonlat_changed)
         self.location_dlg.spin_pie_ring3.valueChanged.connect(self.locationdlg_lonlat_changed)
         # defaults
-        self.location_dlg.spin_pie_ring1.setValue(2)
-        self.location_dlg.spin_pie_ring2.setValue(5)
-        self.location_dlg.spin_pie_ring3.setValue(10)
+        self.location_dlg.spin_pie_ring1.setValue(2000)
+        self.location_dlg.spin_pie_ring2.setValue(5000)
+        self.location_dlg.spin_pie_ring3.setValue(10000)
 
         # SectorplotSet_dialog showing current sectorplot (list of sectors in this plot)
         self.sectorplotset_dlg = SectorPlotSectorPlotSetDialog(parent=self.sectorplotsets_dlg)

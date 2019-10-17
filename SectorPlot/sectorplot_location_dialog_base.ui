@@ -266,13 +266,6 @@
          </item>
         </widget>
        </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="label_8">
-         <property name="text">
-          <string>Rings and distances (m)</string>
-         </property>
-        </widget>
-       </item>
        <item row="7" column="1">
         <widget class="QLabel" name="label_9">
          <property name="text">
@@ -290,42 +283,49 @@
        <item row="9" column="1">
         <widget class="QLabel" name="label_12">
          <property name="text">
-          <string>Distance Ring 1</string>
+          <string>Distance Ring 1 (meters)</string>
          </property>
         </widget>
        </item>
        <item row="9" column="2">
         <widget class="QLabel" name="label_13">
          <property name="text">
-          <string>Distance Ring 2</string>
+          <string>Distance Ring 2 (meters) </string>
          </property>
         </widget>
        </item>
        <item row="9" column="3">
         <widget class="QLabel" name="label_14">
          <property name="text">
-          <string>Distance Ring 3</string>
+          <string>Distance Ring 3 (meters)</string>
          </property>
         </widget>
        </item>
        <item row="8" column="3">
         <widget class="QSpinBox" name="spin_pie_ring3">
          <property name="maximum">
-          <number>200</number>
+          <number>200000</number>
          </property>
         </widget>
        </item>
        <item row="8" column="2">
         <widget class="QSpinBox" name="spin_pie_ring2">
          <property name="maximum">
-          <number>200</number>
+          <number>200000</number>
          </property>
         </widget>
        </item>
        <item row="8" column="1">
         <widget class="QSpinBox" name="spin_pie_ring1">
          <property name="maximum">
-          <number>200</number>
+          <number>200000</number>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
+        <widget class="QLabel" name="label_8">
+         <property name="text">
+          <string>Rings and distances (m)</string>
          </property>
         </widget>
        </item>
