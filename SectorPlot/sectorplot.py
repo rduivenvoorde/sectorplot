@@ -384,6 +384,7 @@ class SectorPlot:
 
         # Sector dialog
         self.sector_dlg = SectorPlotSectorDialog(parent=self.sectorplotset_dlg)
+        self.sector_dlg.setModal(True)
         self.sector_dlg.cb_min_distance.stateChanged.connect(self.sector_dlg_enable_min_distance)
         self.sector_dlg.combo_countermeasures.currentIndexChanged.connect(self.sector_dlg_countermeasure_selected)
         self.sector_dlg.btn_color.clicked.connect(self.sector_dlg_btn_color_clicked)
@@ -1248,6 +1249,10 @@ class SectorPlot:
                 self.sector_dlg.le_distance.setText('%s' % max_distance)
                 self.sector_dlg_preview()
                 break
+        # setHidden does NOT work because it silently OK/Cancels the Dialog
+        #self.sector_dlg.setHidden(True)
+        #self.sector_dlg.setHidden(False)
+        self.sector_dlg.activateWindow() # YES this works, also on Windows
 
     def sector_dlg_sector_is_ok(self):
         acceptable = QDoubleValidator.Acceptable  #  0=invalid, 1=intermediate, 2=acceptable
@@ -1354,8 +1359,9 @@ class SectorPlot:
         #self.debug('sector_dlg_show with old sector = %s' % old_sector)
         self.iface.layerTreeView().setCurrentLayer(self.get_pie_layer())  # make pie_layer current for selections
         self.iface.actionSelect().trigger()  # activate the selecttool
-        # OK pressed in Sector dialog(!)
-        if self.sector_dlg.exec_():
+
+        if self.sector_dlg.exec_():   # exec_ also SHOWS the dialog!
+            # OK pressed in Sector dialog(!)
             # do some checking...
             if not self.sector_dlg_sector_is_ok():
                 # mmm, one of the validators failed: reopen the sector_dlg after the msg was OK'ed
@@ -1365,7 +1371,7 @@ class SectorPlot:
                 self.sector_dlg.show()
                 return
             else:
-                self.sector_dlg_sector_create()
+                self.sector_dlg_sector_create()  # if all ok ALSO shows preview
         else:
             # user canceled dialog
             # set the data of the selected row BACK to the old_sector (original sector)
@@ -1376,7 +1382,6 @@ class SectorPlot:
                 row = row + 1
             # repaint restored state
             self.sectorplotsetdlg_create_sectorset_from_sector_table()
-
         self.sectorplotset_dlg.table_sectors.clearSelection()
         self.iface.actionPan().trigger()  # just want to disable selection tool... by activating Panning tool...
 
