@@ -29,7 +29,7 @@ class Npp(dict):
         self['ventopening'] = float(rec[12].strip())
         self['countrycode'] = rec[13].strip()
         self['numberofzones'] = int(rec[14].strip())
-        self['zoneradii'] = [2.5, 5.0, 10.0]  # get array(rec[15]) ??? TODO
+        self['zoneradii'] = [2500, 5000, 10000]  # get array(rec[15]) ??? TODO
         self['numberofsectors'] = int(rec[16].strip())
         self['starangle'] = float(rec[17].strip())
         #self['closetoborder'] = rec[18] == 'True'  # ???
@@ -89,6 +89,10 @@ class NppSet(list):
             npp['countrycode'] = npp_data['countrycode']
             npp['numberofzones'] = int(npp_data['numberofzones'])
             npp['zoneradii'] = npp_data['zoneradii']
+            # 22 oct 2019: zoneradii are retrieved in km but now users can
+            # create Pie/Roses theirselves and want meters... multiply X1000
+            for i in range(0, len(npp['zoneradii'])):
+                npp['zoneradii'][i] = npp['zoneradii'][i]*1000
             npp['numberofsectors'] = int(npp_data['numberofsectors'])
             npp['angle'] = float(npp_data['angle'])
             npp['closetoborder'] = npp_data['closetoborder']

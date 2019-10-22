@@ -56,6 +56,10 @@ import logging
 from . import LOGGER_NAME
 log = logging.getLogger(LOGGER_NAME)
 
+# pycharm debugging
+# COMMENT OUT BEFORE PACKAGING !!!
+#import pydevd
+#pydevd.settrace('localhost', port=5678, stdoutToServer=True, stderrToServer=True, suspend=False)
 
 class SectorPlot:
     """QGIS Plugin Implementation."""
