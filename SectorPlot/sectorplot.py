@@ -51,6 +51,7 @@ from .connect import Database, RestClient
 
 import os.path
 import shutil
+import sys
 
 import logging
 from . import LOGGER_NAME
@@ -815,7 +816,7 @@ class SectorPlot:
     def locationdlg_lonlat_changed(self):
         # called via several routes: when user clicks in npp list
         # or when user sets location via 'click in map'
-        log.debug('locationdlg_lonlat_changed')
+        #log.debug('locationdlg_lonlat_changed')
         lon_txt = self.location_dlg.le_longitude.text()
         lat_txt = self.location_dlg.le_latitude.text()
 
@@ -1222,10 +1223,8 @@ class SectorPlot:
     def sector_dlg_pie_sector_select(self):
         # find all selectied PIE-sectors
         selected_features = self.get_pie_layer().selectedFeatures()
-        direction = 0.00001
-        angle = 0
-        min_distance = 0
-        max_distance = 0
+        #log.debug("Pie select, # of selectedFeatures: {}".format(len(selected_features)))
+        smallest_distance = sys.maxsize
         for feature in selected_features:
             # self.debug("selectedfeature attributes: %s" % feature.attributes())
             # really do not know, but clicking a second feature by using the CTRL-button
@@ -1234,25 +1233,28 @@ class SectorPlot:
             if len(feature.attributes()) > 0:
                 arr = feature['sectorname'].split('|')
                 if len(arr) == 4:
+                    # trying to find the feature with smallest distance
+                    # because we sometimes select several features
+                    d = int(self.locale.toString(float(arr[3]) / 1000))
+                    if d < smallest_distance:
+                        smallest_distance = d
                         direction = self.locale.toString(float(arr[0]))
                         angle = self.locale.toString(float(arr[1]))
                         #min_distance = float(arr[2])/1000)
                         max_distance = self.locale.toString(float(arr[3])/1000)
-                # if len(selected_features) > 1:
-                #     self.msg(self.sector_dlg, self.tr("Sorry, just one click per sector. \nOnly the first feature is used."))
-                #break
-                self.sector_dlg.le_direction.setText('%s' % direction)
-                self.sector_dlg.le_angle.setText('%s' % angle)
-                if min_distance > 0:
-                    self.sector_dlg.le_min_distance.setEnabled(True)
-                    self.sector_dlg.le_min_distance.setText('%s' % min_distance)
-                self.sector_dlg.le_distance.setText('%s' % max_distance)
-                self.sector_dlg_preview()
-                break
+
+                        self.sector_dlg.le_direction.setText('%s' % direction)
+                        self.sector_dlg.le_angle.setText('%s' % angle)
+                        if min_distance > 0:
+                            self.sector_dlg.le_min_distance.setEnabled(True)
+                            self.sector_dlg.le_min_distance.setText('%s' % min_distance)
+                        self.sector_dlg.le_distance.setText('%s' % max_distance)
+                        self.sector_dlg_preview()
+            #break
         # setHidden does NOT work because it silently OK/Cancels the Dialog
         #self.sector_dlg.setHidden(True)
         #self.sector_dlg.setHidden(False)
-        self.sector_dlg.activateWindow() # YES this works, also on Windows
+        self.sector_dlg.activateWindow()  # YES this works, also on Windows
 
     def sector_dlg_sector_is_ok(self):
         acceptable = QDoubleValidator.Acceptable  #  0=invalid, 1=intermediate, 2=acceptable
@@ -1330,7 +1332,7 @@ class SectorPlot:
         lat = self.current_sectorset.lat # self.locale.toFloat(self.current_sectorset.lat)[0]
 
         direction = self.locale.toFloat(self.sector_dlg.le_direction.text())[0]  # toFloat returns tuple like (60,0 True)
-        log.debug('direction {}'.format(direction))
+        #log.debug('direction {}'.format(direction))
         angle = self.locale.toFloat(self.sector_dlg.le_angle.text())[0]
         distance = self.locale.toFloat(self.sector_dlg.le_distance.text())[0]
         min_distance = self.locale.toFloat(self.sector_dlg.le_min_distance.text())[0]
