@@ -1224,6 +1224,7 @@ class SectorPlot:
         # find all selectied PIE-sectors
         selected_features = self.get_pie_layer().selectedFeatures()
         #log.debug("Pie select, # of selectedFeatures: {}".format(len(selected_features)))
+        min_distance = 0
         smallest_distance = sys.maxsize
         for feature in selected_features:
             # self.debug("selectedfeature attributes: %s" % feature.attributes())
@@ -1235,7 +1236,7 @@ class SectorPlot:
                 if len(arr) == 4:
                     # trying to find the feature with smallest distance
                     # because we sometimes select several features
-                    d = int(self.locale.toString(float(arr[3]) / 1000))
+                    d = int(float(arr[3]) / 1000)
                     if d < smallest_distance:
                         smallest_distance = d
                         direction = self.locale.toString(float(arr[0]))
