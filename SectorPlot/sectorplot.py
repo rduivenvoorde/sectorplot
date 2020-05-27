@@ -302,6 +302,9 @@ class SectorPlot:
 
         # The SectorplotSetS dialog, showing recent Sectorplots
         self.sectorplotsets_dlg = SectorPlotSetsDialog()
+        # Below does not seem to work? So set modality in ui file
+        # self.sectorplotsets_dlg.setModal(True)
+        # self.sectorplotsets_dlg.setWindowModality(True)  # or this one?
         self.sectorplotsets_dlg.table_sectorplot_sets.horizontalHeader().setStretchLastSection(True)
         self.sectorplotsets_dlg.table_sectorplot_sets.setSelectionBehavior(QAbstractItemView.SelectRows)
         self.sectorplotsets_dlg.table_sectorplot_sets.setEditTriggers(QAbstractItemView.NoEditTriggers)
@@ -437,13 +440,6 @@ class SectorPlot:
 
     def run(self):
         """Start the plugin"""
-        # we REALLY need OTF enabled
-        #if self.iface.mapCanvas().hasCrsTransformEnabled() == False:
-        #    QMessageBox.warning(self.iface.mainWindow(), self.MSG_BOX_TITLE, self.tr(
-        #        "This Plugin ONLY works when you have OTF (On The Fly Reprojection) enabled for current QGIS Project.\n\n" +
-        #        "Please enable OTF for this project or open a project with OTF enabled."),
-        #                        QMessageBox.Ok, QMessageBox.Ok)
-        #    return
 
         # fresh installs do not have passwords, present the settings dialog upon first use
         settings = SectorPlotSettings()
@@ -496,6 +492,8 @@ class SectorPlot:
                 # WHEN the sectorplot layer is deleted from the layer tree, stop the session
                 # mmm, trying this results in SegFaults when quiting QGIS
                 #self.sector_layer.destroyed.connect(self.stop_sectorplot_session)
+        # do NOT ask if we want this layer to be saved!
+        self.sector_layer.setCustomProperty("skipMemoryLayersCheck", 1)
         return self.sector_layer
 
     def get_pie_layer(self):
@@ -523,6 +521,8 @@ class SectorPlot:
                 # WHEN the pie layer is deleted from the layer tree, stop the session
                 # mmm, trying this results in SegFaults when quiting QGIS
                 #self.pie_layer.destroyed.connect(self.stop_sectorplot_session)
+        # do NOT ask if we want this layer to be saved!
+        self.pie_layer.setCustomProperty("skipMemoryLayersCheck", 1)
         return self.pie_layer
 
     def stop_sectorplot_session(self):
@@ -563,91 +563,98 @@ class SectorPlot:
         # show... nothing
         self.show_current_sectorplotset_on_map()
 
-    def show_current_sectorplotset_on_map(self):
+    def show_current_sectorplotset_on_map(self, zooms=0):
         self.clean_sector_layer(sectorset=True, pie=True)
-        if self.current_pie is not None and self.pie_layer is not None:
-            self.get_pie_layer().dataProvider().addFeatures(self.current_pie.get_features())
-        self.repaint_sector_layers()
         if self.current_sectorset is not None and self.sector_layer is not None:
             self.get_sector_layer().dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
-            self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat)
-        self.repaint_sector_layers()
+            # log.debug(f'show_current_sectorplotset_on_map Current Sectors xy: {self.current_sectorset.lon} {self.current_sectorset.lat} extent: {self.get_sector_layer().extent()}')
+            self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat, self.get_sector_layer().extent())
+        if self.current_pie is not None and self.pie_layer is not None:
+            self.get_pie_layer().dataProvider().addFeatures(self.current_pie.get_features())
+            # log.debug(f'show_current_sectorplotset_on_map Current pie xy: {self.current_pie.lon} {self.current_pie.lat} extent: {self.get_sector_layer().extent()}')
+            self.zoom_map_to_lonlat(self.current_pie.lon, self.current_pie.lat, self.get_pie_layer().extent())
+        #self.repaint_sector_layers()
+        for i in range(0, zooms):
+            self.iface.mapCanvas().zoomOut()
 
     def repaint_sector_layers(self):
-# TODO: QGIS3 not needed anymore?
-#        if self.iface.mapCanvas().isCachingEnabled():
-#            if self.sector_layer is not None:
-#                self.get_sector_layer().setCacheImage(None)
-#            if self.pie_layer is not None:
-#                self.get_pie_layer().setCacheImage(None)
         self.iface.mapCanvas().refreshAllLayers()
 
-    def zoom_map_to_lonlat(self, lon: float, lat: float):
+    def zoom_map_to_lonlat(self, lon: float, lat: float, extent=None):
         crs_to = self.iface.mapCanvas().mapSettings().destinationCrs()
         crs_transform = QgsCoordinateTransform(self.crs_4326, crs_to, QgsProject.instance())
-        point = QgsPointXY(float(lon), float(lat))
-        geom = QgsGeometry.fromPointXY(point)
-        geom.transform(crs_transform)
-        # zoom to with center is actually setting a point rectangle and then zoom
-        center = geom.asPoint()
-        rect = QgsRectangle(center, center)
-        self.iface.mapCanvas().setExtent(rect)
+        if extent is None or extent.isNull():  # isNull() returns True if a 0,0,0,0 rectangle
+            point = QgsPointXY(float(lon), float(lat))
+            geom = QgsGeometry.fromPointXY(point)
+            geom.transform(crs_transform)
+            # zoom to with center is actually setting a point rectangle and then zoom
+            center = geom.asPoint()
+            #rect = QgsRectangle(center, center)
+            self.iface.mapCanvas().setCenter(center)
+        else:
+            rect = crs_transform.transformBoundingBox(extent)
+            self.iface.mapCanvas().setExtent(rect)
         # self.iface.mapCanvas().zoomScale(scale)
         self.iface.mapCanvas().refresh()
 
     def sectorplotsetsdlg_open_dialog(self, selected_id=-1):
-        # show the dialog with recent sectorplotsets
-        self.sectorplotsets = SectorSets()
-        db_ok, result = self.sectorplotsets.importFromDatabase()
-        if self.DEMO:
-            self.msg(None, "DEMO MODE: no wms and saving / retrieving of old sectors / listing of recent plots\nPlease create a new Sectorplot via 'New Sectorplot' button in next dialog.")
-        elif not db_ok:
-            # if NOT OK importFromDatabase returns the database error
-           self.msg(None, self.tr("There is a problem with the Database to retrieve the Sectorplots\nThe Database error is:\n%s") % result)
-           return
-        # create emtpy model for new list
-        self.sectorplotsets_source_model = QStandardItemModel()
-        self.sectorplotsets_dlg.table_sectorplot_sets.setModel(self.sectorplotsets_source_model)
-        # enable the sorting of columns by clicking on header
-        self.sectorplotsets_dlg.table_sectorplot_sets.setSortingEnabled(True)
-        # resize columns to fit text in it
-        self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
-        # be sure that the copy button is disabled (as nothing is selected?)
-        self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(False)
-        for sectorplot_set in self.sectorplotsets:
-            name = QStandardItem("%s" % sectorplot_set.name)
-            set_id = QStandardItem("%s" % sectorplot_set.setId)
-            # TODO: get time right instead of get_***_time_string()
-            save_time = QStandardItem(sectorplot_set.get_save_time_string())
-            countermeasure_time = QStandardItem(sectorplot_set.get_counter_measure_time_string())
-            # attach the sectorplot_set as data to the first row item
-            set_id.setData(sectorplot_set, Qt.UserRole)
-            self.sectorplotsets_source_model.insertRow(0, [set_id, name, countermeasure_time, save_time])
-        # headers
-        self.sectorplotsets_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Id"))
-        self.sectorplotsets_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Name"))
-        self.sectorplotsets_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Countermeasure Time"))
-        self.sectorplotsets_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Save Time"))
-        self.sectorplotsets_dlg.table_sectorplot_sets.selectionModel().selectionChanged.connect(self.sectorplotsetsdlg_select_sectorplotset)
-        # resize columns to fit text contents
-        self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
-        # select the row of 'selected_id' if given and >= 0
-        selected_row = 0
-        if selected_id >= 0:
-            for row in range(0, self.sectorplotsets_source_model.rowCount()):
-                sectorplot = self.sectorplotsets_source_model.item(row, 0).data(Qt.UserRole)
-                if sectorplot.setId == selected_id:
-                    selected_row = row
-                    break;
-        self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(selected_row)
-        self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.setFocus()
-        # See if OK was pressed
-        if self.sectorplotsets_dlg.exec_():
-            pass
-            # whatever the uses pushes:
-        # TODO still working here without cleaning?
-        # self.new_sectorplotset()
-        # self.sectorplotsets = None
+        if self.sectorplotsets is None:
+            # show a new dialog with recent sectorplotsets
+            self.sectorplotsets = SectorSets()
+            db_ok, result = self.sectorplotsets.importFromDatabase()
+            if self.DEMO:
+                self.msg(None, "DEMO MODE: no wms and saving / retrieving of old sectors / listing of recent plots\nPlease create a new Sectorplot via 'New Sectorplot' button in next dialog.")
+            elif not db_ok:
+                # if NOT OK importFromDatabase returns the database error
+               self.msg(None, self.tr("There is a problem with the Database to retrieve the Sectorplots\nThe Database error is:\n%s") % result)
+               return
+            # create emtpy model for new list
+            self.sectorplotsets_source_model = QStandardItemModel()
+            self.sectorplotsets_dlg.table_sectorplot_sets.setModel(self.sectorplotsets_source_model)
+            # enable the sorting of columns by clicking on header
+            self.sectorplotsets_dlg.table_sectorplot_sets.setSortingEnabled(True)
+            # resize columns to fit text in it
+            self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
+            # be sure that the copy button is disabled (as nothing is selected?)
+            self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(False)
+            for sectorplot_set in self.sectorplotsets:
+                name = QStandardItem("%s" % sectorplot_set.name)
+                set_id = QStandardItem("%s" % sectorplot_set.setId)
+                # TODO: get time right instead of get_***_time_string()
+                save_time = QStandardItem(sectorplot_set.get_save_time_string())
+                countermeasure_time = QStandardItem(sectorplot_set.get_counter_measure_time_string())
+                # attach the sectorplot_set as data to the first row item
+                set_id.setData(sectorplot_set, Qt.UserRole)
+                self.sectorplotsets_source_model.insertRow(0, [set_id, name, countermeasure_time, save_time])
+            # headers
+            self.sectorplotsets_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Id"))
+            self.sectorplotsets_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Name"))
+            self.sectorplotsets_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Countermeasure Time"))
+            self.sectorplotsets_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Save Time"))
+            self.sectorplotsets_dlg.table_sectorplot_sets.selectionModel().selectionChanged.connect(self.sectorplotsetsdlg_select_sectorplotset)
+            # resize columns to fit text contents
+            self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
+            # select the row of 'selected_id' if given and >= 0
+            selected_row = 0
+            if selected_id >= 0:
+                for row in range(0, self.sectorplotsets_source_model.rowCount()):
+                    sectorplot = self.sectorplotsets_source_model.item(row, 0).data(Qt.UserRole)
+                    if sectorplot.setId == selected_id:
+                        selected_row = row
+                        break;
+            self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(selected_row)
+            self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.setFocus()
+            # See if OK was pressed
+            self.sectorplotsets_dlg.show()
+            # if self.sectorplotsets_dlg.exec_():
+            #     pass
+            #     # whatever the uses pushes:
+            # # TODO still working here without cleaning?
+            # self.new_sectorplotset()
+            # self.sectorplotsets = None
+        else:
+            # everything was setup already, just raise the window (mainly needed for Windows)
+            self.sectorplotsets_dlg.show()
 
     def sectorplotsetsdlg_select_sectorplotset(self):
         if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
@@ -672,10 +679,10 @@ class SectorPlot:
                 db_ok, result = self.current_pie.importFromDatabase(self.current_sectorset.setId)
                 if not db_ok:
                     self.current_pie = None
-                    self.msg(self.sectorplotset_dlg, self.tr('Problem retrieving Pie for this SectorSet {}\n{}').format(self.current_sectorset.setId, result))
+                    #self.msg(self.sectorplotset_dlg, self.tr('Problem retrieving Pie for this SectorSet {}\n{}').format(self.current_sectorset.setId, result))
 
             # zoom to and show
-            self.show_current_sectorplotset_on_map()
+            self.show_current_sectorplotset_on_map(1)
             self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(True)
         else:
             # disable the button
@@ -910,6 +917,7 @@ class SectorPlot:
             # lon=0, lat=0, start_angle=0.0, sector_count=8, zone_radii=[5]
             self.current_pie = Pie(npp['longitude'], npp['latitude'], npp['angle'], npp['numberofsectors'], npp['zoneradii'])
             self.get_pie_layer().dataProvider().addFeatures(self.current_pie.get_features())
+            self.show_current_sectorplotset_on_map()
             self.repaint_sector_layers()
             #self.debug('setting last_location to: %s' % npp['block'])
             QSettings().setValue("plugins/SectorPlot/last_location", npp['block'])
