@@ -598,63 +598,53 @@ class SectorPlot:
         self.iface.mapCanvas().refresh()
 
     def sectorplotsetsdlg_open_dialog(self, selected_id=-1):
-        if self.sectorplotsets is None:
-            # show a new dialog with recent sectorplotsets
-            self.sectorplotsets = SectorSets()
-            db_ok, result = self.sectorplotsets.importFromDatabase()
-            if self.DEMO:
-                self.msg(None, "DEMO MODE: no wms and saving / retrieving of old sectors / listing of recent plots\nPlease create a new Sectorplot via 'New Sectorplot' button in next dialog.")
-            elif not db_ok:
-                # if NOT OK importFromDatabase returns the database error
-               self.msg(None, self.tr("There is a problem with the Database to retrieve the Sectorplots\nThe Database error is:\n%s") % result)
-               return
-            # create emtpy model for new list
-            self.sectorplotsets_source_model = QStandardItemModel()
-            self.sectorplotsets_dlg.table_sectorplot_sets.setModel(self.sectorplotsets_source_model)
-            # enable the sorting of columns by clicking on header
-            self.sectorplotsets_dlg.table_sectorplot_sets.setSortingEnabled(True)
-            # resize columns to fit text in it
-            self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
-            # be sure that the copy button is disabled (as nothing is selected?)
-            self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(False)
-            for sectorplot_set in self.sectorplotsets:
-                name = QStandardItem("%s" % sectorplot_set.name)
-                set_id = QStandardItem("%s" % sectorplot_set.setId)
-                # TODO: get time right instead of get_***_time_string()
-                save_time = QStandardItem(sectorplot_set.get_save_time_string())
-                countermeasure_time = QStandardItem(sectorplot_set.get_counter_measure_time_string())
-                # attach the sectorplot_set as data to the first row item
-                set_id.setData(sectorplot_set, Qt.UserRole)
-                self.sectorplotsets_source_model.insertRow(0, [set_id, name, countermeasure_time, save_time])
-            # headers
-            self.sectorplotsets_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Id"))
-            self.sectorplotsets_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Name"))
-            self.sectorplotsets_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Countermeasure Time"))
-            self.sectorplotsets_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Save Time"))
-            self.sectorplotsets_dlg.table_sectorplot_sets.selectionModel().selectionChanged.connect(self.sectorplotsetsdlg_select_sectorplotset)
-            # resize columns to fit text contents
-            self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
-            # select the row of 'selected_id' if given and >= 0
-            selected_row = 0
-            if selected_id >= 0:
-                for row in range(0, self.sectorplotsets_source_model.rowCount()):
-                    sectorplot = self.sectorplotsets_source_model.item(row, 0).data(Qt.UserRole)
-                    if sectorplot.setId == selected_id:
-                        selected_row = row
-                        break;
-            self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(selected_row)
-            self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.setFocus()
-            # See if OK was pressed
-            self.sectorplotsets_dlg.show()
-            # if self.sectorplotsets_dlg.exec_():
-            #     pass
-            #     # whatever the uses pushes:
-            # # TODO still working here without cleaning?
-            # self.new_sectorplotset()
-            # self.sectorplotsets = None
-        else:
-            # everything was setup already, just raise the window (mainly needed for Windows)
-            self.sectorplotsets_dlg.show()
+        # show a new dialog with recent sectorplotsets
+        self.sectorplotsets = SectorSets()
+        db_ok, result = self.sectorplotsets.importFromDatabase()
+        if self.DEMO:
+            self.msg(None, "DEMO MODE: no wms and saving / retrieving of old sectors / listing of recent plots\nPlease create a new Sectorplot via 'New Sectorplot' button in next dialog.")
+        elif not db_ok:
+            # if NOT OK importFromDatabase returns the database error
+           self.msg(None, self.tr("There is a problem with the Database to retrieve the Sectorplots\nThe Database error is:\n%s") % result)
+           return
+        # create emtpy model for new list
+        self.sectorplotsets_source_model = QStandardItemModel()
+        self.sectorplotsets_dlg.table_sectorplot_sets.setModel(self.sectorplotsets_source_model)
+        # enable the sorting of columns by clicking on header
+        self.sectorplotsets_dlg.table_sectorplot_sets.setSortingEnabled(True)
+        # resize columns to fit text in it
+        self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
+        # be sure that the copy button is disabled (as nothing is selected?)
+        self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(False)
+        for sectorplot_set in self.sectorplotsets:
+            name = QStandardItem("%s" % sectorplot_set.name)
+            set_id = QStandardItem("%s" % sectorplot_set.setId)
+            # TODO: get time right instead of get_***_time_string()
+            save_time = QStandardItem(sectorplot_set.get_save_time_string())
+            countermeasure_time = QStandardItem(sectorplot_set.get_counter_measure_time_string())
+            # attach the sectorplot_set as data to the first row item
+            set_id.setData(sectorplot_set, Qt.UserRole)
+            self.sectorplotsets_source_model.insertRow(0, [set_id, name, countermeasure_time, save_time])
+        # headers
+        self.sectorplotsets_source_model.setHeaderData(0, Qt.Horizontal, self.tr("Id"))
+        self.sectorplotsets_source_model.setHeaderData(1, Qt.Horizontal, self.tr("Name"))
+        self.sectorplotsets_source_model.setHeaderData(2, Qt.Horizontal, self.tr("Countermeasure Time"))
+        self.sectorplotsets_source_model.setHeaderData(3, Qt.Horizontal, self.tr("Save Time"))
+        self.sectorplotsets_dlg.table_sectorplot_sets.selectionModel().selectionChanged.connect(self.sectorplotsetsdlg_select_sectorplotset)
+        # resize columns to fit text contents
+        self.sectorplotsets_dlg.table_sectorplot_sets.resizeColumnsToContents()
+        # select the row of 'selected_id' if given and >= 0
+        selected_row = 0
+        if selected_id >= 0:
+            for row in range(0, self.sectorplotsets_source_model.rowCount()):
+                sectorplot = self.sectorplotsets_source_model.item(row, 0).data(Qt.UserRole)
+                if sectorplot.setId == selected_id:
+                    selected_row = row
+                    break;
+        self.sectorplotsets_dlg.table_sectorplot_sets.selectRow(selected_row)
+        self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.setFocus()
+        # See if OK was pressed
+        self.sectorplotsets_dlg.show()
 
     def sectorplotsetsdlg_select_sectorplotset(self):
         if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
