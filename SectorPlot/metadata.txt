@@ -10,7 +10,7 @@
 name=SectorPlot
 qgisMinimumVersion=3.4
 description=Plots sector areas on risk management map
-version=1.1.1
+version=1.1.2
 author=RIVM
 email=marnix.de.ridder@rivm.nl
 
@@ -24,6 +24,7 @@ repository=http://github.com/rduivenvoorde/sectorplot
 
 # Uncomment the following line and add your changelog:
 changelog=
+    1.1.2   Modal dialog and better zoomTo sectorplot behaviour (this works now really better on Windows!)
     1.1.1   Pie rings now in meters (instead of km), Move of SectorPlot dialog to foreground, better Pie-part selection
     1.1.0   Safe and Retrieve Pie from Database, update translations
     1.0.4   More Locale and number fixes
