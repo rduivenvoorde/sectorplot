@@ -170,7 +170,6 @@ class SectorPlot:
 
         # when the user starts a new project, the plugins should remove the self.sector_layer, as the underlying cpp layer is removed
         self.iface.newProjectCreated.connect(self.stop_sectorplot_session)
-        log.debug('Sectorplot Plugin init, end')
 
     # TODO: move this to a commons class/module
     def get_rivm_toolbar(self):
@@ -274,7 +273,6 @@ class SectorPlot:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
         # main menu/dialog
-        log.debug('Sectorplot initGui, start')
         icon_path = ':/plugins/SectorPlot/images/icon.png'
         self.add_action(
             icon_path,
@@ -311,8 +309,7 @@ class SectorPlot:
         self.sectorplotsets_dlg.table_sectorplot_sets.setSelectionMode(QAbstractItemView.SingleSelection)
         # dlg actions
         self.sectorplotsets_dlg.btn_new_sectorplotset_dialog.clicked.connect(self.locationdlg_open_dialog)
-        self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.clicked.connect(
-            self.sectorplotsetsdlg_new_sectorplotset_dialog)
+        self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.clicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
         self.sectorplotsets_dlg.btn_create_wms.clicked.connect(self.sectorplotsetsdlg_create_wms)
         self.sectorplotsets_dlg.btn_create_shapefile.clicked.connect(self.sectorplotsetsdlg_create_shapefile)
         self.sectorplotsets_dlg.table_sectorplot_sets.doubleClicked.connect(self.sectorplotsetsdlg_new_sectorplotset_dialog)
@@ -327,7 +324,6 @@ class SectorPlot:
             cur = cur+1
         self.sectorplotsets_dlg.combo_styles.setCurrentIndex(style_idx)
         self.sectorplotsets_dlg.combo_styles.currentIndexChanged.connect(self.sectorplotsetsdlg_style_selected)
-
 
         # The Location_dialog for setting x/y lat/lon
         self.location_dlg = SectorPlotLocationDialog(parent=self.sectorplotsets_dlg)
@@ -413,7 +409,6 @@ class SectorPlot:
         self.settings_dlg.btn_test_postgis.clicked.connect(self.settingsdlg_test_postgis_clicked)
         self.settings_dlg.btn_test_geoserver.clicked.connect(self.settingsdlg_test_geoserver_clicked)
         self.settings_dlg.btn_test_jrodos.clicked.connect(self.settingsdlg_test_jrodos_clicked)
-        log.debug('Sectorplot initGui, end')
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -441,6 +436,21 @@ class SectorPlot:
     def run(self):
         """Start the plugin"""
 
+        # hack: because we fiddle around with so many non modal dialogs, it is possible to
+        # show the main window WHILE in the middle of the creation of a sectorplot(set)
+        # this happens mainly on windows where non-modal dialogs go behind the main dialog..
+        # so we check if either the self.location_dlg or self.sectorplotset_dlg or self.sector_dlg is visible
+        # if so... do nothing for now..
+        if self.location_dlg.isVisible() or self.sectorplotset_dlg.isVisible() or self.sector_dlg.isVisible():
+            log.debug('NOT starting main dialog because an other dialog isVisible()')
+            if self.location_dlg.isVisible():
+                self.location_dlg.activateWindow()
+            if self.sectorplotset_dlg.isVisible():
+                self.sectorplotset_dlg.activateWindow()
+            if self.sector_dlg.isVisible():
+                self.sector_dlg.activateWindow()
+            return
+
         # fresh installs do not have passwords, present the settings dialog upon first use
         settings = SectorPlotSettings()
         no_postgis_password = settings.value('postgis_password') == '' or settings.value('postgis_password') == None
@@ -463,11 +473,10 @@ class SectorPlot:
         self.get_pie_layer()
         self.get_sector_layer()
         # open a the dialog with the sectorplotsets from the database
-        self.new_sectorplotset()
+        self.new_sectorplotset()  # clean all
         self.sectorplotsetsdlg_open_dialog()
 
     def get_sector_layer(self):
-        #if self.sector_layer is None:
         if len(QgsProject.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) >= 0:
             # check IF there is already a SECTOR_LAYER_NAME in the project with the right fields
             if len(QgsProject.instance().mapLayersByName(self.SECTOR_LAYER_NAME)) > 0:
@@ -497,7 +506,6 @@ class SectorPlot:
         return self.sector_layer
 
     def get_pie_layer(self):
-        #if self.pie_layer is None:
         if len(QgsProject.instance().mapLayersByName(self.PIE_LAYER_NAME)) >= 0:
             if len(QgsProject.instance().mapLayersByName(self.PIE_LAYER_NAME)) > 0:
                 self.pie_layer = QgsProject.instance().mapLayersByName(self.PIE_LAYER_NAME)[0]
@@ -567,15 +575,15 @@ class SectorPlot:
         self.clean_sector_layer(sectorset=True, pie=True)
         if self.current_sectorset is not None and self.sector_layer is not None:
             self.get_sector_layer().dataProvider().addFeatures(self.current_sectorset.get_qgs_features())
-            # log.debug(f'show_current_sectorplotset_on_map Current Sectors xy: {self.current_sectorset.lon} {self.current_sectorset.lat} extent: {self.get_sector_layer().extent()}')
-            self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat, self.get_sector_layer().extent())
+            # using "self.get_sector_layer().dataProvider().sourceExtent()" as in QGIS 3.4 "self.get_sector_layer().extent()" is not updated yet !!
+            self.zoom_map_to_lonlat(self.current_sectorset.lon, self.current_sectorset.lat, self.get_sector_layer().dataProvider().sourceExtent())
         if self.current_pie is not None and self.pie_layer is not None:
             self.get_pie_layer().dataProvider().addFeatures(self.current_pie.get_features())
-            # log.debug(f'show_current_sectorplotset_on_map Current pie xy: {self.current_pie.lon} {self.current_pie.lat} extent: {self.get_sector_layer().extent()}')
-            self.zoom_map_to_lonlat(self.current_pie.lon, self.current_pie.lat, self.get_pie_layer().extent())
-        #self.repaint_sector_layers()
+            # using "self.get_pie_layer().dataProvider().sourceExtent()" as in QGIS 3.4 "self.get_pie_layer().extent()" is not updated yet !!
+            self.zoom_map_to_lonlat(self.current_pie.lon, self.current_pie.lat, self.get_pie_layer().dataProvider().sourceExtent())
         for i in range(0, zooms):
             self.iface.mapCanvas().zoomOut()
+        self.repaint_sector_layers()
 
     def repaint_sector_layers(self):
         self.iface.mapCanvas().refreshAllLayers()
@@ -587,14 +595,11 @@ class SectorPlot:
             point = QgsPointXY(float(lon), float(lat))
             geom = QgsGeometry.fromPointXY(point)
             geom.transform(crs_transform)
-            # zoom to with center is actually setting a point rectangle and then zoom
             center = geom.asPoint()
-            #rect = QgsRectangle(center, center)
             self.iface.mapCanvas().setCenter(center)
         else:
             rect = crs_transform.transformBoundingBox(extent)
             self.iface.mapCanvas().setExtent(rect)
-        # self.iface.mapCanvas().zoomScale(scale)
         self.iface.mapCanvas().refresh()
 
     def sectorplotsetsdlg_open_dialog(self, selected_id=-1):
@@ -670,8 +675,9 @@ class SectorPlot:
                 if not db_ok:
                     self.current_pie = None
                     #self.msg(self.sectorplotset_dlg, self.tr('Problem retrieving Pie for this SectorSet {}\n{}').format(self.current_sectorset.setId, result))
-
             # zoom to and show
+            #log.debug(f'SELECT self.current_sectorset: {self.current_sectorset}')
+            #log.debug(f'SELECT self.current_pie: {self.current_pie}')
             self.show_current_sectorplotset_on_map(1)
             self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(True)
         else:
@@ -679,6 +685,7 @@ class SectorPlot:
             self.sectorplotsets_dlg.btn_copy_sectorplotset_dialog.setEnabled(False)
 
     def sectorplotsetsdlg_new_sectorplotset_dialog(self, lon=None, lat=None, name='', npp_block=None):
+        self.sectorplotsets_dlg.hide()
         if self.current_sectorset is None:
             # create a SectorSet based on location dialog
             self.current_sectorset = SectorSet(lon, lat)
@@ -930,6 +937,7 @@ class SectorPlot:
         self.location_dlg.le_latitude.setText(lat_txt)
         QSettings().setValue("plugins/SectorPlot/last_location", [lon_txt, lat_txt])
         self.iface.mapCanvas().unsetMapTool(self.xy_tool)
+        self.location_dlg.activateWindow()
 
     def locationdlg_tab_changed(self, tab):
         log.debug('locationdlg_tab_changed: {}'.format(tab))
@@ -1183,8 +1191,9 @@ class SectorPlot:
             self.current_sectorset = None
             self.current_pie = None
             # go back to (old) selected one, IF there was one selected
-            if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
-                self.current_sectorset = self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()[0].data(Qt.UserRole)
+            # NOPE: not doing that anymore, just start over please...
+            #if len(self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()) > 0:
+            #    self.current_sectorset = self.sectorplotsets_dlg.table_sectorplot_sets.selectedIndexes()[0].data(Qt.UserRole)
             self.show_current_sectorplotset_on_map()
 
     def sector_dlg_enable_min_distance(self):
@@ -1418,8 +1427,8 @@ class SectorPlot:
     def settingsdlg_show(self):
         self.settings_dlg.exec_()
 
-    def debug(self, s):
-        QgsMessageLog.logMessage('%s' % s, tag="SectorPlot Debug", level=Qgis.Info)
+    #def debug(self, s):
+    #    QgsMessageLog.logMessage('%s' % s, tag="SectorPlot Debug", level=Qgis.Info)
 
 
 class GetPointTool(QgsMapTool):

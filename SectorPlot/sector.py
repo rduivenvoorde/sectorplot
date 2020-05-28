@@ -319,15 +319,12 @@ class Pie:
                         direction += angle
 
     def __str__(self):
-        result = 'Pie[lon: %s, lat: %s, #sectors: %s, sectorsetid: %s]' % (self.lon, self.lat, len(self.sectors), self.sectorset_id)
-        if len(self.sectors)>0:
-            result = result + '\nSectors[0]: {}'.format(self.sectors[0])
-        result = result + '\nFeatures: {}'.format(self.get_features())
-        if len(self.get_features())>0:
-            result = result + '\nFeatures[0].geometry(): {}'.format(self.get_features()[0].geometry())
-        #result = result + '\nFeatures[0].geometry().asGeometryCollection(): {}'.format(self.get_features()[0].geometry().asGeometryCollection())
-        #result = result + '\nFeatures[0].geometry().asGeometryCollection().collectGeometry(): {}'.format(self.get_features()[0].geometry().collectGeometry(self.get_features()[0].geometry().asGeometryCollection()))
-        #result = result + '\nQgsGeometry.collectGeometry(): {}'.format(QgsGeometry.collectGeometry(self.get_features()[0].geometry().asGeometryCollection()))
+        result = f'Pie [id: {self.sectorset_id}, lon: {self.lon}, lat: {self.lat}, #sectors: {len(self.sectors)}]'
+        # if len(self.sectors)>0:
+        #     result = result + '\nSectors[0]: {}'.format(self.sectors[0])
+        # result = result + '\nFeatures: {}'.format(self.get_features())
+        # if len(self.get_features())>0:
+        #     result = result + '\nFeatures[0].geometry(): {}'.format(self.get_features()[0].geometry())
         return result
 
     def get_features(self, multi_polygon=False):
@@ -434,7 +431,7 @@ class SectorSet:
         self.sectors = []
 
     def __str__(self):
-        result = 'SectorSet[ %s sectors]' % len(self.sectors)
+        result = f'SectorSet[ {self.setId} {self.name} {self.lon} {self.lat} {len(self.sectors)} sectors]'
         return result
 
     def display(self, doGeometry=False):
