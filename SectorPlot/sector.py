@@ -11,8 +11,10 @@ import logging
 from . import LOGGER_NAME
 log = logging.getLogger(LOGGER_NAME)
 
-crs4326 = QgsCoordinateReferenceSystem(4326)
-crs3857 = QgsCoordinateReferenceSystem(3857)
+crs4326 = QgsCoordinateReferenceSystem()
+crs4326.createFromString('EPSG:4326')
+crs3857 = QgsCoordinateReferenceSystem()
+crs3857.createFromString('EPSG:3857')
 xformTo3857 = QgsCoordinateTransform(crs4326, crs3857, QgsProject.instance())
 xformTo4326 = QgsCoordinateTransform(crs3857, crs4326, QgsProject.instance())
 
@@ -537,7 +539,7 @@ class SectorSet:
         return result
 
     def validate_name(self, name):
-        forbidden = ' -=+\/";:' + "'"
+        forbidden = ' -=+/";:' + "'\\"
         result = ''
         for c in name:
             if c in forbidden:

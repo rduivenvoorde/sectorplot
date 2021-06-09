@@ -149,7 +149,7 @@ class SectorPlot:
         self.sector_layer = None
         self.pie_layer = None
         self.crs_4326 = QgsCoordinateReferenceSystem()
-        self.crs_4326.createFromId(4326)
+        self.crs_4326.createFromString('EPSG:4326')
 
         # Declare instance attributes
         self.actions = []
