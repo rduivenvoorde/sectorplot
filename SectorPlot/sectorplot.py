@@ -1220,7 +1220,7 @@ class SectorPlot:
         color = QColor(html_color)
         # colors in Qt styles are in 0-255 notation if you want to use opacity, we have to add it
         color.setAlpha(self.ALPHA)
-        style = "QLineEdit { background: rgb(%s, %s, %s, %s); }" % (color.red(), color.green(), color.blue(), color.alpha())
+        style = "QLineEdit { background: rgba(%s, %s, %s, %s); }" % (color.red(), color.green(), color.blue(), color.alpha())
         self.sector_dlg.le_color.setStyleSheet(style)
         # to have #rrggbbaa notation:  color.name()+hex(color.alpha())[2:]
         self.sector_dlg.le_color.setText(color.name())
