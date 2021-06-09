@@ -288,6 +288,7 @@ class Pie:
         self.start_angle = start_angle
         self.sector_count = sector_count
         self.zone_radii = zone_radii
+        self.zone_radii.sort()  # to be sure they are sorted...
         self.sectorset_id = sectorset_id
         self._create_sectors()
 
@@ -295,15 +296,17 @@ class Pie:
         self.sectors = []
         if self.sector_count > 0:
             angle = 360.0 / self.sector_count
-            min_distance = 0
+
             # self.zone_radii can be a commaseparated string from db or a list
             if type(self.zone_radii) is str:
                 self.zone_radii = self.zone_radii.split(',')
+            min_distance = 0
             for radius in self.zone_radii:
                 radius = float(radius)
+                log.debug(f'Creating sectors with min_radius = {min_distance} and radius {radius}')
                 if radius > 0:
                     direction = self.start_angle
-                    max_distance = radius # * 1000 # 20191017 Richard: now in meters instead of km
+                    max_distance = radius  # * 1000 # 20191017 Richard: now in meters instead of km
                     for x in range(0, self.sector_count):
                         # Sector(setName=None, lon=0, lat=0, minDistance=0,
                         #          maxDistance=1, direction=0, angle=45, counterMeasureId=-1,
@@ -317,6 +320,7 @@ class Pie:
                                      counterMeasureTime=None, sectorName=sectorName, setId=-1, color='#000000')
                         self.sectors.append(sec)
                         direction += angle
+                min_distance = radius  # use the old radius for the inner circle
 
     def __str__(self):
         result = f'Pie [id: {self.sectorset_id}, lon: {self.lon}, lat: {self.lat}, #sectors: {len(self.sectors)}]'
