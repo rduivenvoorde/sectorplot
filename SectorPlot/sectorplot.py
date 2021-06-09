@@ -153,7 +153,7 @@ class SectorPlot:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&SectorPlot')
+        self.menu = self.tr('RIVM &SectorPlot')
         self.toolbar = self.get_rivm_toolbar()
 
         self.sector_dlg = None
@@ -262,7 +262,7 @@ class SectorPlot:
             self.toolbar.addAction(action)
 
         if add_to_menu:
-            self.iface.addPluginToWebMenu(
+            self.iface.addPluginToMenu(
                 self.menu,
                 action)
 
