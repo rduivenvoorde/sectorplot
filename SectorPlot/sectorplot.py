@@ -1146,6 +1146,10 @@ class SectorPlot:
         self.current_sectorset.setSaveTime()
         # show the sectorset!
         self.show_current_sectorplotset_on_map()
+        try:
+            self.pie_layer.selectionChanged.disconnect(self.sector_dlg_pie_sector_select)
+        except:
+            pass
 
     def sectorplotsetdlg_show(self):
         self.sectorplotset_dlg.btn_new_sector.setFocus()
