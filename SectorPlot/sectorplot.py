@@ -132,13 +132,13 @@ class SectorPlot:
         self.locale = QLocale(QgsApplication.instance().locale())
         # using RejectGroupSeparator makes input of wrong numbers harder !!
         self.locale.setNumberOptions(QLocale.RejectGroupSeparator)
-        self.degree_validator = QDoubleValidator(-360.00, 360.00, 3)
+        self.degree_validator = QDoubleValidator(-360.00, 360.00, 6)
         self.degree_validator.setLocale(self.locale)
-        self.positive_degree_validator = QDoubleValidator(1, 360.00, 3)
+        self.positive_degree_validator = QDoubleValidator(1, 360.00, 6)
         self.positive_degree_validator.setLocale(self.locale)
-        self.distance_validator = QDoubleValidator(0.1, 999.99, 3)
+        self.distance_validator = QDoubleValidator(0.1, 999.99, 6)
         self.distance_validator.setLocale(self.locale)
-        self.min_distance_validator = QDoubleValidator(0.0, 999.99, 3)
+        self.min_distance_validator = QDoubleValidator(0.0, 999.99, 6)
         self.min_distance_validator.setLocale(self.locale)
 
         self.current_sectorset = None
@@ -487,9 +487,9 @@ class SectorPlot:
                 # NOTE!!! the order of the attributes is vital, to the order you add the fields in sector.py!!!
                 self.current_sectorset = None
                 self.sector_layer = QgsVectorLayer(
-                    "Polygon?crs=epsg:4326&field=setname:string(50)&field=countermeasureid:integer&field=z_order:integer" +
-                    "&field=saveTime:string(50)&field=counterMeasureTime:string(50)&field=sectorname:string(50)" +
-                    "&field=setid:integer&field=color:string(9)&field=npp_block:string(50)" +
+                    "Polygon?crs=epsg:4326&field=setname:string(250)&field=countermeasureid:integer&field=z_order:integer" +
+                    "&field=saveTime:string(50)&field=counterMeasureTime:string(50)&field=sectorname:string(250)" +
+                    "&field=setid:integer&field=color:string(9)&field=npp_block:string(250)" +
                     "&index=yes",
                     self.SECTOR_LAYER_NAME,
                     "memory")
@@ -514,9 +514,9 @@ class SectorPlot:
                 # NOTE!!! the order of the attributes is vital, to the order you add the fields in sector.py!!!
                 self.current_pie = None
                 self.pie_layer = QgsVectorLayer(
-                    "Polygon?crs=epsg:4326&field=setname:string(50)&field=countermeasureid:integer&field=z_order:integer" +
-                    "&field=saveTime:string(50)&field=counterMeasureTime:string(50)&field=sectorname:string(50)" +
-                    "&field=setid:integer&field=color:string(9)&field=npp_block:string(50)" +
+                    "Polygon?crs=epsg:4326&field=setname:string(250)&field=countermeasureid:integer&field=z_order:integer" +
+                    "&field=saveTime:string(50)&field=counterMeasureTime:string(50)&field=sectorname:string(250)" +
+                    "&field=setid:integer&field=color:string(9)&field=npp_block:string(250)" +
                     "&index=yes",
                     self.PIE_LAYER_NAME,
                     "memory")
@@ -1148,8 +1148,8 @@ class SectorPlot:
         self.show_current_sectorplotset_on_map()
         try:
             self.pie_layer.selectionChanged.disconnect(self.sector_dlg_pie_sector_select)
-        except:
-            pass
+        except Exception as e:
+            log.debug(f'Error disconnecting Pie selection (for angle values) {e}')
 
     def sectorplotsetdlg_show(self):
         self.sectorplotset_dlg.btn_new_sector.setFocus()
