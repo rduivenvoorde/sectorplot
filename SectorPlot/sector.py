@@ -305,7 +305,7 @@ class Pie:
             min_distance = 0
             for radius in self.zone_radii:
                 radius = float(radius)
-                log.debug(f'Creating sectors with min_radius = {min_distance} and radius {radius}')
+                #log.debug(f'Creating sectors with min_radius = {min_distance} and radius {radius}')
                 if radius > 0:
                     direction = self.start_angle
                     max_distance = radius  # * 1000 # 20191017 Richard: now in meters instead of km
