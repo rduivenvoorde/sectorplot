@@ -9,21 +9,19 @@
 [general]
 name=SectorPlot
 qgisMinimumVersion=3.4
-description=Plots sector areas on risk management map
-version=1.1.2
+description=Plots sector areas (Sector Plots) on risk management map
+version=1.1.3
 author=RIVM
 email=marnix.de.ridder@rivm.nl
 
-about=Later
+about=Plugin to create SectorPlots or retrieve earlier created SectorPlots
 
-tracker=http://github.com/rduivenvoorde/sectorplot/issues
-repository=http://github.com/rduivenvoorde/sectorplot
+tracker=https://git.svc.cal-net.nl/qgis/sectorplotplugin/-/issuesu
+repository=https://git.svc.cal-net.nl/qgis/sectorplotplugin
 # End of mandatory metadata
 
-# Recommended items:
-
-# Uncomment the following line and add your changelog:
 changelog=
+    1.1.3   Fix Deprications, Move to Plugins menu, Fix style error (Qt warning), use non overlapping/separate Pie parts, Fix too long attribute name
     1.1.2   Modal dialog and better zoomTo sectorplot behaviour (this works now really better on Windows!)
     1.1.1   Pie rings now in meters (instead of km), Move of SectorPlot dialog to foreground, better Pie-part selection
     1.1.0   Safe and Retrieve Pie from Database, update translations
