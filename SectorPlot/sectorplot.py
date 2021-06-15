@@ -1149,7 +1149,8 @@ class SectorPlot:
         try:
             self.pie_layer.selectionChanged.disconnect(self.sector_dlg_pie_sector_select)
         except Exception as e:
-            log.debug(f'Error disconnecting Pie selection (for angle values) {e}')
+            pass
+            #log.debug(f'Info: failing to disconnect Pie selection signal (for angle values) {e}')
 
     def sectorplotsetdlg_show(self):
         self.sectorplotset_dlg.btn_new_sector.setFocus()
